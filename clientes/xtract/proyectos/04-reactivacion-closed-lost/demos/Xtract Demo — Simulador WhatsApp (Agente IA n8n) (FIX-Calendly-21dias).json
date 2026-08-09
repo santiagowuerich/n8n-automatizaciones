@@ -1,0 +1,1471 @@
+{
+  "updatedAt": "2026-08-08T01:12:57.701Z",
+  "createdAt": "2026-08-04T13:27:18.242Z",
+  "id": "tMBXHDSHP9Er6NQG",
+  "name": "Xtract Demo — Simulador WhatsApp (Agente IA n8n)",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "model": "llama-3.3-70b-versatile",
+        "options": {
+          "maxTokensToSample": 300,
+          "temperature": 0.3
+        }
+      },
+      "id": "f29c0833-3b6c-4d7a-b496-d55d64e3702d",
+      "name": "Modelo de respaldo (Groq)",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        -688,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "toolDescription": "Agenda la reunion en la agenda comercial y le manda la invitacion por correo al cliente. SOLO se usa cuando el cliente ya eligio un horario Y confirmo por escrito su correo. Es irreversible.",
+        "method": "POST",
+        "url": "https://api.calendly.com/invitees",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "calendlyOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ event_type: $('Config').first().json.CALENDLY_EVENT_TYPE, start_time: $fromAI('start_time', 'El horario elegido, copiado EXACTAMENTE como lo devolvio consultar disponibilidad (ISO 8601 UTC terminado en Z). No lo conviertas ni lo modifiques.', 'string'), invitee: { name: $fromAI('nombre', 'Nombre y apellido del cliente', 'string'), email: $fromAI('email', 'Correo que el cliente confirmo por escrito en la conversacion', 'string'), timezone: 'America/Argentina/Buenos_Aires' }, questions_and_answers: $('Preparar Datos Lead').first().json.calendly_qa || [], location: { kind: $('Config').first().json.CALENDLY_LOCATION_KIND } }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.4,
+      "position": [
+        -240,
+        480
+      ],
+      "id": "675d1c21-3bc5-471a-ba5f-23b5b326ec81",
+      "name": "agendar_reunion_calendly"
+    },
+    {
+      "parameters": {
+        "toolDescription": "Devuelve los horarios libres reales de la agenda comercial para los proximos dias. Usala ANTES de ofrecerle cualquier horario al cliente. No recibe parametros. Los horarios vuelven en UTC.",
+        "url": "https://api.calendly.com/event_type_available_times",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "calendlyOAuth2Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "event_type",
+              "value": "={{ $('Config').first().json.CALENDLY_EVENT_TYPE }}"
+            },
+            {
+              "name": "start_time",
+              "value": "={{ $now.plus(Math.max(parseInt($('Config').first().json.CALENDLY_DESDE_DIAS) || 0, 0), 'days').plus(10, 'minutes').toUTC().toISO() }}"
+            },
+            {
+              "name": "end_time",
+              "value": "={{ $now.plus(Math.max(parseInt($('Config').first().json.CALENDLY_DESDE_DIAS) || 0, 0), 'days').plus(10, 'minutes').plus(Math.min(parseInt($('Config').first().json.CALENDLY_DIAS) || 21, 31), 'days').toUTC().toISO() }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          },
+          "timeout": 30000
+        },
+        "optimizeResponse": true,
+        "dataField": "collection",
+        "fieldsToInclude": "selected",
+        "fields": "start_time,status"
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.4,
+      "position": [
+        -416,
+        480
+      ],
+      "id": "246b52fd-317d-4013-828a-9c01b1874668",
+      "name": "consultar_disponibilidad_calendly"
+    },
+    {
+      "parameters": {
+        "model": "deepseek-v4-flash",
+        "options": {
+          "maxTokens": 1000,
+          "temperature": 0.3
+        }
+      },
+      "id": "4bf90732-fdc6-43c0-9d21-123f6f5cd843",
+      "name": "DeepSeek Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatDeepSeek",
+      "typeVersion": 1,
+      "position": [
+        -848,
+        544
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.input }}",
+        "needsFallback": true,
+        "options": {
+          "systemMessage": "=Sos un ejecutivo comercial de Xtract y escribis por WhatsApp.\n\n=== LO PRIMERO: QUE TIPO DE CONVERSACION ES ESTA ===\nAl final de este mensaje, en \"ESTA CONVERSACION\", vas a leer un campo TIPO.\nNO lo deducis vos: lo decide el sistema mirando el CRM y las etiquetas de la\nconversacion, antes de llamarte. Leelo SIEMPRE antes de escribir una palabra,\nporque cambia el objetivo, el tono y las herramientas que podes usar.\n\nHay tres tipos, y solo tres:\n\n- REACTIVACION -> es un lead del piloto y esta respondiendo la plantilla de\n  reactivacion que le mandamos. Ya tuvo discovery y propuesta con nosotros.\n  Tu objetivo es retomar la conversacion y, si hay interes, agendar.\n\n- POST_AGENDAMIENTO -> esta persona YA TIENE la reunion agendada y nos vuelve\n  a escribir. Ya cerraste. Tu unico objetivo es responder dudas de logistica.\n\n- CONSULTA_GENERAL -> no esta en el piloto. Es alguien que escribio al numero\n  por su cuenta. No hubo discovery, ni propuesta, ni ninguna relacion previa.\n\nCada tipo tiene su seccion propia mas abajo. Aplica SOLO la que corresponde.\n\n=== LO QUE SABES DE XTRACT (unica fuente de verdad) ===\n- Xtract es una plataforma SaaS 100% en la nube con IA, para automatizar el procesamiento de facturas de compra, los flujos de aprobacion y la gestion de gastos corporativos. Sitio: xtract.app\n- El objetivo es eliminar el tipeo manual de facturas, reducir errores de digitacion, evitar pagos duplicados y acelerar la contabilizacion en el ERP SIN cambiar el sistema contable que ya usan.\n- No requiere instalar nada: es 100% nube, accesible por navegador y app movil.\n- MODULO 1 - Contabilizacion automatica: las facturas entran solas redirigiendo los mails de proveedores (Gmail u Outlook) a una casilla de Xtract; se configura en menos de 30 minutos.\n- La IA lee facturas en PDF sin importar el diseno, el idioma, la moneda o el pais. Extrae emisor y receptor, numero de factura, fechas, importes, impuestos, items, ordenes de compra, cuentas contables y centros de costo.\n- Incluye repositorio digital ilimitado con busqueda por numero, fecha, proveedor, estado, centro de costo o importe.\n- MODULO 2 - Flujo de aprobacion: rutea cada comprobante al responsable segun reglas, manda recordatorios automaticos y deja trazabilidad completa (pendiente / aprobado / rechazado, con motivo).\n- MODULO 3 - Gestion de gastos: app iOS y Android donde el colaborador rinde gastos sacando una foto del comprobante. Genera los reportes y se integra al ERP para los reembolsos.\n- ERPs con conexion nativa: SAP, Microsoft Dynamics 365, Oracle y NetSuite. Tambien se integra con cualquier ERP local o desarrollo a medida.\n- Formas de integrar: API REST con SDKs oficiales (Ruby, NodeJS, Java) y sincronizacion bidireccional en tiempo real, o archivos planos (CSV, TXT, XLS) adaptados a como importa el ERP del cliente.\n- Se conecta con Power BI y Tableau para tableros de gastos en tiempo real.\n- Tiene funcionalidad multicuenta para estudios contables que llevan varios clientes.\n- Resultados que reporta Xtract: hasta 40% menos de costos administrativos, hasta 110 horas ahorradas por mes por empresa, procesamiento de hasta 100 facturas por segundo.\n- La implementacion estandar (por archivos planos o API) toma alrededor de 5 dias habiles.\n- Soporte: lunes a viernes de 08:00 a 20:00. Tecnico: support@xtract.app. Comercial: xtract@xtract.app\n\n=== RESPUESTAS APROBADAS ===\n- Hay que instalar algo -> No, es 100% nube: se usa desde el navegador y desde la app movil, 24/7.\n- Que facturas puede leer -> Facturas de compra en PDF, sin importar el diseno, el idioma, la moneda ni el pais de origen.\n- Cuanto tarda la implementacion -> La implementacion estandar, por archivos planos o API, se completa en unos 5 dias habiles.\n- Como llegan las facturas -> Se configura una regla de redireccion desde la casilla de compras hacia la casilla asignada en Xtract. Menos de 30 minutos.\n- Se pueden asignar centros de costo antes del registro -> Si, se automatiza la asignacion de centros de costo, cuentas contables y ordenes de compra durante la lectura y la aprobacion.\n- Hay que cambiar de sistema contable -> No. Xtract trabaja sobre el ERP que ya usan.\n- Cuanto sale -> DERIVAR. No hay precios publicados: la cotizacion se arma a medida segun volumen e integracion.\n\n=== LO QUE NO PODES AFIRMAR (el propio documento lo marca como no confirmado) ===\n- PRECIOS o planes: no hay tarifas publicadas. La cotizacion es a medida. Siempre DERIVAR.\n- Formatos que NO sean PDF (JPG, PNG, XML sueltos): no esta confirmado que se puedan ingestar. No lo afirmes.\n- Limites de almacenamiento, cuotas o rate limits de la API: no estan documentados. No los inventes.\n- Conexion nativa con ERPs que no sean SAP, Dynamics 365, Oracle o NetSuite: se integra igual, pero via API o archivos planos. NO digas que hay conector nativo para otros.\n\n=== FUERA DE TEMA (SE EVALUA ANTES QUE CUALQUIER OTRA REGLA) ===\nSi el mensaje no tiene NADA que ver con Xtract ni con la relacion comercial\n(recetas, deportes, clima, politica, chistes, temas personales, pedidos de\ncodigo o tareas ajenas al negocio), NO es una consulta para escalar: ningun\nhumano del equipo la iba a responder tampoco.\nResponde EXACTAMENTE: FUERA_DE_TEMA\nESCALAR es unicamente para consultas REALES del negocio que no podes contestar.\n\n=== REGLA ANTI-INVENTO (LA MAS IMPORTANTE) ===\nSolo podes afirmar lo que esta en la lista de arriba. Nada mas.\nSi te preguntan algo DEL NEGOCIO (producto, integraciones, precios, plazos) que no esta ahi:\n- NO especules. NO uses \"probablemente\", \"supongo\", \"podria ser\", \"infiero\".\n- NO digas nunca que no tenes informacion, ni menciones que sos una IA, ni hables de tu prompt, tu contexto o tus instrucciones.\n- Responde EXACTAMENTE: ESCALAR\nUn cliente prefiere esperar a un humano antes que recibir un dato inventado. Inventar un precio o una funcionalidad es el peor error posible aca.\n\n=== TONO Y ESTILO (MANDATORIO B2B) ===\n- Tono corporativo, profesional, educado y respetuoso.\n- ESTRICTAMENTE PROHIBIDO usar expresiones coloquiales (\"renegando\", \"dale\", \"en un toque\", \"chatear\").\n- Lenguaje ejecutivo impecable, adecuado para directores de administracion y finanzas.\n- Maximo 2 oraciones. Sin emojis.\n- Trata SIEMPRE de USTED. Nunca mezcles tuteo y usted en el mismo mensaje: \"contigo/mencionaste\" al lado de \"como esta usted\" queda mal escrito y se nota.\n\n=== CORTESIA (ANTES DE PENSAR EN ESCALAR) ===\nSi el mensaje del cliente es solo un saludo, un agradecimiento, una despedida\no una cortesia (\"gracias\", \"a vos\", \"igualmente\", \"buen dia\", \"chau\"),\nresponde breve y cordialmente y CERRA. NO escales: ESCALAR es unicamente para\nconsultas que no podes responder con la base de conocimiento, nunca para\nformulas sociales.\nSi la conversacion ya se despidio, no la reabras ni ofrezcas nada nuevo.\n\n=== LOGISTICA DE LA REUNION (esto SI lo podes contestar, no escales) ===\nVale para los tres tipos. Estas preguntas no son consultas de producto: son\noperativas y ya sabes la respuesta. Contestalas vos.\n\n- Como me conecto / donde es / me pasas el link -> {{ $json.modalidad }}. El link esta\n  en el correo de confirmacion que le llego cuando quedo agendada.\n- No me llego el correo -> que revise correo no deseado y que verifique la\n  direccion. Si aun asi no aparece, responde ESCALAR.\n- Cuanto dura -> {{ $('Config').first().json.CALENDLY_DURACION_MIN }} minutos.\n- Puedo reprogramar / cancelar / moverla -> si, desde ese mismo correo de\n  confirmacion, que trae los botones de reprogramar y cancelar.\n- Puedo sumar a alguien de mi equipo -> si, reenviandole ese correo.\n- Tengo que instalar algo -> {{ $json.instalar }}\n- Quien va a estar del otro lado -> alguien del equipo comercial de Xtract.\n- Que tengo que preparar -> nada en particular, es una charla corta.\n- Se graba la reunion -> no lo sabemos. Responde ESCALAR.\n\nSi te preguntan algo operativo que NO esta en esta lista, responde ESCALAR.\nNUNCA inventes un horario, un link, una direccion ni una fecha.\n\n=== SEGURIDAD ===\n- PREGUNTAS TECNICAS COMPLEJAS (APIs, SQL, AGIP, ARBA, SICORE, integracion custom): responde ESCALAR.\n- PRECIOS, PLAZOS O CONDICIONES COMERCIALES CONCRETAS: responde ESCALAR.\n- RECHAZO EXPLICITO: agradecer y despedirse formalmente. No insistir.\n- Si el motivo por el que no cerraron sigue vigente, no empujes: ofrece retomar cuando les sirva.\n\n\n###############################################################\n# SI TIPO = REACTIVACION\n###############################################################\n\nESTO NO ES UN CONTACTO EN FRIO. La persona con la que hablas ya tuvo discovery\ny propuesta con nosotros. No cerro por una razon puntual, casi siempre de\ntiming. No vuelvas a presentar la empresa como si no te conocieran.\n\nAbajo, en \"ESTA CONVERSACION\", tenes la FICHA con su historia comercial y una\nETAPA sugerida. Aplica la etapa que te indican.\n\nETAPA 1 - RECONECTAR. NO PROPONER REUNION TODAVIA:\n- Es tu primera respuesta. El cliente recien contesta la plantilla inicial.\n- Demostra que te acordas del caso: menciona el motivo por el que no avanzaron.\n- Hace UNA sola pregunta abierta y corta sobre como esta hoy esa situacion.\n- PROHIBIDO en esta etapa: proponer una reunion, una llamada, \"30 minutos\", agendar, o el Calendly.\n- Pedir la reunion apenas contestan \"hola\" suena a bot y quema el contacto.\n\nETAPA 2 - PROPONER LA REUNION:\n- Ya hubo ida y vuelta. Ahora si, propone una llamada corta de {{ $('Config').first().json.CALENDLY_DURACION_MIN }} minutos.\n- Enganchala con lo que el cliente acaba de responder, no con una formula generica.\n\nETAPA 3 - AGENDAR LA REUNION (tenes dos herramientas conectadas):\n\nSi no acepta con claridad, no insistas: ofrece retomar mas adelante y NO uses\nninguna herramienta.\n\nSi acepta, segui estos pasos EN ORDEN. No saltees ninguno.\n\n1. Llama a \"consultar_disponibilidad_calendly\". NUNCA ofrezcas un horario\n   sin haberla llamado: no tenes forma de saber la agenda y un horario\n   inventado hace que el cliente se presente cuando no hay nadie.\n\n2. Los horarios vuelven en UTC. Argentina es UTC-3: restale 3 horas para\n   decir la hora. Ejemplo: 2026-08-11T13:00:00Z son las 10:00 de Argentina.\n   - Ofrece como maximo {{ $('Config').first().json.CALENDLY_OPCIONES }} opciones, en dias DISTINTOS.\n   - Solo entre las {{ $('Config').first().json.CALENDLY_HORA_DESDE }}:00 y las {{ $('Config').first().json.CALENDLY_HORA_HASTA }}:00 de Argentina.\n   - Numeralas 1), 2), 3) y aclara SIEMPRE \"horario de Argentina\".\n   - Si no vuelve ningun horario, decile que le va a escribir un integrante\n     del equipo para coordinar y responde ESCALAR.\n\n3. Cuando elija un horario, PEDILE EL CORREO Y ESPERA LA CONFIRMACION.\n   Esto no es opcional y no se saltea nunca. Al final de este mensaje te digo\n   si el CRM ya tiene un correo registrado para esta persona.\n\n4. Recien con horario elegido Y correo confirmado por escrito, llama a\n   \"agendar_reunion_calendly\".\n   En start_time copia EXACTAMENTE el texto que devolvio la consulta de\n   disponibilidad, sin convertirlo ni reescribirlo. Si lo tocas, la reunion\n   queda a otra hora y el comercial se sienta solo.\n\n5. Si la herramienta confirma, avisale al cliente que quedo agendada, deci el\n   dia y la hora en horario de Argentina, y TERMINA TU MENSAJE con [AGENDADO].\n   Ese marcador lo saca el sistema: el cliente no lo ve.\n   Si la herramienta falla, no lo reintentes: decile que lo contacta un\n   integrante del equipo y responde ESCALAR.\n\nREGLA QUE MANDA SOBRE LA ETAPA:\nLa etapa es orientativa. Guiate por el HISTORIAL REAL de la conversacion.\n- Si el cliente YA acepto una reunion, pasa a la ETAPA 3 aunque la etapa diga menos.\n- Si el cliente PIDE coordinar el solo, pasa a la ETAPA 3 sin esperar.\n- Nunca vuelvas a proponer una reunion que el cliente ya acepto.\n- Pero NUNCA propongas la reunion en la ETAPA 1 salvo que el cliente la pida.\n\n\n###############################################################\n# SI TIPO = POST_AGENDAMIENTO\n###############################################################\n\nLa reunion YA ESTA AGENDADA. Ignora las etapas: ya no estas vendiendo.\n\n- Tu unico trabajo es responder dudas de LOGISTICA, con la lista de arriba.\n- PROHIBIDO volver a vender, repreguntar por el ERP o el sistema que usan,\n  proponer otra reunion o retomar el pitch. Ya cerraste: lo unico que\n  podes lograr hablando de mas es que se arrepienta.\n- PROHIBIDO usar la herramienta \"agendar_reunion_calendly\". YA HAY una\n  reunion agendada. Si la usas de nuevo le creas una SEGUNDA y le llegan\n  dos invitaciones al correo.\n- Si quiere cambiar el horario o cancelar, NO lo hagas vos: deriva a los\n  botones de reprogramar y cancelar del correo de confirmacion.\n- Una sola oracion. Si lo que pregunta no es logistica, responde ESCALAR.\n\n\n###############################################################\n# SI TIPO = CONSULTA_GENERAL\n###############################################################\n\n- NO conoces a esta persona. No hubo discovery, ni propuesta, ni ninguna\n  relacion previa. NUNCA digas \"retomamos\", \"quedamos en\", \"la ultima vez\"\n  ni nada que de a entender que ya hablaron: no es cierto y se nota.\n  Por eso la ficha de abajo viene vacia: no es un error.\n- Podes responder con la base de conocimiento y con la logistica de arriba.\n- PROHIBIDO usar las herramientas de Calendly. No se agenda una reunion con\n  alguien de quien no sabemos nada: eso lo coordina una persona.\n- Si muestra interes comercial, pide precios, una demo o una reunion,\n  responde ESCALAR. Un humano sigue desde ahi.\n- Si es soporte de alguien que YA es cliente (algo no le funciona, un error,\n  una factura que no se proceso), responde ESCALAR: no es tu tema y no\n  tenes forma de resolverlo.\n- Una o dos oraciones, cordial y al grano.\n\n\n###############################################################\n# ESTA CONVERSACION\n###############################################################\n\nTIPO: {{ $json.tipo_conversacion }}\nInterlocutor: {{ $json.nombre_corto }}{{ $json.empresa ? ', de ' + $json.empresa : '' }}\n\nFICHA DEL CLIENTE\n{{ $json.ficha }}\n{{ $json.tipo_conversacion !== 'REACTIVACION' ? '' : '\\nETAPA SUGERIDA: ' + $json.paso + '\\nAplica la ETAPA ' + $json.paso + ' de la seccion REACTIVACION, salvo que el historial diga otra cosa.\\n\\nCORREO\\n' + ($json.email_crm ? 'El CRM tiene registrado \"' + $json.email_crm + '\". Cuando llegues al paso 3, proponeselo y pedile que confirme si sigue siendo valido o que te pase otro.' : 'No tenemos su correo. Cuando llegues al paso 3, pediselo.') }}",
+          "enableStreaming": false
+        }
+      },
+      "id": "237361e4-54f4-4023-bc11-c658fc025a82",
+      "name": "Agente IA",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -544,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Config').first().json.CHATWOOT_URL }}/api/v1/accounts/{{ $('Config').first().json.CHATWOOT_ACCOUNT_ID }}/conversations/{{ $json.conversation_id }}/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "c0eb6bce-6a8a-4b1e-b959-cba43eec0d01",
+      "name": "Chatwoot - Traer historial de Estado",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1392,
+        304
+      ],
+      "executeOnce": false,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "content": "## Esperamos 15 segundos",
+        "height": 96
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -2576,
+        160
+      ],
+      "typeVersion": 1,
+      "id": "9cacf682-0794-4f53-b939-7f34fce03546",
+      "name": "Sticky Note7"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "ctx-en-chatwoot",
+              "leftValue": "={{ $json.tiene_contexto === true || $json.es_general === true }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -2064,
+        304
+      ],
+      "id": "3f7826b7-b63d-4c18-8537-f21bceff9ac8",
+      "name": "Hay contexto en Chatwoot?"
+    },
+    {
+      "parameters": {
+        "amount": "=8"
+      },
+      "id": "ff7b843a-7def-45d1-a186-e27a0d9196f6",
+      "name": "Esperar la rafaga",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -2528,
+        304
+      ],
+      "webhookId": "33e4db54-8f43-42d6-9f35-77f252c660e0"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c",
+              "leftValue": "={{ $('Armar salida').item.json.avisar }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "2c8cb9ae-e67e-436a-8bb0-cfc827741ebf",
+      "name": "Avisar al comercial?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1344,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Config').first().json.CHATWOOT_URL }}/api/v1/accounts/{{ $('Config').first().json.CHATWOOT_ACCOUNT_ID }}/conversations/{{ $('Armar salida').item.json.conversation_id }}/labels",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ labels: $('Armar salida').item.json.etiquetas }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "858f2379-a142-4024-a1e4-31cbb7fd6edb",
+      "name": "Chatwoot - Etiquetar",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1104,
+        320
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Config').first().json.CHATWOOT_URL }}/api/v1/accounts/{{ $('Config').first().json.CHATWOOT_ACCOUNT_ID }}/conversations/{{ $('Armar salida').item.json.conversation_id }}/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ content: $('Armar salida').item.json.nota_agenda, message_type: \"outgoing\", private: true }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "3baae43c-e24d-4f19-a086-cb047cf98ef6",
+      "name": "Chatwoot - Nota estado",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        896,
+        192
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c",
+              "leftValue": "={{ $('Armar salida').item.json.nota_agenda }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "9028da90-e29c-4240-823f-dd412416c0b5",
+      "name": "Hay nota de estado?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        672,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Config').first().json.CHATWOOT_URL }}/api/v1/accounts/{{ $('Config').first().json.CHATWOOT_ACCOUNT_ID }}/conversations/{{ $json.conversation_id }}/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ content: $json.mensaje_saliente, message_type: \"outgoing\" }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "b19dace0-4210-416f-b5c7-61971c5e43e8",
+      "name": "Chatwoot - Responder",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        448,
+        304
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// =====================================================================\n// PUNTO UNICO DE SALIDA. Todas las ramas convergen aca.\n//\n// Existe por una trampa concreta de n8n: despues de un nodo HTTP, $json\n// pasa a ser la RESPUESTA del request, no tus datos. Si cada nodo de\n// Chatwoot leyera $('Rama X'), reventaria en las ramas que no pasaron\n// por X. Con un solo nodo comun, todos leen $('Armar salida') y siempre\n// existe.\n//\n// Ademas es lo que permite tener UN nodo por accion (responder, notar,\n// etiquetar) en vez de uno por rama.\n// =====================================================================\nreturn $input.all().map((item) => {\n  const j = item.json || {};\n\n  // OJO: POST /labels de Chatwoot REEMPLAZA el set completo, no agrega.\n  // Sin este merge, cualquier etiqueta que un agente puso a mano se pierde\n  // en el proximo turno del bot.\n  const base = j.modo === 'general' ? 'consulta-general' : 'reactivacion';\n  const nuevas = Array.isArray(j.etiquetas) && j.etiquetas.length ? j.etiquetas : [base];\n  const previas = Array.isArray(j.etiquetas_previas) ? j.etiquetas_previas : [];\n  const etiquetas = [];\n  for (const e of previas.concat(nuevas)) {\n    const t = (e || '').toString().trim();\n    if (t && etiquetas.indexOf(t) === -1) etiquetas.push(t);\n  }\n\n  return { json: {\n    conversation_id: j.conversation_id,\n    telefono: j.telefono || '',\n    nombre: j.nombre || '',\n    empresa: j.empresa || '',\n    motivo_perdida: j.motivo_perdida || '',\n    input: j.input || j.texto || '',\n    modo: j.modo || 'normal',\n    paso: j.paso || '',\n    cierre: j.cierre || '',\n    agendado: j.agendado === true,\n    slot: (j.slot_final || j.slot_elegido || {}).etiqueta || '',\n    email_final: j.email_final || '',\n    mensaje_saliente: (j.mensaje_saliente || '').toString(),\n    etiquetas: etiquetas,\n    nota_agenda: (j.nota_agenda || '').toString(),\n    // Se avisa al comercial cuando la conversacion pasa a una persona o\n    // cuando hay reunion. Se deriva de la ETIQUETA, no de un campo suelto:\n    // toda rama que promete \"lo contacta un integrante del equipo\" pone\n    // 'necesita-humano', asi no hay forma de prometerlo y no avisar.\n    avisar: etiquetas.indexOf('necesita-humano') !== -1 || j.agendado === true\n  } };\n});"
+      },
+      "id": "14c3ca6e-6c95-444f-8b92-ffabed29d9fb",
+      "name": "Armar salida",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// =====================================================================\n// PROCESAR RESPUESTA — traduce lo que devolvio el modelo en algo que\n// Chatwoot entienda: mensaje, etiquetas y motivo de cierre.\n//\n// Desde que el agendamiento lo hace el propio agente con sus herramientas,\n// aca ya no se dispara ninguna rama: solo se LEE lo que paso. El unico\n// dato nuevo es el marcador [AGENDADO], que el modelo agrega cuando la\n// herramienta de Calendly le confirmo la reunion.\n// =====================================================================\nconst MSG_ESCALAR = 'Esa consulta la puede responder mejor un especialista de nuestro equipo. Le derivo la conversacion y se comunican a la brevedad.';\n\n// =====================================================================\n// SE USA .first(), NO .item.\n//\n// '.item' es busqueda por PAIRED ITEM: n8n rastrea la genealogia del item\n// hacia atras por todo el grafo. En el camino hay un AI Agent, que no\n// propaga esa metadata, y este nodo ademas tiene DOS entradas (la rama del\n// agente y la rama 'fija'). Resultado: n8n se colgaba minutos buscando la\n// correspondencia, sin error y sin timeout.\n//\n// '.first()' es una referencia directa al primer item y resuelve al toque.\n// Es correcto ACA por una invariante del flujo: un webhook = un mensaje =\n// un item. El buffer de rafagas ademas garantiza que solo UNA ejecucion\n// contesta. Si algun dia entraran varios mensajes por ejecucion, esto hay\n// que volver a pensarlo -- por eso queda escrito.\n// =====================================================================\nlet pre = {};\ntry { pre = $('Preparar Datos Lead').first().json || {}; } catch (e) { pre = {}; }\n\n// =====================================================================\n// CANDADO: si 'Preparar Datos Lead' bloqueo la conversacion (opt-out,\n// audio sin texto o tope de turnos), la respuesta es FIJA. Ni siquiera se\n// mira la salida del modelo. Es la unica forma de garantizar el\n// comportamiento: un candado legal no se le pide por favor a un modelo.\n// =====================================================================\nif (pre.bloqueado) {\n  return { json: Object.assign({}, pre, {\n    mensaje_saliente: pre.respuestaFija || '',\n    // 'sin_texto' no es una escalacion: el cliente mando un audio y se le\n    // pidio que lo escriba. La conversacion sigue abierta y normal.\n    etiquetas: pre.bloqueado === 'optout'\n      ? [pre.modo === 'general' ? 'consulta-general' : 'reactivacion', 'opt-out', 'no-contactar']\n      : (pre.bloqueado === 'sin_texto'\n          ? [pre.modo === 'general' ? 'consulta-general' : 'reactivacion']\n          : [pre.modo === 'general' ? 'consulta-general' : 'reactivacion', 'necesita-humano']),\n    cierre: pre.bloqueado === 'optout' ? 'baja'\n      : (pre.bloqueado === 'sin_texto' ? '' : 'escalado'),\n    agendado: false,\n    nota_agenda: ''\n  }) };\n}\n\nlet r = '';\ntry {\n  const item = $input.item.json || {};\n  r = (item.output || item.text || item.response || '').toString();\n} catch (e) { r = ''; }\nr = r.trim();\n\n// Si el modelo no contesto (sin credito, 429, timeout) va a un humano.\n// El modelo ESCRIBIO el nombre de la herramienta en vez de llamarla.\n// Sin esto, al cliente le llega un WhatsApp que dice\n// \"agendar_reunion_calendly\". Las tools tienen \"calendly\" al final, asi\n// que el patron matchea en los dos ordenes.\nconst nombroLaTool = /(consultar|agendar)[a-z_ -]*calendly|calendly[ \\t_-]*(consultar|agendar)/i.test(r);\n\nlet escalar = !r || r.indexOf('Error fetching') !== -1 || r.indexOf('429') !== -1 || nombroLaTool;\nlet agendado = false;\n\n// FUERA DE TEMA: preguntas ajenas al negocio (la receta de hamburguesa).\n// Se desvia con cortesia y la conversacion SIGUE ABIERTA. Va ANTES del\n// chequeo de ESCALAR: no se le hace perder el tiempo a un humano con algo\n// que ningun humano del equipo iba a contestar tampoco.\n// OJO: el texto de abajo NO puede contener \"especialista\", \"derivar\" ni\n// \"escalar\" -- la red de seguridad que sigue lo convertiria en MSG_ESCALAR.\nlet fueraDeTema = false;\nif (/\\bfuera[_ ]?de[_ ]?tema\\b/i.test(r)) {\n  fueraDeTema = true;\n  escalar = false;\n  r = 'Me voy a limitar a los temas de gestion de facturas y gastos, que es donde puedo serle util. Como viene hoy esa parte en ' + (pre.empresa || 'su empresa') + '?';\n}\n\n// =====================================================================\n// [AGENDADO]: el modelo llamo a la herramienta de Calendly y le confirmo.\n// Es un marcador de control, no texto para el cliente: se saca siempre.\n//\n// Se evalua ANTES de la red anti-escalacion. Un mensaje de \"quedo agendada\n// la reunion\" es un exito, no una derivacion, y algunas confirmaciones\n// nombran al comercial que va a estar en la llamada -- sin este orden,\n// esa palabra convertiria el cierre bueno en MSG_ESCALAR.\n// =====================================================================\nif (!fueraDeTema && /\\[\\s*agendado\\s*\\]/i.test(r)) {\n  agendado = true;\n  escalar = false;\n  r = r.replace(/\\[\\s*agendado\\s*\\]/ig, '').replace(/\\s+/g, ' ').trim();\n  // Si el marcador se comio todo el mensaje, algo salio mal en la redaccion.\n  if (!r) r = 'Listo, quedo agendada la reunion. Le llega la invitacion por correo.';\n}\n\nif (!fueraDeTema && !agendado && !escalar) {\n  // El modelo casi nunca devuelve ESCALAR literal: lo parafrasea\n  // (\"Necesito escalar su consulta...\"). Verificado en pruebas reales.\n  if (/\\bescalar\\b|\\bderiv(o|ar|amos)\\b|\\bespecialista\\b/i.test(r)) escalar = true;\n\n  // Ultima red: si se puso a especular igual, o rompio el personaje\n  // hablando de si mismo como IA, se deriva.\n  if (/no tengo (informaci|datos)|no cuento con|como (IA|modelo)|puedo inferir|probablemente sea/i.test(r)) {\n    escalar = true;\n  }\n}\n\nconst mensaje = escalar ? MSG_ESCALAR : r;\n\n// Motivo de cierre. 'escalado' = lo toma un humano. 'despedida' = termino bien.\nlet cierre = '';\nif (agendado) cierre = 'agendado';\nelse if (escalar) cierre = 'escalado';\nelse if (/\\badi[oó]s\\b|hasta pronto|quedamos a disposicion|le agradezco la respuesta/i.test(mensaje)) {\n  cierre = 'despedida';\n}\n\n// Etiquetas de Chatwoot segun como termino el turno.\n// 'agendado' es TERMINAL: 'Preparar Datos Lead' la lee y el bot no vuelve\n// a hablar en esa conversacion.\nconst BASE = pre.modo === 'general' ? 'consulta-general' : 'reactivacion';\nlet etiquetas = [BASE];\nif (agendado) etiquetas = [BASE, 'agendado'];\nelse if (escalar) etiquetas = [BASE, 'necesita-humano'];\n\n// La nota privada queda solo como candado y rastro de auditoria: ya no\n// lleva maquina de estados, porque el horario y el mail viven en el hilo.\nconst nota = agendado\n  ? 'AGENDA_ESTADO ' + JSON.stringify({ etapa: 'agendado', registrado: new Date().toISOString() })\n  : '';\n\nreturn { json: Object.assign({}, pre, {\n  mensaje_saliente: mensaje,\n  etiquetas: etiquetas,\n  cierre: cierre,\n  fuera_de_tema: fueraDeTema,\n  agendado: agendado,\n  nota_agenda: nota\n}) };"
+      },
+      "id": "510ed9a0-7793-4e93-838f-7a8a2a2131be",
+      "name": "Procesar Respuesta",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        32,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.accion }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "rightValue": "bot",
+                    "id": "0910803f-c27e-4d14-9167-dacf08f6725b"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.accion }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "rightValue": "fija",
+                    "id": "4c4b20d9-2bc7-4ad2-a044-2a8aff1654b4"
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra",
+          "renameFallbackOutput": "Sin accion (revisar)"
+        }
+      },
+      "id": "5428e0a2-1710-4b59-847f-1c8b1f5cf3da",
+      "name": "Que hacer?",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -944,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const CFG = $('Config').first().json;\nconst MAX_TURNOS_HIST = parseInt(CFG.WA_MAX_TURNOS) || 12;\nconst MAX_TURNOS = parseInt(CFG.WA_MAX_TURNOS_BOT) || 0;   // 0 = sin tope\n\nconst KIND = (CFG.CALENDLY_LOCATION_KIND || '').toString().toLowerCase();\nconst MODALIDAD = KIND.indexOf('zoom') !== -1 ? 'Es una videollamada por Zoom'\n  : KIND.indexOf('google') !== -1 ? 'Es una videollamada por Google Meet'\n  : KIND.indexOf('teams') !== -1 ? 'Es una videollamada por Microsoft Teams'\n  : KIND.indexOf('physical') !== -1 ? 'Es presencial'\n  : 'Es una videollamada';\nconst INSTALAR = KIND.indexOf('physical') !== -1\n  ? 'No aplica, la reunion es presencial.'\n  : 'Con el link del correo alcanza. Si le ofrece descargar una aplicacion, puede entrar igual desde el navegador.';\n\nconst OPT_OUT = [\n  /\\bdar(me|nos)? de baja\\b(?!\\s+(a\\s+)?(un|una|el|la|los|las|mi|su)?\\s*(usuario|proveedor|factura|comprobante|cuenta|articulo|producto|empleado|centro|item|orden)\\w*)/i,\n  /\\bsolicito la baja\\b|\\bbaja de la (lista|base)\\b/i,\n  /\\b(stop|unsubscribe|desuscribir|desuscribime)\\b/i,\n  /no me (escrib|contact|manden|mande|llamen|molest)/i,\n  /dejen de (escrib|molest|contact|mandar)/i,\n  /\\b(borr|elimin|sa[cq]|quit)\\w*me\\b/i,\n  /(borren|elimin\\w*|saquen|quiten)\\s+(me|mi|mis)\\b/i,\n  /no quiero (que me|recibir|mas mensaje)/i,\n  /reportar como spam|es spam|esto es spam/i\n];\nconst MSG_OPT_OUT = 'Entendido. Damos de baja el contacto y no volveremos a escribirle. Disculpe la molestia.';\nconst MSG_TOPE = 'Prefiero que siga la conversacion un integrante del equipo comercial, que le va a poder dar mas detalle. Ya le paso el contacto.';\nconst MSG_SIN_TEXTO = 'Perdon, no puedo escuchar audios ni ver imagenes por este canal. Me lo escribe y lo vemos?';\n\nconst ETIQUETAS_TERMINALES = ['opt-out', 'no-contactar', 'necesita-humano', 'escalado'];\n\nconst limpiar = s => (s || '').toString().replace(/\\s+/g, ' ').trim();\n\nconst metas = $('Cruzar con contexto del CRM').all();\nconst salida = [];\n\n$input.all().forEach((item, idx) => {\n  const meta = (metas[idx] && metas[idx].json) || {};\n  const b = item.json || {};\n\n  let msgs = [];\n  if (Array.isArray(b.payload)) msgs = b.payload;\n  else if (Array.isArray(b)) msgs = b;\n  else if (b.payload && Array.isArray(b.payload.payload)) msgs = b.payload.payload;\n\n  if (!msgs.length) return;\n\n  let agenda = {};\n  for (const m of msgs) {\n    const c = (m.content || '').toString();\n    if (m.private !== true || c.indexOf('AGENDA_ESTADO ') !== 0) continue;\n    try {\n      const d = JSON.parse(c.slice('AGENDA_ESTADO '.length));\n      if (d && d.etapa) agenda = d;\n    } catch (e) { /* nota rota: se ignora */ }\n  }\n\n  let turnos = [];\n  for (const m of msgs) {\n    if (m.private === true) continue;\n    const tipo = m.message_type;\n    if (tipo === 2 || tipo === 'activity') continue;\n    const t = limpiar(m.content);\n    if (!t) continue;\n    turnos.push({ rol: (tipo === 0 || tipo === 'incoming') ? 'CLIENTE' : 'NOSOTROS', texto: t });\n  }\n\n  const idsEntrantes = msgs\n    .filter(m => m.private !== true && (m.message_type === 0 || m.message_type === 'incoming'))\n    .map(m => parseInt(m.id) || 0);\n  const idUltimo = idsEntrantes.length ? Math.max.apply(null, idsEntrantes) : 0;\n  const idPropio = parseInt(meta.message_id) || 0;\n\n  if (idPropio && idUltimo && idUltimo > idPropio) return;\n\n  let turnoCliente = 0;\n  let previo = '';\n  for (const t of turnos) {\n    if (t.rol === 'CLIENTE' && previo !== 'CLIENTE') turnoCliente++;\n    previo = t.rol;\n  }\n  turnoCliente = turnoCliente || 1;\n\n  const rafaga = [];\n  for (let i = turnos.length - 1; i >= 0; i--) {\n    if (turnos[i].rol !== 'CLIENTE') break;\n    rafaga.unshift(turnos[i].texto);\n  }\n  const recorte = turnos.slice(-MAX_TURNOS_HIST);\n  const transcripcion = recorte.map(t => t.rol + ': ' + t.texto).join('\\n');\n\n  const textoCliente = rafaga.length ? rafaga.join('. ') : limpiar(meta.texto);\n  const etiquetas = (meta.etiquetas || []).map(e => e.toString().toLowerCase().trim());\n  const emailCrm = /^[a-z0-9._%+-]+@[a-z0-9.-]+\\.[a-z]{2,}$/i.test((meta.email || '').trim())\n    ? meta.email.trim().toLowerCase() : '';\n\n  const turnosModelo = turnoCliente;\n  const paso = turnoCliente <= 1 ? 1 : (turnoCliente === 2 ? 2 : 3);\n\n  const telDigitos = (meta.telefono || '').toString().replace(/[^0-9]/g, '');\n  const DATOS_QA = { empresa: meta.empresa || '', nombre: meta.nombre || '',\n    telefono: meta.telefono || '', telefono_e164: telDigitos ? '+' + telDigitos : '',\n    sistema: meta.sistema || '', pais: meta.pais || '' };\n  const calendly_qa = (Array.isArray(CFG.CALENDLY_PREGUNTAS) ? CFG.CALENDLY_PREGUNTAS : [])\n    .map(function (q) {\n      const resp = (q.respuesta || '').toString().replace(/\\{(\\w+)(?:\\|([^}]*))?\\}/g, function (_, k, def) {\n        const v = (DATOS_QA[k] || '').toString().trim();\n        return v || (def || '').toString();\n      }).trim();\n      const o = { question: (q.pregunta || '').toString(), answer: resp };\n      if (q.position !== undefined) o.position = q.position;\n      return o;\n    })\n    .filter(function (q) { return q.question && q.answer; });\n\n  let accion = 'bot';\n  let bloqueado = '';\n  let respuestaFija = '';\n  let modo = 'normal';\n\n  const terminal = ETIQUETAS_TERMINALES.find(e => etiquetas.indexOf(e) !== -1);\n  const yaAgendado = etiquetas.indexOf('agendado') !== -1 || agenda.etapa === 'agendado';\n\n  if (terminal) {\n    return;\n  } else if (!textoCliente) {\n    accion = 'fija'; bloqueado = 'sin_texto'; respuestaFija = MSG_SIN_TEXTO;\n  } else if (OPT_OUT.some(re => re.test(textoCliente))) {\n    accion = 'fija'; bloqueado = 'optout'; respuestaFija = MSG_OPT_OUT;\n  } else if (MAX_TURNOS > 0 && turnosModelo > MAX_TURNOS) {\n    accion = 'fija'; bloqueado = 'tope'; respuestaFija = MSG_TOPE;\n  } else if (meta.conocido === false) {\n    modo = 'general';\n  } else if (yaAgendado) {\n    modo = 'postventa';\n  }\n\n  const TIPOS = { normal: 'REACTIVACION', postventa: 'POST_AGENDAMIENTO', general: 'CONSULTA_GENERAL' };\n  const tipoConversacion = TIPOS[modo] || 'REACTIVACION';\n\n  let ficha;\n  if (modo === 'general') {\n    ficha = '- No esta en el piloto. No tenemos ningun dato de esta persona.';\n  } else {\n    const L = [];\n    const push = (k, v) => { const x = limpiar(v); if (x) L.push('- ' + k + ': ' + x); };\n    push('Nombre', meta.nombre);\n    push('Empresa', meta.empresa);\n    push('Pais', meta.pais);\n    push('Sistema ERP', meta.sistema);\n    push('Facturas mensuales', meta.cantidad_facturas);\n    push('Comercial que lo atendio', meta.owner);\n\n    const hitos = [];\n    if (limpiar(meta.fecha_discovery)) hitos.push('discovery el ' + limpiar(meta.fecha_discovery));\n    if (limpiar(meta.hubo_reunion) === 'si') hitos.push('tuvo reunion con el equipo');\n    if (limpiar(meta.fecha_propuesta)) hitos.push('se le envio propuesta el ' + limpiar(meta.fecha_propuesta));\n    if (hitos.length) L.push('- Historia con nosotros: ' + hitos.join('; '));\n\n    const dias = parseInt(meta.dias_desde_perdida);\n    if (!isNaN(dias)) L.push('- Se marco como perdida hace ' + dias + ' dias');\n\n    if (limpiar(meta.motivo_perdida)) {\n      L.push('- Lo ultimo que nos dijeron (textual, respetalo): \"' + limpiar(meta.motivo_perdida) + '\"');\n    } else {\n      L.push('- No quedo registrado el motivo de la perdida. NO inventes uno.');\n    }\n    ficha = L.join('\\n') || '- Sin datos adicionales en el CRM.';\n  }\n\n  salida.push({ json: Object.assign({}, meta, {\n    accion: accion,\n    bloqueado: bloqueado,\n    respuestaFija: respuestaFija,\n    input: textoCliente,\n    paso: paso,\n    turnoCliente: turnoCliente,\n    turnos_modelo: turnosModelo,\n    tipo_conversacion: tipoConversacion,\n    nombre_corto: meta.primer_nombre || 'Contacto',\n    ficha: ficha,\n    modalidad: MODALIDAD,\n    instalar: INSTALAR,\n    email_crm: emailCrm,\n    transcripcion: transcripcion,\n    modo: modo,\n    calendly_qa: calendly_qa,\n    agenda_etapa: agenda.etapa || ''\n  }) });\n});\n\nreturn salida;\n"
+      },
+      "id": "698f5635-aa93-41cf-ad42-d763c8e4c8a9",
+      "name": "Preparar Datos Lead",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1168,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// =====================================================================\n// CRUCE CON EL CRM. Antes esto era un candado: el que no estaba en la\n// lista del piloto se descartaba. Ya no, porque el bot tambien contesta\n// consultas generales de gente que nunca estuvo en el piloto.\n//\n// Lo que hace ahora es CLASIFICAR, no filtrar:\n//   conocido: true  -> lead del piloto, con toda su historia comercial\n//   conocido: false -> consulta general, sin ficha y sin pitch\n//\n// Quien protege de pisarle la conversacion a una persona es el candado\n// del asignado, en 'Filtrar solo entrantes'.\n// =====================================================================\nconst soloDigitos = s => (s || '').toString().replace(/[^0-9]/g, '');\n\n// Compara los ultimos 8 digitos: sortea diferencias de prefijo pais / 9 / 15\nconst cola = s => { const d = soloDigitos(s); return d.length >= 8 ? d.slice(-8) : ''; };\n\nconst porTel = {};\nconst porConv = {};\ntry {\n  for (const it of $('Leer Enviados WA').all()) {\n    const r = it.json;\n    const c = cola(r.telefono);\n    if (c) porTel[c] = r;\n    const conv = (r.chatwoot_conversation_id || '').toString().trim();\n    if (conv) porConv[conv] = r;\n  }\n} catch (e) {}\n\n// PUERTA DE PRUEBA: estos telefonos entran como leads del piloto aunque\n// no tengan una fila en la hoja ni atributos en Chatwoot. Sin esto caen en\n// modo 'general', y en ese modo el prompt le PROHIBE al modelo usar las\n// herramientas de Calendly -- o sea que no se podria probar el agendamiento.\n// Se comparan los ultimos 8 digitos, igual que el resto del cruce.\nconst PRUEBA = new Set(\n  ((($('Config').first().json || {}).WA_TELEFONOS_PRUEBA) || [])\n    .map(t => cola(t)).filter(Boolean)\n);\n\nconst txt = v => (v === null || v === undefined) ? '' : String(v);\nconst salida = [];\n\nfor (const it of $('Filtrar solo entrantes').all()) {\n  const m = it.json;\n  // Orden de preferencia:\n  //  1) los custom_attributes que ya vinieron en el webhook (sin red)\n  //  2) la fila de la hoja, si el IF de arriba la hizo leer\n  const c = (m.tiene_contexto ? m.crm : null)\n    || porConv[String(m.conversation_id)]\n    || porTel[cola(m.telefono)]\n    || null;\n\n  // NO conocido -> consulta general. No hay ficha ni historia comercial:\n  // los campos van vacios a proposito y el prompt cambia de modo.\n  // La lista blanca solo AGREGA: si el numero ya estaba en el CRM, se usa\n  // su ficha real. Nunca pisa datos buenos con una ficha vacia.\n  const esPrueba = PRUEBA.has(cola(m.telefono));\n  const conocido = !!c || esPrueba;\n  const d = c || {};\n\n  salida.push({ json: {\n    conversation_id: m.conversation_id,\n    telefono: m.telefono,\n    texto: m.texto,\n    soportado: m.soportado,\n    message_id: m.message_id,\n    etiquetas: m.etiquetas || [],\n    etiquetas_previas: m.etiquetas || [],\n    nombre: txt(d.nombre || m.nombre_wa),\n    // Vacio si no hay nombre, NO 'Hola': este campo lo lee el prompt del\n    // agente como el nombre del interlocutor. Con el default viejo, a un\n    // contacto sin nombre en WhatsApp el modelo lo trataba de \"Hola\".\n    primer_nombre: (txt(d.nombre || m.nombre_wa).split(' ')[0]) || '',\n    empresa: txt(d.empresa),\n    motivo_perdida: txt(d.motivo_perdida),\n    sistema: txt(d.sistema),\n    pais: txt(d.pais),\n    // El atributo del correo cambio de nombre en Chatwoot y se manejaron\n    // dos variantes ('emailsdk' / 'emailkdm'). Se aceptan las dos mas el\n    // nombre viejo: si se lee el equivocado, el bot le pide el correo a\n    // gente que ya lo tiene cargado, y eso no da ningun error visible.\n    // La hoja de Sheets sigue usando la columna 'email'.\n    email: txt(d.emailsdk || d.emailkdm || d.email_kdm || d.email),\n    owner: txt(d.owner),\n    cantidad_facturas: txt(d.cantidad_facturas),\n    fecha_discovery: txt(d.fecha_discovery),\n    fecha_reunion: txt(d.fecha_reunion),\n    fecha_propuesta: txt(d.fecha_propuesta),\n    dias_desde_perdida: txt(d.dias_desde_perdida),\n    hubo_reunion: txt(d.hubo_reunion),\n    calificacion: txt(d.calificacion),\n    fecha_envio: txt(d.fecha_envio),\n    conocido: conocido\n  } });\n}\n\nreturn salida;"
+      },
+      "id": "c8b4dc26-e257-4fe8-a385-2361a66c75c0",
+      "name": "Cruzar con contexto del CRM",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1616,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1w6wVAuYmHjI8Fk4b3S1VLxAcgSSQkUjHOTrE1enmaP8",
+          "mode": "list",
+          "cachedResultName": "Planilla_Piloto_WhatsApp_Final",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1w6wVAuYmHjI8Fk4b3S1VLxAcgSSQkUjHOTrE1enmaP8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 550854563,
+          "mode": "list",
+          "cachedResultName": "Enviados WA",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1w6wVAuYmHjI8Fk4b3S1VLxAcgSSQkUjHOTrE1enmaP8/edit#gid=550854563"
+        },
+        "options": {}
+      },
+      "id": "05483f16-3dcb-4777-a431-e099c0623cec",
+      "name": "Leer Enviados WA",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -1840,
+        448
+      ],
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// =====================================================================\n// CANDADO 1: Chatwoot NO es exclusivo de este piloto.\n// El webhook message_created llega por TODA la cuenta, asi que hay que\n// descartar activamente lo que no sea de este flujo.\n// =====================================================================\nconst INBOX_PERMITIDO = ($('Config').first().json.CHATWOOT_INBOX_ID || '').toString().trim();\nconst salida = [];\n\n// ⚠️ $input NO es el webhook: es el nodo 'Config', que esta en el medio y\n// REEMPLAZA los items (hace return [{ json: {...} }]). Con $input.all() se\n// recorria la config, message_type venia undefined y SE DESCARTABA TODO\n// mensaje, siempre, sin ningun error visible.\n// El payload real se lee del webhook por nombre.\nfor (const item of $('Chatwoot - message_created').all()) {\n  const raw = item.json || {};\n  const p = raw.body || raw;\n\n  // Solo el evento que nos interesa\n  if (p.event && p.event !== 'message_created') continue;\n\n  // ANTI-LOOP: el bot no puede responderse a si mismo\n  const tipo = (p.message_type || '').toString().toLowerCase();\n  if (tipo !== 'incoming') continue;\n\n  // Las notas internas de los agentes no son del cliente\n  if (p.private === true) continue;\n\n  // CANDADO por inbox: si esta configurado, solo ese inbox\n  const inbox = ((p.inbox && p.inbox.id) || p.inbox_id || '').toString().trim();\n  if (INBOX_PERMITIDO && inbox && inbox !== INBOX_PERMITIDO) continue;\n\n  const texto = (p.content || '').toString().trim();\n  const conv = (p.conversation && p.conversation.id) || p.conversation_id || null;\n  if (!conv) continue;\n\n  // ETIQUETAS de la conversacion: son el estado persistente del bot.\n  // No hay base propia -- Chatwoot ya es el dueno del hilo y de su estado.\n  // OJO: la forma exacta del payload de message_created hay que verificarla\n  // contra la instancia real; por eso se leen las tres variantes conocidas.\n  const cv = p.conversation || {};\n  const etiquetas = []\n    .concat(Array.isArray(cv.labels) ? cv.labels : [])\n    .concat(Array.isArray(cv.label_list) ? cv.label_list : [])\n    .concat(Array.isArray(p.labels) ? p.labels : [])\n    .map(e => (e && e.title ? e.title : e).toString());\n\n  // =================================================================\n  // CLASIFICACION TEMPRANA: piloto o consulta general.\n  //\n  // El workflow 1 le pone 'reactivacion' a cada conversacion del piloto.\n  // Si la tiene, hace falta el contexto del CRM. Si NO la tiene, es una\n  // consulta general y no hay CRM que buscar: se saltea Google Sheets\n  // entero. Eso es lo que evita que cada mensaje ajeno se traiga la hoja\n  // completa y queme la cuota de lectura (60/min).\n  const esPiloto = etiquetas.some(e => e.toLowerCase().trim() === 'reactivacion');\n\n  // Si el payload NO trae etiquetas no podemos saber si es del piloto.\n  // En ese caso NO se decide aca: se hace la busqueda en la hoja y decide\n  // 'Cruzar con contexto'. Filtrar por un campo ausente dejaria al bot mudo\n  // con todo el mundo y sin ningun error visible.\n  const esGeneral = etiquetas.length > 0 && !esPiloto;\n\n  // =================================================================\n  // CANDADO NUEVO: NO LE PISES LA CONVERSACION A UN HUMANO.\n  //\n  // Este reemplaza al descarte por etiqueta. Antes, todo lo que no fuera\n  // del piloto se tiraba, y eso alcanzaba como proteccion. Ahora el bot\n  // TAMBIEN contesta consultas generales, asi que el unico limite que\n  // queda es este: si la conversacion ya tiene un agente asignado, es de\n  // el. El bot se calla.\n  //\n  // Solo corta cuando HAY asignado. Si el campo no viene en el payload,\n  // no se descarta nada: mismo criterio defensivo que con las etiquetas.\n  // =================================================================\n  const cvMeta = cv.meta || {};\n  const asignado = (cvMeta.assignee && cvMeta.assignee.id)\n    || (cv.assignee && cv.assignee.id) || cv.assignee_id || null;\n  if (asignado) continue;\n\n  const sender = p.sender || {};\n\n  // =================================================================\n  // CONTEXTO DEL CRM, DIRECTO DEL WEBHOOK.\n  // El WF1 lo deja en los custom_attributes del contacto de Chatwoot.\n  // Si viene aca, el WF2 NO necesita leer la hoja de Sheets: se ahorra\n  // una lectura de la API de Google por cada mensaje entrante.\n  //\n  // 'empresa' y 'motivo_perdida' se usan de testigo: un contacto puede\n  // existir en Chatwoot sin haber pasado nunca por el WF1, y en ese caso\n  // los atributos vienen vacios y hay que caer a la hoja igual.\n  // =================================================================\n  const attrs = (sender.custom_attributes && typeof sender.custom_attributes === 'object')\n    ? sender.custom_attributes : {};\n  const tieneContexto = !!(attrs.empresa || attrs.motivo_perdida);\n  const tel = (sender.phone_number || sender.identifier || '').toString().replace(/[^0-9]/g, '');\n\n  salida.push({ json: {\n    conversation_id: conv,\n    contact_id: sender.id || null,\n    inbox_id: inbox,\n    telefono: tel,\n    nombre_wa: (sender.name || '').toString(),\n    texto: texto,\n    etiquetas: etiquetas,\n    estado_conversacion: (cv.status || '').toString(),\n    es_piloto: esPiloto,\n    es_general: esGeneral,\n    soportado: texto.length > 0,\n    message_id: p.id || null,\n    crm: attrs,\n    tiene_contexto: tieneContexto\n  } });\n}\n\nreturn salida;"
+      },
+      "id": "4d8058e3-703f-4ce9-9959-493a11bd13d1",
+      "name": "Filtrar solo entrantes",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2720,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Unico lugar de configuracion del workflow.\n// Esta instancia de n8n corre con N8N_BLOCK_ENV_ACCESS_IN_NODE: $env tira\n// \"access to env vars denied\" y el `|| default` NO salva, porque la excepcion\n// se tira al tocar $env. Por eso la config vive aca.\n// Todo nodo aguas abajo lee con: $('Config').first().json.LO_QUE_SEA\nreturn [{ json: {\n  // --- Chatwoot ---\n  CHATWOOT_URL: 'https://chatwoot.xtract.app',               // sin barra final\n  CHATWOOT_ACCOUNT_ID: '1',\n  CHATWOOT_INBOX_ID: '1',     // inbox de WhatsApp\n\n  // --- Hoja de control del piloto ---\n  WA_SHEET_URL: 'REEMPLAZAR_WA_SHEET_URL',\n\n  // --- Avisos ---\n  WA_SLACK_CHANNEL: 'REEMPLAZAR_SLACK_CHANNEL',\n\n  // --- Calendly (Scheduling API: REQUIERE plan pago de Calendly) ---\n  // Los tools del agente leen estos valores. EVENT_TYPE, la zona horaria y\n  // LOCATION_KIND van fijos en el nodo tool: el modelo no los puede tocar.\n  CALENDLY_EVENT_TYPE: 'https://api.calendly.com/event_types/a382fbef-fc03-4a33-ae47-90024c6b6714', // https://api.calendly.com/event_types/XXXX\n  // Desde cuando se busca. 0 = desde ahora. La tool de disponibilidad la\n  // usa, asi que si falta queda en 0 sin que nadie se entere.\n  CALENDLY_DESDE_DIAS: 0,\n  CALENDLY_DIAS: 21,              // ventana de disponibilidad (endpoint admite hasta 31)\n  CALENDLY_OPCIONES: 3,           // horarios que se le piden al modelo que ofrezca\n  CALENDLY_HORA_DESDE: 9,         // horario laboral ARGENTINO\n  CALENDLY_HORA_HASTA: 18,\n  CALENDLY_LOCATION_KIND: 'google_conference',\n  // Duracion real del evento en Calendly. El bot la dice cuando le preguntan\n  // \"cuanto dura\", asi que si cambias el event type, cambiala aca tambien.\n  CALENDLY_DURACION_MIN: 30,\n  CALENDLY_PREGUNTAS: [\n    // La UNICA obligatoria. Es el numero de WhatsApp desde el que escribio\n    // el cliente: SIEMPRE existe, porque es como llego el mensaje.\n    //\n    // SIN VALOR POR DEFECTO A PROPOSITO. Un numero inventado terminaria\n    // escrito en la reserva real y el comercial lo leeria como si fuera el\n    // del cliente. Si algun dia llegara vacio, la pregunta se omite y\n    // Calendly rechaza el alta con un error visible -- que es lo correcto.\n    { position: 1, pregunta: 'Número de teléfono', respuesta: '{telefono_e164}' },\n    // Opcional. Se usa para dejar constancia de que la reunion la coordino\n    // el bot: sin esto, el comercial la lee como una reserva normal.\n    { position: 0, pregunta: 'Cuéntenos algo que nos ayude a prepararnos para la reunión.',\n      respuesta: 'Reunion coordinada por el asistente de reactivacion de Closed Lost ({empresa|empresa sin identificar}, ERP: {sistema|no informado}). El cliente acepto por WhatsApp.' }\n  ],\n  // --- PUERTA DE PRUEBA ---\n  // Numeros que entran al flujo COMPLETO aunque no esten en la hoja ni\n  // tengan atributos en Chatwoot. Se los trata como leads del piloto: con\n  // ficha vacia, pero con modo normal y con las herramientas de Calendly\n  // habilitadas, que es lo que hace falta para probar el agendamiento.\n  //\n  // ⚠️ VACIAR ESTA LISTA ANTES DEL PILOTO REAL. Mientras tenga numeros,\n  // esos telefonos van a ser tratados como leads aunque no lo sean.\n  // [] la desactiva por completo.\n  WA_TELEFONOS_PRUEBA: ['+5493624900418', '+5493624009270'],\n\n  // --- Buffer de rafagas ---\n  // En WhatsApp nadie escribe un parrafo: manda \"hola\" / \"che\" / \"una\n  // consulta\" en 5 segundos. Cada uno dispara una ejecucion. Se espera el\n  // silencio y contesta UNA sola, con todo junto.\n  WA_ESPERA_RAFAGA_SEG: 8,\n\n  // --- Barandas de la conversacion ---\n  WA_MAX_TURNOS: 12,     // turnos de historial que se le pasan al modelo\n  // Mensajes conversados con el modelo antes de pasarlo a un humano.\n  // OJO: desde que el agendamiento lo maneja el modelo con tools, los turnos\n  // de coordinar horario y confirmar el mail SI cuentan aca. Por eso 12 y no\n  // 8: con 8, un cliente que esta confirmando el correo se escala solo\n  // -- justo el que estaba por cerrar. 0 lo desactiva por completo.\n  WA_MAX_TURNOS_BOT: 12\n} }];"
+      },
+      "id": "a44d82a6-97ab-4bbf-8864-c108d4e02a04",
+      "name": "Config",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2944,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "closed-lost-wa",
+        "options": {}
+      },
+      "id": "80c295cb-d71e-40cb-98d4-dfc7438e3c98",
+      "name": "Chatwoot - message_created",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -3168,
+        304
+      ],
+      "webhookId": "cbb4870f-598a-4bb9-9a4e-ee06f584f78b"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.telefono }}_v7"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [
+        -576,
+        560
+      ],
+      "id": "e5ae372f-2f80-4bd8-9270-16f08fab6bdf",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1w6wVAuYmHjI8Fk4b3S1VLxAcgSSQkUjHOTrE1enmaP8",
+          "mode": "list",
+          "cachedResultName": "Planilla_Piloto_WhatsApp_Final",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1w6wVAuYmHjI8Fk4b3S1VLxAcgSSQkUjHOTrE1enmaP8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 733087457,
+          "mode": "list",
+          "cachedResultName": "Interacciones",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1w6wVAuYmHjI8Fk4b3S1VLxAcgSSQkUjHOTrE1enmaP8/edit#gid=733087457"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "conversation_id": "={{ $('Chatwoot - Traer historial de Estado').item.json.payload[0].conversation_id }}",
+            "telefono": "={{ $('Cruzar con contexto del CRM').item.json.telefono }}",
+            "empresa": "={{ $('Cruzar con contexto del CRM').item.json.empresa }}",
+            "nombre": "={{ $('Cruzar con contexto del CRM').item.json.nombre }}",
+            "mensaje_cliente": "={{ $('Chatwoot - message_created').item.json.body.content }}",
+            "respuesta_bot": "={{ $('Armar salida').item.json.mensaje_saliente }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "fecha",
+              "displayName": "fecha",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "conversation_id",
+              "displayName": "conversation_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "telefono",
+              "displayName": "telefono",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "nombre",
+              "displayName": "nombre",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "empresa",
+              "displayName": "empresa",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "mensaje_cliente",
+              "displayName": "mensaje_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "respuesta_bot",
+              "displayName": "respuesta_bot",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "af83ea2f-c945-436e-a582-2e4183883128",
+      "name": "Registrar interaccion0",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1600,
+        320
+      ],
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "connections": {
+    "Modelo de respaldo (Groq)": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Agente IA",
+            "type": "ai_languageModel",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "agendar_reunion_calendly": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente IA",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "consultar_disponibilidad_calendly": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente IA",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DeepSeek Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Agente IA",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agente IA": {
+      "main": [
+        [
+          {
+            "node": "Procesar Respuesta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chatwoot - Traer historial de Estado": {
+      "main": [
+        [
+          {
+            "node": "Preparar Datos Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hay contexto en Chatwoot?": {
+      "main": [
+        [
+          {
+            "node": "Cruzar con contexto del CRM",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Leer Enviados WA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Esperar la rafaga": {
+      "main": [
+        [
+          {
+            "node": "Hay contexto en Chatwoot?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Avisar al comercial?": {
+      "main": [
+        [
+          {
+            "node": "Registrar interaccion0",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Registrar interaccion0",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chatwoot - Etiquetar": {
+      "main": [
+        [
+          {
+            "node": "Avisar al comercial?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chatwoot - Nota estado": {
+      "main": [
+        [
+          {
+            "node": "Chatwoot - Etiquetar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hay nota de estado?": {
+      "main": [
+        [
+          {
+            "node": "Chatwoot - Nota estado",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Chatwoot - Etiquetar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chatwoot - Responder": {
+      "main": [
+        [
+          {
+            "node": "Hay nota de estado?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Armar salida": {
+      "main": [
+        [
+          {
+            "node": "Chatwoot - Responder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Procesar Respuesta": {
+      "main": [
+        [
+          {
+            "node": "Armar salida",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Que hacer?": {
+      "main": [
+        [
+          {
+            "node": "Agente IA",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Procesar Respuesta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Datos Lead": {
+      "main": [
+        [
+          {
+            "node": "Que hacer?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cruzar con contexto del CRM": {
+      "main": [
+        [
+          {
+            "node": "Chatwoot - Traer historial de Estado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leer Enviados WA": {
+      "main": [
+        [
+          {
+            "node": "Cruzar con contexto del CRM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filtrar solo entrantes": {
+      "main": [
+        [
+          {
+            "node": "Esperar la rafaga",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Filtrar solo entrantes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chatwoot - message_created": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Agente IA",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "nodeGroups": [],
+  "pinData": {
+    "Armar salida": [
+      {
+        "json": {
+          "conversation_id": 397,
+          "telefono": "5491149718518",
+          "nombre": "Olinda Ferreira",
+          "empresa": "",
+          "motivo_perdida": "",
+          "input": "ok ya vi el mail. Gracias",
+          "modo": "general",
+          "paso": 2,
+          "cierre": "",
+          "agendado": false,
+          "slot": "",
+          "email_final": "",
+          "mensaje_saliente": "A sus órdenes, Olinda. Quedo atento por si necesita algo más. Que tenga un excelente día.",
+          "etiquetas": [
+            "consulta-general"
+          ],
+          "nota_agenda": "",
+          "avisar": false
+        }
+      }
+    ],
+    "Chatwoot - message_created": [
+      {
+        "json": {
+          "headers": {
+            "host": "n8n.xtract.app",
+            "user-agent": "Ruby",
+            "content-length": "2436",
+            "accept": "application/json",
+            "accept-encoding": "gzip;q=1.0,deflate;q=0.6,identity;q=0.3",
+            "content-type": "application/json",
+            "server": "Heroku",
+            "via": "1.1 heroku-router",
+            "x-chatwoot-delivery": "d8e9964c-d71c-42f0-8d18-8809af610f4a",
+            "x-chatwoot-signature": "sha256=7ce2f8ea853eae5a4a1dcf281b46a2bd7c4d1061dabf4748997fb90f659a4227",
+            "x-chatwoot-timestamp": "1785967464",
+            "x-forwarded-for": "35.175.233.51",
+            "x-forwarded-port": "443",
+            "x-forwarded-proto": "https",
+            "x-request-id": "9723f1bf-7169-2f29-17b5-d08bade3f7c0",
+            "x-request-start": "1785967464146"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "account": {
+              "id": 1,
+              "name": "Xtract"
+            },
+            "additional_attributes": {},
+            "content_attributes": {},
+            "content_type": "text",
+            "content": "perfecto",
+            "conversation": {
+              "additional_attributes": {},
+              "can_reply": true,
+              "channel": "Channel::Whatsapp",
+              "contact_inbox": {
+                "id": 339,
+                "contact_id": 401,
+                "inbox_id": 1,
+                "source_id": "5493624009270",
+                "created_at": "2026-08-05T22:03:05.716Z",
+                "updated_at": "2026-08-05T22:03:05.716Z",
+                "hmac_verified": false,
+                "pubsub_token": "aNZM3GXeGRCRK9HRxFU73nXN"
+              },
+              "id": 375,
+              "inbox_id": 1,
+              "messages": [
+                {
+                  "id": 457,
+                  "content": "perfecto",
+                  "account_id": 1,
+                  "inbox_id": 1,
+                  "conversation_id": 375,
+                  "message_type": 0,
+                  "created_at": 1785967463,
+                  "updated_at": "2026-08-05T22:04:23.919Z",
+                  "private": false,
+                  "status": "sent",
+                  "source_id": "wamid.HBgNNTQ5MzYyNDAwOTI3MBUCABIYFDNCMEMwNzhFQ0JBQkFCOTZEMDFEAA==",
+                  "content_type": "text",
+                  "content_attributes": {},
+                  "sender_type": "Contact",
+                  "sender_id": 401,
+                  "external_source_ids": {},
+                  "additional_attributes": {},
+                  "processed_message_content": "perfecto",
+                  "sentiment": {},
+                  "conversation": {
+                    "assignee_id": null,
+                    "unread_count": 3,
+                    "last_activity_at": 1785967463,
+                    "contact_inbox": {
+                      "source_id": "5493624009270"
+                    }
+                  },
+                  "sender": {
+                    "additional_attributes": {},
+                    "custom_attributes": {},
+                    "email": null,
+                    "id": 401,
+                    "identifier": null,
+                    "name": "Santiago Wuerich",
+                    "phone_number": "+5493624009270",
+                    "thumbnail": "",
+                    "blocked": false,
+                    "type": "contact"
+                  }
+                }
+              ],
+              "labels": [
+                "reactivacion"
+              ],
+              "meta": {
+                "sender": {
+                  "additional_attributes": {},
+                  "custom_attributes": {},
+                  "email": null,
+                  "id": 401,
+                  "identifier": null,
+                  "name": "Santiago Wuerich",
+                  "phone_number": "+5493624009270",
+                  "thumbnail": "",
+                  "blocked": false,
+                  "type": "contact"
+                },
+                "assignee": null,
+                "assignee_type": null,
+                "team": null,
+                "hmac_verified": false
+              },
+              "status": "open",
+              "custom_attributes": {},
+              "snoozed_until": null,
+              "unread_count": 3,
+              "first_reply_created_at": "2026-08-05T22:03:36.848Z",
+              "priority": null,
+              "waiting_since": 1785967463,
+              "agent_last_seen_at": 0,
+              "contact_last_seen_at": 0,
+              "last_activity_at": 1785967463,
+              "timestamp": 1785967463,
+              "created_at": 1785967385,
+              "updated_at": 1785967463.994494,
+              "account": {
+                "id": 1,
+                "name": "Xtract"
+              }
+            },
+            "created_at": "2026-08-05T22:04:23.919Z",
+            "id": 457,
+            "inbox": {
+              "id": 1,
+              "name": "Xtract AI"
+            },
+            "message_type": "incoming",
+            "private": false,
+            "sender": {
+              "account": {
+                "id": 1,
+                "name": "Xtract"
+              },
+              "additional_attributes": {},
+              "avatar": "",
+              "custom_attributes": {},
+              "email": null,
+              "id": 401,
+              "identifier": null,
+              "name": "Santiago Wuerich",
+              "phone_number": "+5493624009270",
+              "thumbnail": "",
+              "blocked": false
+            },
+            "source_id": "wamid.HBgNNTQ5MzYyNDAwOTI3MBUCABIYFDNCMEMwNzhFQ0JBQkFCOTZEMDFEAA==",
+            "event": "message_created"
+          },
+          "webhookUrl": "https://n8n.xtract.app/webhook/closed-lost-wa",
+          "executionMode": "production"
+        }
+      }
+    ]
+  },
+  "versionId": "90398fa0-7da1-4db3-b919-c001c21376ee",
+  "activeVersionId": "58a09b05-6df0-4af0-96b4-9dcfe405f40c",
+  "versionCounter": 4,
+  "triggerCount": 1,
+  "sourceWorkflowId": null,
+  "shared": [
+    {
+      "updatedAt": "2026-08-04T13:27:18.288Z",
+      "createdAt": "2026-08-04T13:27:18.288Z",
+      "role": "workflow:owner",
+      "workflowId": "tMBXHDSHP9Er6NQG",
+      "projectId": "LKWtm3pklo9NoWPo",
+      "project": {
+        "updatedAt": "2026-08-04T13:24:57.393Z",
+        "createdAt": "2026-08-04T13:22:42.622Z",
+        "id": "LKWtm3pklo9NoWPo",
+        "name": "Santiago Wuerich <santiagow142001@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "customTelemetryTags": [],
+        "creatorId": "1ea0ed00-d8d2-408d-ac05-92a742038b93"
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": {
+    "updatedAt": "2026-08-04T13:29:47.000Z",
+    "createdAt": "2026-08-04T13:27:51.857Z",
+    "versionId": "58a09b05-6df0-4af0-96b4-9dcfe405f40c",
+    "workflowId": "tMBXHDSHP9Er6NQG",
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "demo-simulador",
+          "responseMode": "responseNode",
+          "options": {
+            "allowedOrigins": "*"
+          }
+        },
+        "id": "3c3d0eb8-62e6-464b-8be9-368a04816d35",
+        "name": "Webhook — Recibir de HTML",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2.1,
+        "position": [
+          -752,
+          32
+        ],
+        "webhookId": "ce028789-4c8f-4ce9-bcff-bc2a5e7ef76c"
+      },
+      {
+        "parameters": {
+          "jsCode": "// =====================================================================\n// BASE DE CONOCIMIENTO DE XTRACT\n// Fuente: 'base-conocimiento-xtract.pdf' (documento oficial de Xtract).\n// Editar SOLO aca. Es lo unico que el bot puede afirmar sobre la empresa.\n// Todo lo que no este en esta lista, el bot NO lo sabe y deriva a un humano.\n// =====================================================================\nconst BASE_CONOCIMIENTO = [\n  'Xtract es una plataforma SaaS 100% en la nube con IA, para automatizar el procesamiento de facturas de compra, los flujos de aprobacion y la gestion de gastos corporativos. Sitio: xtract.app',\n  'El objetivo es eliminar el tipeo manual de facturas, reducir errores de digitacion, evitar pagos duplicados y acelerar la contabilizacion en el ERP SIN cambiar el sistema contable que ya usan.',\n  'No requiere instalar nada: es 100% nube, accesible por navegador y app movil.',\n  'MODULO 1 - Contabilizacion automatica: las facturas entran solas redirigiendo los mails de proveedores (Gmail u Outlook) a una casilla de Xtract; se configura en menos de 10 minutos.',\n  'La IA lee facturas en PDF sin importar el diseno, el idioma, la moneda o el pais. Extrae emisor y receptor, numero de factura, fechas, importes, impuestos, items, ordenes de compra, cuentas contables y centros de costo.',\n  'Incluye repositorio digital ilimitado con busqueda por numero, fecha, proveedor, estado, centro de costo o importe.',\n  'MODULO 2 - Flujo de aprobacion: rutea cada comprobante al responsable segun reglas, manda recordatorios automaticos y deja trazabilidad completa (pendiente / aprobado / rechazado, con motivo).',\n  'MODULO 3 - Gestion de gastos: app iOS y Android donde el colaborador rinde gastos sacando una foto del comprobante. Genera los reportes y se integra al ERP para los reembolsos.',\n  'ERPs con conexion nativa: SAP, Microsoft Dynamics 365, Oracle y NetSuite. Tambien se integra con cualquier ERP local o desarrollo a medida.',\n  'Formas de integrar: API REST con SDKs oficiales (Ruby, NodeJS, Java) y sincronizacion bidireccional en tiempo real, o archivos planos (CSV, TXT, XLS) adaptados a como importa el ERP del cliente.',\n  'Se conecta con Power BI y Tableau para tableros de gastos en tiempo real.',\n  'Tiene funcionalidad multicuenta para estudios contables que llevan varios clientes.',\n  'Resultados que reporta Xtract: hasta 40% menos de costos administrativos, hasta 110 horas ahorradas por mes por empresa, procesamiento de hasta 100 facturas por segundo.',\n  'La implementacion estandar (por archivos planos o API) toma alrededor de 5 dias habiles.',\n  'Soporte: lunes a viernes de 08:00 a 20:00. Tecnico: support@xtract.app. Comercial: xtract@xtract.app'\n];\n\n// Preguntas frecuentes con respuesta corta y aprobada.\n// Si la consulta no entra aca ni en la base de arriba, se deriva.\nconst FAQ = [\n  ['Hay que instalar algo', 'No, es 100% nube: se usa desde el navegador y desde la app movil, 24/7.'],\n  ['Que facturas puede leer', 'Facturas de compra en PDF, sin importar el diseno, el idioma, la moneda ni el pais de origen.'],\n  ['Cuanto tarda la implementacion', 'La implementacion estandar, por archivos planos o API, se completa en unos 5 dias habiles.'],\n  ['Como llegan las facturas', 'Se configura una regla de redireccion desde la casilla de compras hacia la casilla asignada en Xtract. Menos de 10 minutos.'],\n  ['Se pueden asignar centros de costo antes del registro', 'Si, se automatiza la asignacion de centros de costo, cuentas contables y ordenes de compra durante la lectura y la aprobacion.'],\n  ['Hay que cambiar de sistema contable', 'No. Xtract trabaja sobre el ERP que ya usan.'],\n  ['Cuanto sale', 'DERIVAR. No hay precios publicados: la cotizacion se arma a medida segun volumen e integracion.']\n];\n\n// Limites que el PROPIO documento marca como no confirmados.\n// Son justamente las preguntas donde es mas tentador inventar.\nconst NO_AFIRMAR = [\n  'PRECIOS o planes: no hay tarifas publicadas. La cotizacion es a medida. Siempre DERIVAR.',\n  'Formatos que NO sean PDF (JPG, PNG, XML sueltos): no esta confirmado que se puedan ingestar. No lo afirmes.',\n  'Limites de almacenamiento, cuotas o rate limits de la API: no estan documentados. No los inventes.',\n  'Conexion nativa con ERPs que no sean SAP, Dynamics 365, Oracle o NetSuite: se integra igual, pero via API o archivos planos. NO digas que hay conector nativo para otros.'\n];\n\n// Extraer datos del lead y preparar entrada para el Agente\nconst body = $input.first().json.body || $input.first().json;\nconst textoCliente = (body.content || body.texto || '').toString().trim();\nconst lead = body.lead || {};\nconst paso = parseInt(body.conversationStep) || 1;\n\n// El sessionId lo manda el HTML e incluye un id de corrida.\n// Si no cambia entre demos, la memoria de n8n arrastra la charla anterior\n// y el bot arranca sabiendo cosas que en pantalla nunca pasaron.\nconst sessionId = body.sessionId || 'demo-123';\n\nconst nombre = lead.primerNombre || lead.contacto || 'Contacto';\nconst empresa = lead.empresa || 'la empresa';\nconst sistema = lead.sistema || 'su sistema ERP';\nconst facturas = lead.facturas || '400';\nconst motivo = lead.motivo || 'cambio de sistema';\n\n// =====================================================================\n// CANDADOS DETERMINISTAS — corren ANTES que la IA y no dependen de ella.\n// Un modelo puede fallar al clasificar. Estas dos reglas no.\n// =====================================================================\n\n// 1) OPT-OUT. Requisito de Meta: si piden la baja, se corta y no se\n//    vuelve a escribir NUNCA. No puede depender de que el LLM lo detecte.\n//    Ojo: \"no me interesa\" NO es opt-out, es un rechazo comercial comun.\nconst OPT_OUT = [\n  // \"baja\" suelta NO alcanza: \"estamos en baja temporada\" es charla normal\n  // y daria de baja a un lead sano para siempre. Se exige contexto.\n  /\\bdar(me|nos)? de baja\\b|\\bsolicito la baja\\b|\\bbaja de la (lista|base)\\b/i,\n  /\\b(stop|unsubscribe|desuscribir|desuscribime)\\b/i,\n  /no me (escrib|contact|manden|mande|llamen|molest)/i,\n  /dejen de (escrib|molest|contact|mandar)/i,\n  // Enclitico pegado: \"sacame\", \"borrenme\", \"saquenme\" van en UNA palabra.\n  // Ojo sacar -> saquen: cambia la raiz, por eso sa[cq] y no solo sac.\n  /\\b(borr|elimin|sa[cq]|quit)\\w*me\\b/i,\n  /(borren|elimin\\w*|saquen|quiten)\\s+(me|mi|mis)\\b/i,\n  /no quiero (que me|recibir|mas mensaje)/i,\n  /reportar como spam|es spam|esto es spam/i\n];\nconst MSG_OPT_OUT = 'Entendido. Damos de baja el contacto y no volveremos a escribirle. Disculpe la molestia.';\n\n// 2) TOPE DE TURNOS. El objetivo es agendar una reunion, no sostener un\n//    chat de soporte. Cuanto mas largo el hilo, mas chances de que el\n//    modelo diga algo que no debia. A partir del tope, lo toma un humano.\nconst MAX_TURNOS = 6;\nconst MSG_TOPE = 'Prefiero que siga la conversacion un integrante del equipo comercial, que le va a poder dar mas detalle. Ya le paso el contacto.';\n\nconst turno = parseInt(body.turnoCliente) || 1;\n\nlet bloqueado = '';\nlet respuestaFija = '';\n\n// EL OPT-OUT ES PEGAJOSO. Se evalua el mensaje actual PERO tambien si ya\n// hubo una baja antes en esta conversacion. Sin esto, el cliente pide la\n// baja, el bot la confirma, escribe \"hola\" y el bot le contesta de nuevo:\n// el candado solo miraba el mensaje que tenia adelante.\nconst bajaPrevia = body.optOutPrevio === true || body.optOutPrevio === 'true';\n\n// LA CONVERSACION TIENE ESTADO TERMINAL. Una vez que cerro (baja, despedida,\n// o derivacion a un humano) el bot NO vuelve a hablar. Sin esto, despues de\n// derivar a un ingeniero el bot le seguia contestando por encima al humano\n// que ya habia tomado la conversacion: peor que no derivar.\nconst cerrada = body.conversacionCerrada === true || body.conversacionCerrada === 'true';\n\nif (cerrada) {\n  bloqueado = 'cerrada';\n  respuestaFija = '';\n} else if (bajaPrevia) {\n  bloqueado = 'optout_previo';\n  respuestaFija = '';   // ya se le contesto la baja: no se le escribe mas\n} else if (OPT_OUT.some(re => re.test(textoCliente))) {\n  bloqueado = 'optout';\n  respuestaFija = MSG_OPT_OUT;\n} else if (turno > MAX_TURNOS) {\n  bloqueado = 'tope';\n  respuestaFija = MSG_TOPE;\n}\n\nconst conocimiento = BASE_CONOCIMIENTO.map(l => '- ' + l).join('\\n');\nconst faq = FAQ.map(f => '- ' + f[0] + ' -> ' + f[1]).join('\\n');\nconst limites = NO_AFIRMAR.map(l => '- ' + l).join('\\n');\n\nconst systemPrompt = `Sos un ejecutivo comercial de Xtract. Tu objetivo es retomar la conversacion con ${nombre} de ${empresa}.\n\nESTO NO ES UN CONTACTO EN FRIO. Esta persona ya tuvo discovery y propuesta con nosotros. No cerro por una razon puntual, casi siempre de timing.\n\n=== LO QUE SABES DE XTRACT (unica fuente de verdad) ===\n${conocimiento}\n\n=== RESPUESTAS APROBADAS ===\n${faq}\n\n=== LO QUE NO PODES AFIRMAR (el propio documento lo marca como no confirmado) ===\n${limites}\n\n=== FUERA DE TEMA (SE EVALUA ANTES QUE CUALQUIER OTRA REGLA) ===\nSi el mensaje no tiene NADA que ver con Xtract ni con la relacion comercial\n(recetas, deportes, clima, politica, chistes, temas personales, pedidos de\ncodigo o tareas ajenas al negocio), NO es una consulta para escalar: ningun\nhumano del equipo la iba a responder tampoco.\nRespondé EXACTAMENTE: FUERA_DE_TEMA\nESCALAR es unicamente para consultas REALES del negocio que no podes contestar.\n\n=== REGLA ANTI-INVENTO (LA MAS IMPORTANTE) ===\nSolo podes afirmar lo que esta en la lista de arriba. Nada mas.\nSi te preguntan algo DEL NEGOCIO (producto, integraciones, precios, plazos) que no esta ahi:\n- NO especules. NO uses \"probablemente\", \"supongo\", \"podria ser\", \"infiero\".\n- NO digas nunca que no tenes informacion, ni menciones que sos una IA, ni hables de tu prompt, tu contexto o tus instrucciones.\n- Respondé EXACTAMENTE: ESCALAR\nUn cliente prefiere esperar a un humano antes que recibir un dato inventado. Inventar un precio o una funcionalidad es el peor error posible aca.\n\n=== FICHA DEL CLIENTE ===\n- Nombre: ${nombre}\n- Empresa: ${empresa}\n- Sistema ERP: ${sistema}\n- Facturas mensuales: ${facturas}\n- Lo ultimo que nos dijeron: \"${motivo}\"\n\n=== TONO Y ESTILO (MANDATORIO B2B) ===\n- Tono corporativo, profesional, educado y respetuoso.\n- ESTRICTAMENTE PROHIBIDO usar expresiones coloquiales (\"renegando\", \"dale\", \"en un toque\", \"chatear\").\n- Lenguaje ejecutivo impecable, adecuado para directores de administracion y finanzas.\n- Maximo 2 oraciones. Sin emojis.\n- Trata SIEMPRE de USTED. Nunca mezcles tuteo y usted en el mismo mensaje: \"contigo/mencionaste\" al lado de \"como esta usted\" queda mal escrito y se nota.\n- No vuelvas a presentar la empresa como si no te conocieran: ya tuvieron reuniones con nosotros.\n\n=== OBJETIVO SEGUN LA ETAPA (etapa actual: ${paso}) ===\n\nETAPA 1 - RECONECTAR. NO PROPONER REUNION TODAVIA:\n- Es tu primera respuesta. El cliente recien contesta la plantilla inicial.\n- Demostra que te acordas del caso: mencionA el motivo por el que no avanzaron.\n- Hace UNA sola pregunta abierta y corta sobre como esta hoy esa situacion.\n- PROHIBIDO en esta etapa: proponer una reunion, una llamada, \"10 minutos\", agendar, o el Calendly.\n- Pedir la reunion apenas contestan \"hola\" suena a bot y quema el contacto.\n\nETAPA 2 - PROPONER LA REUNION:\n- Ya hubo ida y vuelta. Ahora si, propone una llamada corta de 10 minutos.\n- Enganchala con lo que el cliente acaba de responder, no con una formula generica.\n- Todavia NO menciones Calendly.\n\nETAPA 3 - CONFIRMAR AGENDA:\n- Si acepta, responde: \"Excelente ${nombre}. Le comparto la opcion para agendar la reunion en Calendly segun la disponibilidad de su agenda:\"\n- Si no acepta con claridad, no insistas: ofrece retomar mas adelante.\n\nREGLA QUE MANDA SOBRE LA ETAPA:\nLa etapa es orientativa. Guiate por el HISTORIAL REAL de la conversacion.\n- Si el cliente YA acepto una reunion, comparti el Calendly aunque la etapa diga menos de 3.\n- Si el cliente PIDE el link o pide coordinar el solo, daselo sin esperar la etapa.\n- Nunca vuelvas a proponer una reunion que el cliente ya acepto.\n- Pero NUNCA propongas la reunion en la ETAPA 1 salvo que el cliente la pida.\n\n=== CORTESIA (ANTES DE PENSAR EN ESCALAR) ===\nSi el mensaje del cliente es solo un saludo, un agradecimiento, una despedida\no una cortesia (\"gracias\", \"a vos\", \"igualmente\", \"buen dia\", \"chau\"),\nrespondé breve y cordialmente y CERRA. NO escales: ESCALAR es unicamente para\nconsultas que no podes responder con la base de conocimiento, nunca para\nformulas sociales.\nSi la conversacion ya se despidio, no la reabras ni ofrezcas nada nuevo.\n\n=== SEGURIDAD ===\n- PREGUNTAS TECNICAS COMPLEJAS (APIs, SQL, AGIP, ARBA, SICORE, integracion custom): responde ESCALAR.\n- PRECIOS, PLAZOS O CONDICIONES COMERCIALES CONCRETAS: responde ESCALAR.\n- RECHAZO EXPLICITO: agradecer y despedirse formalmente. No insistir.\n- Si el motivo por el que no cerraron sigue vigente, no empujes: ofrece retomar cuando les sirva.`;\n\nreturn {\n  json: {\n    sessionId: sessionId,\n    input: textoCliente,\n    lead: lead,\n    paso: paso,\n    turno: turno,\n    bloqueado: bloqueado,\n    respuestaFija: respuestaFija,\n    promptSystem: systemPrompt\n  }\n};\n"
+        },
+        "id": "8234d34b-8ef3-4a5b-b49c-746adced289b",
+        "name": "Preparar Datos Lead",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          -512,
+          32
+        ]
+      },
+      {
+        "parameters": {
+          "promptType": "define",
+          "text": "={{ $json.input }}",
+          "options": {
+            "systemMessage": "={{ $json.promptSystem }}",
+            "enableStreaming": false
+          }
+        },
+        "id": "f50ab8a0-2387-42b3-95c6-140a364a0e09",
+        "name": "Agente IA",
+        "type": "@n8n/n8n-nodes-langchain.agent",
+        "typeVersion": 3.1,
+        "position": [
+          -208,
+          -32
+        ],
+        "onError": "continueRegularOutput"
+      },
+      {
+        "parameters": {
+          "model": "llama-3.3-70b-versatile",
+          "options": {
+            "maxTokensToSample": 300,
+            "temperature": 0.3
+          }
+        },
+        "id": "e7f91986-49cd-4eb9-a0b1-b39ef73c7170",
+        "name": "Modelo IA (Groq)",
+        "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+        "typeVersion": 1,
+        "position": [
+          -288,
+          240
+        ],
+        "credentials": {
+          "groqApi": {
+            "id": "Qa47kiif6fRN0Qb8",
+            "name": "Groq account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "sessionIdType": "customKey",
+          "sessionKey": "={{ $json.sessionId }}",
+          "contextWindowLength": 10
+        },
+        "id": "8ead267d-d3c5-44d0-ac20-873215d5b2dd",
+        "name": "Window Buffer Memory",
+        "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+        "typeVersion": 1.4,
+        "position": [
+          -112,
+          240
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "// Frase unica de derivacion. El HTML la detecta por \"especialista\".\nconst MSG_ESCALAR = 'Esa consulta la puede responder mejor un especialista de nuestro equipo. Le derivo la conversacion y se comunican a la brevedad.';\n\n// =====================================================================\n// CANDADO: si 'Preparar Datos Lead' bloqueo la conversacion (opt-out o\n// tope de turnos), la respuesta es FIJA. Ni siquiera se mira la salida\n// del modelo. Es la unica forma de garantizar el comportamiento.\n// =====================================================================\nlet pre = {};\ntry { pre = $('Preparar Datos Lead').first().json || {}; } catch (e) { pre = {}; }\n\nif (pre.bloqueado) {\n  // respuestaFija vacia = silencio deliberado (la baja ya se confirmo antes).\n  // OJO: NO devolver [] aca. Con 0 items 'Responder al HTML' nunca corre y\n  // la peticion queda colgada hasta el timeout. Se responde con texto vacio\n  // y el cliente decide no pintar nada.\n  return { json: { response: pre.respuestaFija || '', bloqueado: pre.bloqueado } };\n}\n\n// Respaldo para la demo: si el modelo falla (sin credito, 429, timeout),\n// igual sale una respuesta coherente en vez de un error en pantalla.\nlet respuestaIA = '';\n\ntry {\n  const item = $input.first().json || {};\n  respuestaIA = (item.output || item.text || item.response || '').toString();\n} catch (e) {\n  respuestaIA = '';\n}\n\nconst fallo = !respuestaIA.trim()\n  || respuestaIA.includes('Error fetching')\n  || respuestaIA.includes('429');\n\nif (fallo) {\n  // OJO: aca NO va $node[...] (sintaxis vieja del Function node).\n  // En Code node es $('Nombre'). Con la sintaxis vieja esto tiraba error,\n  // el catch se lo comia y el respaldo \"inteligente\" nunca corria.\n  const ctx = pre;\n\n  const lead = ctx.lead || {};\n  const nombre = lead.primerNombre || 'Gabriela';\n  const sistema = lead.sistema || 'SOFTLAND';\n  const empresa = lead.empresa || 'su empresa';\n  const paso = parseInt(ctx.paso) || 1;\n  const txt = (ctx.input || '').toString().toLowerCase();\n\n  // Match por PALABRA COMPLETA. Con includes('si') una respuesta como\n  // \"no necesito nada\" contenia \"si\" dentro de \"necesito\" y el bot\n  // contestaba \"Excelente, le comparto el Calendly\" a un rechazo.\n  const tiene = (palabras) => {\n    const re = new RegExp('(^|[^a-zá-úñ])(' + palabras.join('|') + ')([^a-zá-úñ]|$)', 'i');\n    return re.test(txt);\n  };\n\n  const esTecnica = tiene(['api', 'apis', 'sql', 'script', 'agip', 'arba', 'sicore', 'webhook', 'endpoint']);\n  const esPrecio = tiene(['precio', 'precios', 'cuanto', 'cuánto', 'sale', 'cuesta', 'costo', 'presupuesto', 'tarifa']);\n  const acepta = tiene(['si', 'sí', 'dale', 'claro', 'perfecto', 'obvio', 'agendar', 'agendemos', 'coordinemos'])\n    || /me sirve|me viene bien|de acuerdo/i.test(txt);\n  const rechaza = /no me interesa|no gracias|no, gracias|dejen de|no contact|ya no trabajo/i.test(txt);\n  const queEs = /qu[eé] (es|hac|se trata|hacen)|de qu[eé] se trata|no me acuerdo|recordame/i.test(txt);\n\n  if (esTecnica || esPrecio) {\n    respuestaIA = MSG_ESCALAR;\n  } else if (rechaza) {\n    respuestaIA = 'Entendido ' + nombre + ', le agradezco la respuesta. Quedamos a disposicion si en el futuro les resulta util retomarlo.';\n  } else if (queEs) {\n    respuestaIA = 'Claro ' + nombre + '. Automatizamos la carga de facturas al sistema contable con IA, para que administracion deje de cargarlas a mano. Como viene el tema en ' + empresa + '?';\n  } else if (paso >= 3 && acepta) {\n    respuestaIA = 'Excelente ' + nombre + '. Le comparto la opcion para agendar la reunion en Calendly segun la disponibilidad de su agenda:';\n  } else if (paso >= 2) {\n    // Recien en la segunda respuesta se propone la reunion.\n    respuestaIA = 'Le propongo revisarlo en una llamada corta de 10 minutos, ' + nombre + '. Le muestro como quedaria funcionando sobre ' + sistema + '.';\n  } else {\n    // ETAPA 1: reconectar, sin pedir la reunion.\n    respuestaIA = 'Hola ' + nombre + '. Los habiamos contactado por la carga contable en ' + sistema + '. Como viene ese tema hoy en ' + empresa + '?';\n  }\n}\n\n// FUERA DE TEMA: preguntas ajenas al negocio (la receta de hamburguesa).\n// Se desvia con cortesia y la conversacion SIGUE ABIERTA. Va ANTES del\n// chequeo de ESCALAR: no se le hace perder el tiempo a un humano con algo\n// que ningun humano del equipo iba a contestar.\n// OJO con el texto de abajo: NO puede contener \"especialista\", \"derivar\",\n// \"escalar\" ni \"chatwoot\". La red de seguridad que sigue lo convertiria en\n// MSG_ESCALAR, y el front pinta la tarjeta de escalacion con esas palabras.\nif (/\\bfuera[_ ]?de[_ ]?tema\\b/i.test(respuestaIA)) {\n  const empresaFT = ((pre.lead || {}).empresa) || 'su empresa';\n  respuestaIA = 'Me voy a limitar a los temas de gestion de facturas y gastos, que es donde puedo serle util. Como viene hoy esa parte en ' + empresaFT + '?';\n}\n\n// El modelo casi nunca devuelve ESCALAR literal: lo parafrasea\n// (\"Necesito escalar su consulta...\"). Verificado en pruebas reales.\n// Por eso se matchea la palabra completa sin distinguir mayusculas.\n// Este token de control NUNCA puede llegar crudo al cliente.\nif (/\\bescalar\\b|\\bderiv(o|ar|amos)\\b|\\bespecialista\\b/i.test(respuestaIA)) {\n  respuestaIA = MSG_ESCALAR;\n}\n\n// Ultima red: si el modelo se puso a especular igual, se deriva.\nif (/no tengo (informaci|datos)|no cuento con|como (IA|modelo)|puedo inferir|probablemente sea/i.test(respuestaIA)) {\n  respuestaIA = MSG_ESCALAR;\n}\n\n// Se le avisa al front por que motivo cerro, para que no siga mandando.\n// 'escalado' = lo tomo un humano. 'despedida' = la charla termino bien.\nlet cierre = '';\nif (respuestaIA === MSG_ESCALAR) cierre = 'escalado';\nelse if (/\badi[oó]s\b|hasta pronto|quedamos a disposicion|quedamos a disposici[oó]n|le agradezco la respuesta|damos de baja/i.test(respuestaIA)) cierre = 'despedida';\n\nreturn { json: { response: respuestaIA, cierre: cierre } };\n"
+        },
+        "id": "8146f166-0cef-4896-9e54-56e16ba87d5e",
+        "name": "Procesar Respuesta",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          80,
+          48
+        ]
+      },
+      {
+        "parameters": {
+          "respondWith": "json",
+          "responseBody": "={{ JSON.stringify({ response: $json.response, bloqueado: $json.bloqueado || '', cierre: $json.cierre || '', status: 'ok' }) }}",
+          "options": {
+            "responseHeaders": {
+              "entries": [
+                {
+                  "name": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "name": "Access-Control-Allow-Methods",
+                  "value": "POST, GET, OPTIONS"
+                },
+                {
+                  "name": "Access-Control-Allow-Headers",
+                  "value": "*"
+                }
+              ]
+            }
+          }
+        },
+        "id": "d595639d-ce24-4d58-b763-d7ecf4bd5336",
+        "name": "Responder al HTML",
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1.1,
+        "position": [
+          320,
+          48
+        ]
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "loose",
+              "version": 1
+            },
+            "conditions": [
+              {
+                "leftValue": "={{ $json.bloqueado }}",
+                "operator": {
+                  "type": "string",
+                  "operation": "empty",
+                  "singleValue": true
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "id": "c9326aac-dbb8-47cd-9bb9-fe7421844ee4",
+        "name": "Responde el bot?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.2,
+        "position": [
+          -384,
+          32
+        ]
+      }
+    ],
+    "connections": {
+      "Webhook — Recibir de HTML": {
+        "main": [
+          [
+            {
+              "node": "Preparar Datos Lead",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Preparar Datos Lead": {
+        "main": [
+          [
+            {
+              "node": "Responde el bot?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Modelo IA (Groq)": {
+        "ai_languageModel": [
+          [
+            {
+              "node": "Agente IA",
+              "type": "ai_languageModel",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Window Buffer Memory": {
+        "ai_memory": [
+          [
+            {
+              "node": "Agente IA",
+              "type": "ai_memory",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Agente IA": {
+        "main": [
+          [
+            {
+              "node": "Procesar Respuesta",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Procesar Respuesta": {
+        "main": [
+          [
+            {
+              "node": "Responder al HTML",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Responde el bot?": {
+        "main": [
+          [
+            {
+              "node": "Agente IA",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Procesar Respuesta",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "nodeGroups": [],
+    "authors": "Santiago Wuerich",
+    "name": "Version 58a09b05",
+    "description": "",
+    "autosaved": true,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-08-04T13:29:47.506Z",
+        "id": 1,
+        "workflowId": "tMBXHDSHP9Er6NQG",
+        "versionId": "58a09b05-6df0-4af0-96b4-9dcfe405f40c",
+        "event": "activated",
+        "userId": "1ea0ed00-d8d2-408d-ac05-92a742038b93"
+      }
+    ]
+  }
+}

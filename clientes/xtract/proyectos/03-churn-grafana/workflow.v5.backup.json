@@ -1,0 +1,605 @@
+{
+  "name": "Análisis Churn Clientes v5 (Modular & Visual) - Grafana → Sheets + Slack",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "content": "### 📅 1. DISPARADOR DIARIO\nEjecución programada 7:00 AM.",
+        "height": 90,
+        "width": 220,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-300, -320],
+      "id": "sticky-1",
+      "name": "Sticky 1"
+    },
+    {
+      "parameters": {
+        "content": "### 📊 2. EXTRACCIÓN GRAFANA\nPOST /api/ds/query sin credenciales directas a DB.",
+        "height": 90,
+        "width": 240,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-40, -320],
+      "id": "sticky-2",
+      "name": "Sticky 2"
+    },
+    {
+      "parameters": {
+        "content": "### 🛡️ 3. FILTRO DE EXCLUSIONES\nDescarta clientes pausados o de prueba.",
+        "height": 90,
+        "width": 240,
+        "color": 1
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [240, -320],
+      "id": "sticky-3",
+      "name": "Sticky 3"
+    },
+    {
+      "parameters": {
+        "content": "### 🧮 4. SEÑAL A: RECENCIA\nCalcula cadencia habitual vs silencio actual.",
+        "height": 90,
+        "width": 240,
+        "color": 1
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [520, -320],
+      "id": "sticky-4",
+      "name": "Sticky 4"
+    },
+    {
+      "parameters": {
+        "content": "### 📉 5. SEÑAL B: CAÍDA VOLUMEN\nCompara misma ventana temporal vs mediana 6M.",
+        "height": 90,
+        "width": 250,
+        "color": 1
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [800, -320],
+      "id": "sticky-5",
+      "name": "Sticky 5"
+    },
+    {
+      "parameters": {
+        "content": "### ↘️ 6. SEÑAL C: RACHA DESCENDENTE\n3 meses consecutivos a la baja (+1 nivel de severidad).",
+        "height": 90,
+        "width": 260,
+        "color": 1
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [1090, -320],
+      "id": "sticky-6",
+      "name": "Sticky 6"
+    },
+    {
+      "parameters": {
+        "content": "### 🍂 7. ESTACIONALIDAD & MRR\nAjusta YoY en clientes 12M+ y calcula MRR estimado.",
+        "height": 90,
+        "width": 260,
+        "color": 1
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [1390, -320],
+      "id": "sticky-7",
+      "name": "Sticky 7"
+    },
+    {
+      "parameters": {
+        "content": "### ⏳ 8. TRANSICIONES & PERSISTENCIA\nCompara hoy vs ayer. Exige 3 días en clientes nuevos.",
+        "height": 90,
+        "width": 260,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [1690, -320],
+      "id": "sticky-8",
+      "name": "Sticky 8"
+    },
+    {
+      "parameters": {
+        "content": "### 📋 9. TABLERO SHEETS\nReescribe estado diario en Google Sheets.",
+        "height": 90,
+        "width": 240,
+        "color": 2
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [1990, -320],
+      "id": "sticky-9",
+      "name": "Sticky 9"
+    },
+    {
+      "parameters": {
+        "content": "### 🔔 10. NOTIFICACIÓN SLACK\nConsolida alertas en 1 mensaje ordenado por impact $.",
+        "height": 90,
+        "width": 260,
+        "color": 2
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [2270, -320],
+      "id": "sticky-10",
+      "name": "Sticky 10"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 7 * * *"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [-280, -150],
+      "id": "schedule-trigger",
+      "name": "Schedule Diario 7AM"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.GRAFANA_URL || 'https://YOUR-GRAFANA-INSTANCE' }}/api/ds/query",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"queries\": [{\n    \"refId\": \"A\",\n    \"datasource\": { \"uid\": \"{{ $env.GRAFANA_DATASOURCE_UID || 'YOUR_DATASOURCE_UID' }}\" },\n    \"rawSql\": \"SELECT c.id AS cliente_id, c.nombre AS cliente_nombre, f.fecha_emision, f.monto, f.numero_factura FROM clientes c JOIN facturas f ON f.cliente_id = c.id WHERE f.fecha_emision >= NOW() - INTERVAL '12 months' ORDER BY c.id, f.fecha_emision\",\n    \"format\": \"table\"\n  }],\n  \"from\": \"now-12M\",\n  \"to\": \"now\"\n}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-30, -150],
+      "id": "grafana-query",
+      "name": "Grafana API - Facturación"
+    },
+    {
+      "parameters": {
+        "jsCode": "// =====================================================================\n// PASO 1: VALIDACIÓN DE RESPUESTA GRAFANA Y FILTRO DE EXCLUSIONES\n// =====================================================================\nconst input = $input.first().json;\nif (input.statusCode && input.statusCode >= 400) {\n  throw new Error(`Grafana error ${input.statusCode}: ${JSON.stringify(input.body || input).substring(0, 500)}`);\n}\nconst responseData = input.results ? input : (input.body || input);\nconst frames = responseData.results?.A?.frames || [];\nif (frames.length === 0) throw new Error('Grafana devolvió frames vacíos.');\n\nconst frame = frames[0];\nconst fields = frame.schema?.fields || [];\nconst values = frame.data?.values || [];\n\nconst colIndex = {};\nfields.forEach((f, i) => { colIndex[f.name] = i; });\n\nconst rowCount = values[0]?.length || 0;\nconst rows = [];\nfor (let i = 0; i < rowCount; i++) {\n  const row = {};\n  fields.forEach((f, ci) => { row[f.name] = values[ci][i]; });\n  rows.push(row);\n}\n\nconst clientesExcluidosRaw = $env.CHURN_EXCLUDED_CLIENT_IDS || '';\nconst clientesExcluidosSet = new Set(clientesExcluidosRaw.split(',').map(id => id.trim().toLowerCase()).filter(Boolean));\n\nconst clientes = {};\nfor (const row of rows) {\n  const id = String(row.cliente_id);\n  if (clientesExcluidosSet.has(id.toLowerCase())) continue;\n  if (!clientes[id]) clientes[id] = { id, nombre: row.cliente_nombre || `Cliente ${id}`, facturas: [] };\n  clientes[id].facturas.push({ fecha: new Date(row.fecha_emision), monto: parseFloat(row.monto) || 0 });\n}\n\nreturn Object.values(clientes).map(c => ({ json: c }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [250, -150],
+      "id": "filtro-exclusiones",
+      "name": "Filtro Clientes Excluidos"
+    },
+    {
+      "parameters": {
+        "jsCode": "// =====================================================================\n// PASO 2: CÁLCULO SEÑAL A (RECENCIA: SILENCIO vs CADENCIA)\n// =====================================================================\nconst items = $input.all().map(i => i.json);\nconst hoy = new Date();\nconst hace6m = new Date(hoy);\nhace6m.setMonth(hace6m.getMonth() - 6);\n\nreturn items.map(cliente => {\n  const facturas = cliente.facturas.map(f => ({ ...f, fecha: new Date(f.fecha) })).sort((a, b) => a.fecha - b.fecha);\n  \n  if (facturas.length < 2) {\n    return { json: { ...cliente, facturas, estado_recencia: '⚪ Sin datos', nivel_recencia: 0, cadencia_dias: 0, silencio_dias: 0, ratio_recencia: 0, insuficiente_historia: true } };\n  }\n\n  const recientes = facturas.filter(f => f.fecha >= hace6m);\n  let cadencia = 30;\n  if (recientes.length >= 2) {\n    const gaps = [];\n    for (let i = 1; i < recientes.length; i++) {\n      const diffDias = (recientes[i].fecha - recientes[i - 1].fecha) / 864e5;\n      if (diffDias > 0) gaps.push(diffDias);\n    }\n    if (gaps.length > 0) {\n      gaps.sort((a, b) => a - b);\n      cadencia = gaps[Math.floor(gaps.length / 2)];\n    }\n  }\n\n  const ultimaFactura = facturas[facturas.length - 1].fecha;\n  const silencio = (hoy - ultimaFactura) / 864e5;\n  const ratio = cadencia > 0 ? silencio / cadencia : 999;\n\n  let estadoRecencia = '🟢 Normal', nivelRecencia = 0;\n  if (ratio > 5) { estadoRecencia = '🔴 Rojo'; nivelRecencia = 3; }\n  else if (ratio > 3) { estadoRecencia = '🟠 Naranja'; nivelRecencia = 2; }\n  else if (ratio > 2) { estadoRecencia = '🟡 Amarillo'; nivelRecencia = 1; }\n\n  return { json: { ...cliente, facturas, ultima_factura: ultimaFactura.toISOString().split('T')[0], cadencia_dias: Math.round(cadencia), silencio_dias: Math.round(silencio), ratio_recencia: Math.round(ratio * 100) / 100, estado_recencia: estadoRecencia, nivel_recencia: nivelRecencia, insuficiente_historia: false } };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [530, -150],
+      "id": "senal-recencia",
+      "name": "Señal A: Recencia"
+    },
+    {
+      "parameters": {
+        "jsCode": "// =====================================================================\n// PASO 3: CÁLCULO SEÑAL B (CAÍDA DE VOLUMEN PROPORCIONAL)\n// =====================================================================\nconst items = $input.all().map(i => i.json);\nconst hoy = new Date();\nconst diaDelMes = hoy.getDate();\nconst mesActualKey = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}`;\n\nreturn items.map(cliente => {\n  if (cliente.insuficiente_historia) {\n    return { json: { ...cliente, estado_volumen: '⚪ Sin datos', nivel_volumen: 0, caida_volumen_pct: 0 } };\n  }\n\n  const mesesMap = {};\n  for (const f of cliente.facturas) {\n    const fecha = new Date(f.fecha);\n    const key = `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}`;\n    if (!mesesMap[key]) mesesMap[key] = { total: 0, totalVentana: 0 };\n    mesesMap[key].total++;\n    if (fecha.getDate() <= diaDelMes) mesesMap[key].totalVentana++;\n  }\n\n  const mesesKeys = Object.keys(mesesMap).sort();\n  const mesesPrevios = mesesKeys.filter(k => k !== mesActualKey).slice(-6);\n  const valoresPrevios = mesesPrevios.map(k => mesesMap[k].totalVentana);\n\n  let estadoVolumen = '🟢 Normal', nivelVolumen = 0, caidaPct = 0;\n  if (valoresPrevios.length >= 2) {\n    const sorted = [...valoresPrevios].sort((a, b) => a - b);\n    const baseProporcional = sorted[Math.floor(sorted.length / 2)];\n    const actual = mesesMap[mesActualKey]?.totalVentana || 0;\n\n    if (baseProporcional > 0) {\n      caidaPct = Math.round(((baseProporcional - actual) / baseProporcional) * 100);\n      if (caidaPct >= 70) { estadoVolumen = '🔴 Rojo'; nivelVolumen = 3; }\n      else if (caidaPct >= 50) { estadoVolumen = '🟠 Naranja'; nivelVolumen = 2; }\n      else if (caidaPct >= 30) { estadoVolumen = '🟡 Amarillo'; nivelVolumen = 1; }\n    }\n  }\n\n  return { json: { ...cliente, mesesMap, mesesKeys, estado_volumen: estadoVolumen, nivel_volumen: nivelVolumen, caida_volumen_pct: Math.max(caidaPct, 0) } };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [810, -150],
+      "id": "senal-volumen",
+      "name": "Señal B: Caída Volumen"
+    },
+    {
+      "parameters": {
+        "jsCode": "// =====================================================================\n// PASO 4: CÁLCULO SEÑAL C (RACHA DESCENDENTE DE 3 MESES)\n// =====================================================================\nconst items = $input.all().map(i => i.json);\nconst hoy = new Date();\nconst mesActualKey = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}`;\n\nreturn items.map(cliente => {\n  if (cliente.insuficiente_historia) {\n    return { json: { ...cliente, racha_descendente: false } };\n  }\n\n  const mesesKeys = cliente.mesesKeys || [];\n  const mesesMap = cliente.mesesMap || {};\n  const ultimos3 = mesesKeys.filter(k => k !== mesActualKey).slice(-3);\n  let rachaDescendente = false;\n\n  if (ultimos3.length === 3) {\n    const v = ultimos3.map(k => mesesMap[k].total);\n    if (v[0] > v[1] && v[1] > v[2]) rachaDescendente = true;\n  }\n\n  return { json: { ...cliente, racha_descendente: rachaDescendente } };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1100, -150],
+      "id": "senal-racha",
+      "name": "Señal C: Racha Descendente"
+    },
+    {
+      "parameters": {
+        "jsCode": "// =====================================================================\n// PASO 5: AJUSTE ESTACIONALIDAD + CÁLCULO MRR ESTIMADO ($)\n// =====================================================================\nconst items = $input.all().map(i => i.json);\nconst hoy = new Date();\nconst mesActualKey = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}`;\n\nreturn items.map(cliente => {\n  if (cliente.insuficiente_historia) {\n    return { json: { ...cliente, mrr_estimado: 0, ajuste_estacional: 0, meses_historia: 0, estado_final: '⚪ Sin datos', nivel_numerico: 0 } };\n  }\n\n  // MRR Estimado\n  const hace3m = new Date(hoy);\n  hace3m.setMonth(hace3m.getMonth() - 3);\n  const facturasUltimos3m = cliente.facturas.filter(f => new Date(f.fecha) >= hace3m);\n  const mrrEstimado = Math.round(facturasUltimos3m.reduce((sum, f) => sum + f.monto, 0) / 3);\n\n  // Estacionalidad\n  const mesesKeys = cliente.mesesKeys || [];\n  const mesesMap = cliente.mesesMap || {};\n  const mesesHistoria = mesesKeys.length;\n  let ajusteEstacional = 0;\n\n  if (mesesHistoria >= 12) {\n    const mesActualNum = hoy.getMonth() + 1;\n    const keyAnioAnt = `${hoy.getFullYear() - 1}-${String(mesActualNum).padStart(2, '0')}`;\n    const volMesAnioAnt = mesesMap[keyAnioAnt]?.totalVentana || 0;\n    const volMesActual = mesesMap[mesActualKey]?.totalVentana || 0;\n    if (volMesAnioAnt > 0 && volMesActual > 0) {\n      if (Math.abs((volMesActual - volMesAnioAnt) / volMesAnioAnt) <= 0.2 && (cliente.nivel_recencia > 0 || cliente.nivel_volumen > 0)) {\n        ajusteEstacional = -1;\n      }\n    }\n  }\n\n  // Combinación Final\n  let nivelFinal = Math.max(cliente.nivel_recencia, cliente.nivel_volumen);\n  if (cliente.racha_descendente && nivelFinal > 0) {\n    nivelFinal = Math.min(nivelFinal + 1, 3);\n  }\n  nivelFinal = Math.max(nivelFinal + ajusteEstacional, 0);\n\n  const estadoMap = { 0: '🟢 Normal', 1: '🟡 Amarillo', 2: '🟠 Naranja', 3: '🔴 Rojo' };\n\n  // Limpiar campos temporales de cálculo\n  delete cliente.mesesMap;\n  delete cliente.mesesKeys;\n\n  return { json: { ...cliente, mrr_estimado: mrrEstimado, ajuste_estacional: ajusteEstacional, meses_historia: mesesHistoria, estado_final: estadoMap[nivelFinal], nivel_numerico: nivelFinal, fecha_analisis: hoy.toISOString().split('T')[0] } };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1400, -150],
+      "id": "estacionalidad-mrr",
+      "name": "Estacionalidad & MRR"
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "mode": "url",
+          "value": "={{ $env.CHURN_SHEET_URL || 'https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/edit' }}"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "Estado Clientes"
+        },
+        "options": {
+          "returnAllMatches": true
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [1700, -150],
+      "id": "leer-sheet-ayer",
+      "name": "Leer Sheet (estado ayer)"
+    },
+    {
+      "parameters": {
+        "jsCode": "// =====================================================================\n// PASO 6: TRANSICIONES Y REGLA DE PERSISTENCIA (3 DÍAS SEGUIDOS)\n// =====================================================================\nconst hoyItems = $('Estacionalidad & MRR').all().map(i => i.json);\nlet ayerItems = [];\ntry { ayerItems = $('Leer Sheet (estado ayer)').all().map(i => i.json); } catch (e) {}\nayerItems = ayerItems.filter(item => item.cliente_id && String(item.cliente_id).trim() !== '');\nconst esPrimeraCorrida = ayerItems.length === 0;\n\nconst ayerMap = {};\nfor (const item of ayerItems) {\n  ayerMap[String(item.cliente_id)] = {\n    estado_final: item.estado_final || '🟢 Normal',\n    nivel_numerico: parseInt(item.nivel_numerico) || 0,\n    dias_consecutivos_riesgo: parseInt(item.dias_consecutivos_riesgo) || 0\n  };\n}\n\nreturn hoyItems.map(cliente => {\n  const cid = String(cliente.cliente_id);\n  const ayer = ayerMap[cid];\n  const nivelAyer = ayer ? ayer.nivel_numerico : 0;\n  const nivelHoy = cliente.nivel_numerico;\n  const estadoAyer = ayer ? ayer.estado_final : '🟢 Normal';\n  const diasPrevioRiesgo = ayer ? ayer.dias_consecutivos_riesgo : 0;\n\n  let diasConsecutivosRiesgo = 0;\n  if (nivelHoy > 0) diasConsecutivosRiesgo = diasPrevioRiesgo + 1;\n\n  let cumplePersistencia = true;\n  if (cliente.meses_historia < 12 && nivelHoy > 0) {\n    cumplePersistencia = diasConsecutivosRiesgo >= 3;\n  }\n\n  const empeoro = !esPrimeraCorrida && nivelHoy > nivelAyer && nivelHoy > 0 && cumplePersistencia;\n  const mejoro = !esPrimeraCorrida && nivelHoy < nivelAyer && nivelAyer > 0;\n  const transicion = esPrimeraCorrida\n    ? `🆕 Primera lectura: ${cliente.estado_final}`\n    : (estadoAyer !== cliente.estado_final ? `${estadoAyer} → ${cliente.estado_final}` : 'Sin cambio');\n\n  return { json: { ...cliente, estado_ayer: esPrimeraCorrida ? 'N/A' : estadoAyer, dias_consecutivos_riesgo: diasConsecutivosRiesgo, transicion, empeoro, mejoro, es_primera_corrida: esPrimeraCorrida } };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1700, 100],
+      "id": "detectar-transiciones",
+      "name": "Detectar Transiciones"
+    },
+    {
+      "parameters": {
+        "operation": "clear",
+        "documentId": {
+          "__rl": true,
+          "mode": "url",
+          "value": "={{ $env.CHURN_SHEET_URL || 'https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/edit' }}"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "Estado Clientes"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [2000, -150],
+      "id": "limpiar-sheet",
+      "name": "Limpiar Sheet"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "url",
+          "value": "={{ $env.CHURN_SHEET_URL || 'https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/edit' }}"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "Estado Clientes"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "cliente_id": "={{ $json.cliente_id }}",
+            "cliente_nombre": "={{ $json.cliente_nombre }}",
+            "estado_final": "={{ $json.estado_final }}",
+            "nivel_numerico": "={{ $json.nivel_numerico }}",
+            "mrr_estimado": "={{ $json.mrr_estimado }}",
+            "meses_historia": "={{ $json.meses_historia }}",
+            "ultima_factura": "={{ $json.ultima_factura }}",
+            "cadencia_dias": "={{ $json.cadencia_dias }}",
+            "silencio_dias": "={{ $json.silencio_dias }}",
+            "ratio_recencia": "={{ $json.ratio_recencia }}",
+            "estado_recencia": "={{ $json.estado_recencia }}",
+            "nivel_recencia": "={{ $json.nivel_recencia }}",
+            "estado_volumen": "={{ $json.estado_volumen }}",
+            "nivel_volumen": "={{ $json.nivel_volumen }}",
+            "caida_volumen_pct": "={{ $json.caida_volumen_pct }}",
+            "racha_descendente": "={{ $json.racha_descendente }}",
+            "ajuste_estacional": "={{ $json.ajuste_estacional }}",
+            "dias_consecutivos_riesgo": "={{ $json.dias_consecutivos_riesgo }}",
+            "estado_ayer": "={{ $json.estado_ayer }}",
+            "transicion": "={{ $json.transicion }}",
+            "empeoro": "={{ $json.empeoro }}",
+            "mejoro": "={{ $json.mejoro }}",
+            "es_primera_corrida": "={{ $json.es_primera_corrida }}",
+            "tiene_alerta": "={{ $json.tiene_alerta }}",
+            "tipo": "={{ $json.tipo }}",
+            "slack_message": "={{ $json.slack_message }}"
+          }
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [2220, -150],
+      "id": "escribir-sheet",
+      "name": "Sheet Update (estado hoy)"
+    },
+    {
+      "parameters": {
+        "jsCode": "// =====================================================================\n// PASO 7: CONSOLIDACIÓN DE MENSAJES SLACK\n// =====================================================================\nconst items = $input.all().map(i => i.json);\nconst esPrimeraCorrida = items[0]?.es_primera_corrida || false;\nconst formatUSD = (val) => '$' + (val || 0).toLocaleString('en-US');\n\nif (esPrimeraCorrida) {\n  const total = items.length;\n  const verdes = items.filter(i => i.nivel_numerico === 0).length;\n  const amarillos = items.filter(i => i.nivel_numerico === 1);\n  const naranjas = items.filter(i => i.nivel_numerico === 2);\n  const rojos = items.filter(i => i.nivel_numerico === 3);\n  const sinDatos = items.filter(i => i.nivel_numerico === 0 && i.estado_final?.includes('Sin datos'));\n  const mrrEnRiesgo = [...rojos, ...naranjas, ...amarillos].reduce((sum, c) => sum + (c.mrr_estimado || 0), 0);\n  let msg = `📊 *Análisis Churn — Primera Corrida (Línea Base)*\\n\\nSe analizaron *${total}* clientes (MRR total en riesgo: *${formatUSD(mrrEnRiesgo)}*):\\n• 🟢 Normal: ${verdes - sinDatos.length}\\n`;\n  if (sinDatos.length > 0) msg += `• ⚪ Sin datos suficientes: ${sinDatos.length}\\n`;\n  if (amarillos.length > 0) msg += `• 🟡 Amarillo: ${amarillos.length}\\n`;\n  if (naranjas.length > 0) msg += `• 🟠 Naranja: ${naranjas.length}\\n`;\n  if (rojos.length > 0) msg += `• 🔴 Rojo: ${rojos.length}\\n`;\n  const enRiesgo = [...rojos, ...naranjas].sort((a, b) => (b.mrr_estimado || 0) - (a.mrr_estimado || 0));\n  if (enRiesgo.length > 0) {\n    msg += `\\n⚠️ *Top Clientes en riesgo por impacto ($):*\\n`;\n    enRiesgo.slice(0, 10).forEach(c => { msg += `• *${c.cliente_nombre}* — ${c.estado_final} (MRR: *${formatUSD(c.mrr_estimado)}*, silencio: ${c.silencio_dias}d)\\n`; });\n    if (enRiesgo.length > 10) msg += `  _...y ${enRiesgo.length - 10} más_\\n`;\n  }\n  msg += `\\nLínea base OK. Mañana se alertan solo los cambios de estado.\\n\\n📋 <${$env.CHURN_SHEET_URL || 'https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/edit'}|Ver tablero completo>`;\n  return [{ json: { slack_message: msg, tiene_alerta: true, tipo: 'primera_corrida', empeorados: [] } }];\n}\n\nconst empeorados = items.filter(i => i.empeoro).sort((a, b) => (b.mrr_estimado || 0) - (a.mrr_estimado || 0));\nconst mejorados = items.filter(i => i.mejoro);\nif (empeorados.length === 0 && mejorados.length === 0) {\n  return [{ json: { slack_message: '', tiene_alerta: false, tipo: 'sin_cambios', empeorados: [] } }];\n}\nconst mrrEmpeoradoTotal = empeorados.reduce((sum, c) => sum + (c.mrr_estimado || 0), 0);\nlet msg = '';\nif (empeorados.length > 0) {\n  msg += `🚨 *Alerta Churn — ${empeorados.length} cliente${empeorados.length > 1 ? 's' : ''} empeor${empeorados.length > 1 ? 'aron' : 'ó'}* (MRR afectado: *${formatUSD(mrrEmpeoradoTotal)}*)\\n\\n`;\n  empeorados.forEach(c => {\n    msg += `*${c.cliente_nombre}* (MRR: *${formatUSD(c.mrr_estimado)}*) — ${c.transicion}\\n`;\n    msg += `  Silencio: ${c.silencio_dias}d (cadencia: ${c.cadencia_dias}d) · Ratio: ${c.ratio_recencia}x · Caída vol: ${c.caida_volumen_pct}%`;\n    if (c.racha_descendente) msg += ` · Racha ↘️`;\n    if (c.ajuste_estacional < 0) msg += ` · Estacional ℹ️`;\n    msg += `\\n\\n`;\n  });\n}\nif (mejorados.length > 0) {\n  msg += `✅ *${mejorados.length} cliente${mejorados.length > 1 ? 's' : ''} mejorar${mejorados.length > 1 ? 'on' : 'ó'}:*\\n`;\n  mejorados.forEach(c => { msg += `• *${c.cliente_nombre}* — ${c.transicion} (MRR: ${formatUSD(c.mrr_estimado)})\\n`; });\n  msg += `\\n`;\n}\nmsg += `📋 <${$env.CHURN_SHEET_URL || 'https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/edit'}|Ver tablero completo>`;\nreturn [{ json: { slack_message: msg, tiene_alerta: true, tipo: 'transiciones', empeorados } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2000, 100],
+      "id": "consolidar-alertas",
+      "name": "Consolidar Alertas"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "tiene-alerta",
+              "leftValue": "={{ $json.tiene_alerta }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [2280, 100],
+      "id": "if-hay-alerta",
+      "name": "IF ¿Hay alerta?"
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $env.CHURN_SLACK_CHANNEL || 'C_YOUR_CHANNEL_ID' }}"
+        },
+        "text": "={{ $json.slack_message }}",
+        "otherOptions": {
+          "includeLinkToWorkflow": false,
+          "unfurlLinks": false,
+          "unfurlMedia": false
+        }
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.3,
+      "position": [2520, 40],
+      "id": "slack-alert",
+      "name": "Slack Alerta Churn"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "url",
+          "value": "={{ $env.CHURN_SHEET_URL || 'https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/edit' }}"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "Historial Alertas"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "fecha": "={{ $now.toISO() }}",
+            "mensaje": "={{ $json.slack_message }}",
+            "tipo": "={{ $json.tipo }}"
+          }
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [2520, 180],
+      "id": "historial-alertas",
+      "name": "Historial Alertas (Sheet)"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.CHURN_ACTION_WEBHOOK_URL || '' }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"evento\": \"churn_alert_empeorado\",\n  \"fecha\": \"{{ $now.toISO() }}\",\n  \"total_clientes_afectados\": {{ $json.empeorados.length }},\n  \"clientes\": {{ JSON.stringify($json.empeorados) }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "continueOnFail": true,
+      "position": [2520, 320],
+      "id": "webhook-crm-action",
+      "name": "Webhook CRM Action (Opcional)"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [2520, 460],
+      "id": "no-op",
+      "name": "Sin cambios (no alertar)"
+    }
+  ],
+  "connections": {
+    "Schedule Diario 7AM": {
+      "main": [
+        [
+          {
+            "node": "Grafana API - Facturación",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Grafana API - Facturación": {
+      "main": [
+        [
+          {
+            "node": "Filtro Clientes Excluidos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filtro Clientes Excluidos": {
+      "main": [
+        [
+          {
+            "node": "Señal A: Recencia",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Señal A: Recencia": {
+      "main": [
+        [
+          {
+            "node": "Señal B: Caída Volumen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Señal B: Caída Volumen": {
+      "main": [
+        [
+          {
+            "node": "Señal C: Racha Descendente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Señal C: Racha Descendente": {
+      "main": [
+        [
+          {
+            "node": "Estacionalidad & MRR",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Estacionalidad & MRR": {
+      "main": [
+        [
+          {
+            "node": "Leer Sheet (estado ayer)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leer Sheet (estado ayer)": {
+      "main": [
+        [
+          {
+            "node": "Detectar Transiciones",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Detectar Transiciones": {
+      "main": [
+        [
+          {
+            "node": "Limpiar Sheet",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Consolidar Alertas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limpiar Sheet": {
+      "main": [
+        [
+          {
+            "node": "Sheet Update (estado hoy)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Consolidar Alertas": {
+      "main": [
+        [
+          {
+            "node": "IF ¿Hay alerta?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF ¿Hay alerta?": {
+      "main": [
+        [
+          {
+            "node": "Slack Alerta Churn",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Historial Alertas (Sheet)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Webhook CRM Action (Opcional)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Sin cambios (no alertar)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}

@@ -1,0 +1,1714 @@
+{
+  "name": "Potencial Entregable",
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "// Países Xtract con storefront de iTunes y tier\nconst PAISES = [\n  { pais: 'Argentina',   iso: 'ar', tier: 1 },\n  { pais: 'México',      iso: 'mx', tier: 1 },\n  { pais: 'Brasil',      iso: 'br', tier: 1 },\n  { pais: 'Colombia',    iso: 'co', tier: 1 },\n  { pais: 'Chile',       iso: 'cl', tier: 1 },\n  { pais: 'Perú',        iso: 'pe', tier: 1 },\n  { pais: 'Ecuador',     iso: 'ec', tier: 2 },\n  { pais: 'Uruguay',     iso: 'uy', tier: 2 },\n  { pais: 'Panamá',      iso: 'pa', tier: 2 },\n  { pais: 'Costa Rica',  iso: 'cr', tier: 2 },\n  { pais: 'Guatemala',   iso: 'gt', tier: 3 },\n  { pais: 'Bolivia',     iso: 'bo', tier: 3 },\n  { pais: 'El Salvador', iso: 'sv', tier: 3 },\n  { pais: 'Paraguay',    iso: 'py', tier: 3 },\n  { pais: 'España',      iso: 'es', tier: 1 },\n  { pais: 'USA',         iso: 'us', tier: 1 },\n];\nreturn PAISES.map(p => ({ json: p }));"
+      },
+      "id": "1546d7fe-d43c-46e2-853f-4908200dcb1f",
+      "name": "Config países",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        672
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "url": "https://itunes.apple.com/search",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "term",
+              "value": "negocios tecnologia startups"
+            },
+            {
+              "name": "entity",
+              "value": "podcast"
+            },
+            {
+              "name": "country",
+              "value": "={{ $json.iso }}"
+            },
+            {
+              "name": "limit",
+              "value": "25"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "663bbac7-fec6-441f-aa95-e57817f55463",
+      "name": "iTunes - Buscar podcasts",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        688,
+        480
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const paisItems = $('Config países').all();\n\nconst out = [];\nconst seen = new Set();\n\nfor (let idx = 0; idx < $input.all().length; idx++) {\n  const inp = $input.all()[idx];\n  const paisData = paisItems[idx]?.json || {};\n  const results = inp.json.results || [];\n\n  for (const p of results) {\n    const nombre = p.collectionName || '';\n    const host = p.artistName || '';\n    if (!nombre || seen.has(nombre.toLowerCase())) continue;\n    seen.add(nombre.toLowerCase());\n\n    out.push({ json: {\n      tipo: 'Podcast',\n      nombre: host || nombre,\n      show: nombre,\n      medio: nombre,\n      pais: paisData.pais || '',\n      tier: paisData.tier || 3,\n      website: p.collectionViewUrl || '',\n      rss: p.feedUrl || '',\n      genero: p.primaryGenreName || '',\n      episodios: p.trackCount || 0,\n      artwork: p.artworkUrl100 || '',\n      notas_origen: 'iTunes - ' + (paisData.pais || '') + ' - ' + (p.trackCount || 0) + ' episodios - ' + (p.primaryGenreName || '')\n    }});\n  }\n}\nreturn out;"
+      },
+      "id": "0b283ee9-a8e1-476c-a864-9aa42f9c6deb",
+      "name": "Normalizar podcasts",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        912,
+        480
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "numberInputs": 3
+      },
+      "id": "fa4234b4-27b9-4b2a-82dd-33d841a24cf1",
+      "name": "Merge fuentes",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1136,
+        640
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Newsletters de inversores/VCs LATAM que cubren startups\nconst queries = [\n  'newsletter venture capital LATAM startups site:substack.com',\n  'newsletter inversores startups latinoamerica site:substack.com',\n  'newsletter VC latinoamerica fintech site:substack.com',\n  'LATAM startups funding newsletter site:substack.com',\n  'newsletter startups mexico argentina brasil inversion site:beehiiv.com',\n  'venture capital latin america newsletter site:beehiiv.com',\n  'newsletter ecosistema emprendedor LATAM',\n  'newsletter startups LATAM semanal inversion'\n].join('\\n');\n\nreturn [{ json: { queries } }];"
+      },
+      "id": "3a170692-8a24-4b12-8fc8-b1aebaa0f064",
+      "name": "Queries newsletters VC",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        464,
+        672
+      ],
+      "executeOnce": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apify.com/v2/acts/apify~google-search-scraper/run-sync-get-dataset-items",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "token",
+              "value": "REEMPLAZAR_APIFY_TOKEN"
+            },
+            {
+              "name": "timeout",
+              "value": "120"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({ queries: $json.queries, resultsPerPage: 10, maxPagesPerQuery: 1, languageCode: \"es\" }) }}",
+        "options": {}
+      },
+      "id": "4026091d-c39a-47c6-8917-c6a814730cbb",
+      "name": "Apify - Buscar newsletters",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        688,
+        672
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 5000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "function getHostname(url) {\n  const m = String(url).match(/^https?:\\/\\/([^\\/\\?#]+)/i);\n  return m ? m[1].replace(/^www\\./i, '').toLowerCase() : '';\n}\nfunction getOrigin(url) {\n  const m = String(url).match(/^(https?:\\/\\/[^\\/\\?#]+)/i);\n  return m ? m[1] : url;\n}\nfunction getPathname(url) {\n  const m = String(url).match(/^https?:\\/\\/[^\\/\\?#]+(\\/[^\\?#]*)?/i);\n  return (m && m[1]) ? m[1] : '/';\n}\n\nconst out = [];\nconst seen = new Set();\n\nconst NEWSLETTER_DOMAINS = ['substack.com', 'beehiiv.com', 'mailchimp.com', 'convertkit.com', 'ghost.io', 'revue.co'];\nconst BLOCKED_DOMAINS = ['instagram.com', 'facebook.com', 'twitter.com', 'x.com', 'youtube.com', 'tiktok.com', 'linkedin.com', 'google.com', 'wikipedia.org', 'medium.com'];\n\nconst PAIS_KW = {\n  'Argentina': ['argentina'], 'México': ['méxico','mexico'], 'Brasil': ['brasil','brazil'],\n  'Colombia': ['colombia'], 'Chile': ['chile'], 'Perú': ['perú','peru'],\n  'Uruguay': ['uruguay'], 'España': ['españa','spain']\n};\n\nfunction extractEmail(text) {\n  const m = (text || '').match(/[a-zA-Z0-9._%+\\-]+@[a-zA-Z0-9.\\-]+\\.[a-zA-Z]{2,}/);\n  return m ? m[0] : '';\n}\n\nfunction capitalizar(s) {\n  return s.charAt(0).toUpperCase() + s.slice(1);\n}\n\nfunction esNombreValido(nombre) {\n  if (!nombre || nombre.length < 3 || nombre.length > 80) return false;\n  if (/^\\d/.test(nombre)) return false;\n  if (/\\d{4}/.test(nombre)) return false;\n  const palabras = nombre.split(' ').length;\n  if (palabras > 8) return false;\n  const DESCARTE = ['acerca de', 'about', 'los mejores', 'las mejores', 'el mejor', 'la mejor', 'cómo', 'como ', 'qué es', 'que es', 'guía', 'guia', 'sitemap'];\n  const low = nombre.toLowerCase();\n  if (DESCARTE.some(d => low.includes(d))) return false;\n  return true;\n}\n\nfor (const inp of $input.all()) {\n  const results = inp.json.organicResults || [];\n\n  for (const r of results) {\n    let url = r.url || '';\n    let title = r.title || '';\n    const desc = r.description || '';\n    if (!url.startsWith('http')) continue;\n\n    const hostname = getHostname(url);\n    if (!hostname) continue;\n\n    if (BLOCKED_DOMAINS.some(d => hostname === d || hostname.endsWith('.' + d))) continue;\n\n    const esPlataforma = NEWSLETTER_DOMAINS.some(d => hostname === d || hostname.endsWith('.' + d));\n    if (!esPlataforma) continue;\n\n    const esSubstack = hostname.endsWith('substack.com');\n    const esBeehiiv = hostname.endsWith('beehiiv.com');\n\n    if ((esSubstack || esBeehiiv) && /\\/p\\//.test(url)) {\n      const origin = getOrigin(url);\n      const sub = hostname.split('.')[0];\n      url = origin;\n      if (sub && sub !== 'www') title = capitalizar(sub);\n    }\n\n    const pathname = getPathname(url);\n    if (/\\/\\d{4}\\/\\d{2}/.test(pathname)) continue;\n\n    let nombre = (title.split(' - ')[0] || title.split(' | ')[0] || title).trim();\n    if ((esSubstack || esBeehiiv) && !esNombreValido(nombre)) {\n      const sub = getHostname(url).split('.')[0];\n      if (sub && sub !== 'www') nombre = capitalizar(sub);\n    }\n\n    if (!esNombreValido(nombre)) continue;\n\n    const dedupKey = url.toLowerCase().replace(/https?:\\/\\/(www\\.)?/, '').replace(/\\/$/, '');\n    if (seen.has(dedupKey)) continue;\n    seen.add(dedupKey);\n\n    const textoLow = (title + ' ' + desc).toLowerCase();\n    let pais = 'LATAM';\n    for (const [p, kws] of Object.entries(PAIS_KW)) {\n      if (kws.some(k => textoLow.includes(k))) { pais = p; break; }\n    }\n\n    out.push({ json: {\n      tipo: 'Newsletter',\n      nombre,\n      show: nombre,\n      medio: nombre,\n      pais,\n      tier: 1,\n      website: url,\n      rss: '',\n      genero: 'VC/Inversores',\n      episodios: 0,\n      email: extractEmail(desc),\n      bio: desc.substring(0, 300),\n      notas_origen: 'Newsletter VC - ' + (esSubstack ? 'Substack' : esBeehiiv ? 'Beehiiv' : 'Web')\n    }});\n  }\n}\nreturn out;"
+      },
+      "id": "66683e2a-5d56-4b8a-ac66-f94a24ddbe08",
+      "name": "Normalizar newsletters",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        912,
+        672
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Score de relevancia para Xtract (contabilidad IA para empresas LATAM)\nconst XTRACT_KW = ['fintech','finanzas','contabilidad','inversión','vc','venture','startup',\n  'emprend','negocio','business','pyme','impuesto','fiscal','economía'];\n\nconst NICHO_POR_TIPO = {\n  'Podcast': 'Podcast C-suite',\n  'Newsletter': 'Newsletter VC',\n  'TikTok': 'Creador TikTok',\n  'YouTube': 'Creador YouTube'\n};\n\nconst FUENTE_POR_TIPO = {\n  'Podcast': 'iTunes - Podcasts',\n  'Newsletter': 'Apify Search - Newsletters VC',\n  'TikTok': 'Apify Search - TikTok',\n  'YouTube': 'YouTube Data API'\n};\n\nconst out = [];\nfor (const item of $input.all()) {\n  const o = item.json;\n  if (!o.nombre) continue;\n\n  const texto = ((o.show || '') + ' ' + (o.genero || '') + ' ' + (o.bio || '')).toLowerCase();\n  const afinidad = XTRACT_KW.filter(k => texto.includes(k)).length;\n\n  let score = 0;\n  score += Math.min(afinidad * 2, 4);\n  score += o.tier === 1 ? 2 : o.tier === 2 ? 1 : 0;\n  if (o.tipo === 'Newsletter') score += 2;\n  if (o.episodios > 50) score += 2;\n  else if (o.episodios > 10) score += 1;\n  const alcance = o.seguidores || 0;\n  if (alcance > 500000) score += 2;\n  else if (alcance > 50000) score += 1;\n  if (o.email) score += 1;\n  score = Math.min(10, Math.max(1, score));\n\n  const prioridad = score >= 8 ? 'Alta' : score >= 5 ? 'Media' : 'Baja';\n\n  const primerNombre = (o.nombre || '').split(' ')[0];\n  let mensaje;\n  if (o.tipo === 'Podcast') {\n    mensaje = 'Hola ' + primerNombre + '! Escuché ' + o.show + ' y me encantó el enfoque. Te escribo de Xtract (xtract.app) — automatizamos contabilidad con IA para empresas LATAM. Te interesaría tener a nuestro founder como invitado?';\n  } else if (o.tipo === 'Newsletter') {\n    mensaje = 'Hola! Sigo ' + o.show + ' y el contenido sobre el ecosistema es excelente. Te escribo de Xtract (xtract.app) — automatizamos contabilidad con IA para empresas LATAM. Charlamos?';\n  } else {\n    mensaje = 'Hola ' + primerNombre + '! Sigo tu contenido de ' + (o.tipo === 'TikTok' ? 'TikTok' : 'YouTube') + ' sobre finanzas/tech. Te escribo de Xtract (xtract.app) — automatizamos contabilidad con IA para empresas LATAM. Podríamos explorar una colaboración?';\n  }\n\n  const descripcion = [];\n  if (o.bio) descripcion.push(o.bio);\n  if (o.notas_origen) descripcion.push(o.notas_origen);\n\n  out.push({ json: {\n    Nombre: o.nombre,\n    'Tipo de contacto': o.tipo,\n    Status: 'No Contactado',\n    Medio: o.show || o.medio || '',\n    Linkedin: '',\n    'Twitter - Bluesky': '',\n    Telefono: '',\n    'Correo electronico': o.email || '',\n    Website: o.website || '',\n    'Posible mensaje a enviar para generar una reunión en base a notas publicadas/perfil de la persona': mensaje,\n    Prioridad: prioridad,\n    'Score de Relevancia': score,\n    'País': o.pais || 'LATAM',\n    'Dedicación / Nicho': NICHO_POR_TIPO[o.tipo] || o.tipo,\n    'Fuente de Prospección': FUENTE_POR_TIPO[o.tipo] || o.tipo,\n    'Notas / Descripción': descripcion.join(' | ')\n  }});\n}\n\nout.sort((a, b) => b.json['Score de Relevancia'] - a.json['Score de Relevancia']);\nreturn out;"
+      },
+      "id": "ee7d21c4-4aa6-408a-8721-d5cdda497aae",
+      "name": "Calificar y armar fila",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1360,
+        480
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "documentId": {
+          "__rl": true,
+          "value": "REEMPLAZAR_ID_DE_TU_GOOGLE_SHEET",
+          "mode": "list",
+          "cachedResultName": "Influencers"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Influencers"
+        },
+        "options": {}
+      },
+      "id": "23971a62-3f1f-4266-8c38-20e52ad9477c",
+      "name": "Leer contactos existentes",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1808,
+        480
+      ],
+      "executeOnce": true,
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "googleApi": {
+          "id": "REEMPLAZAR",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const candidatos = $('Merge final').all();\nconst existentes = $input.all();\n\nconst existentesSet = new Set(\n  existentes.map(i => (i.json.Nombre || '').toLowerCase().trim()).filter(Boolean)\n);\n\nconst vistos = new Set();\nreturn candidatos.filter(c => {\n  const nombre = (c.json.Nombre || '').toLowerCase().trim();\n  if (!nombre || existentesSet.has(nombre) || vistos.has(nombre)) return false;\n  vistos.add(nombre);\n  const j = c.json;\n  return !!(j.Linkedin || j['Twitter / Bluesky'] || j['Correo electronico'] || j.Website || j.Telefono);\n});"
+      },
+      "id": "0e164f38-1d40-4331-95dd-1e7548221d53",
+      "name": "Filtrar solo nuevos",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2032,
+        480
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "REEMPLAZAR_ID_DE_TU_GOOGLE_SHEET",
+          "mode": "list",
+          "cachedResultName": "Influencers"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Influencers"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "580bc64a-76a9-4cce-9d62-d53e44a88f60",
+      "name": "Agregar al Google Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        2256,
+        480
+      ],
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "googleApi": {
+          "id": "REEMPLAZAR",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Creadores TikTok de finanzas/negocios/tech por país via Google\nconst paisItems = $input.all();\nconst TIER12 = paisItems.filter(p => p.json.tier <= 2).map(p => p.json.pais);\n\nconst queryLines = [];\nfor (const pais of TIER12) {\n  queryLines.push('finanzas emprendedores ' + pais + ' site:tiktok.com/@');\n  queryLines.push('tecnologia negocios ' + pais + ' site:tiktok.com/@');\n}\n\nreturn [{ json: { queries: queryLines.join('\\n') } }];"
+      },
+      "id": "c287a1b4-0c19-4efa-8474-a3f6f5e6aea5",
+      "name": "Queries TikTok",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        464,
+        864
+      ],
+      "executeOnce": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apify.com/v2/acts/apify~google-search-scraper/run-sync-get-dataset-items",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "token",
+              "value": "REEMPLAZAR_APIFY_TOKEN"
+            },
+            {
+              "name": "timeout",
+              "value": "120"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({ queries: $json.queries, resultsPerPage: 10, maxPagesPerQuery: 1, languageCode: \"es\" }) }}",
+        "options": {}
+      },
+      "id": "fea9d4f9-0636-48bd-8061-2b09e7edae16",
+      "name": "Apify - Buscar TikTok",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        688,
+        864
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 5000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const paisItems = $('Config países').all();\n\nfunction parseViews(str) {\n  if (!str) return 0;\n  // \"Más de 1,3 M visualizaciones\" / \"Más de 29.7 K vistas\" / \"Más de 620 visualizaciones\"\n  const m = str.match(/([\\d.,]+)\\s*([MK])?/i);\n  if (!m) return 0;\n  const num = parseFloat(m[1].replace(',', '.'));\n  const mult = (m[2] || '').toUpperCase() === 'M' ? 1000000 : (m[2] || '').toUpperCase() === 'K' ? 1000 : 1;\n  return Math.round(num * mult);\n}\n\nconst creadores = new Map(); // handle → datos agregados\n\nfor (const inp of $input.all()) {\n  const queryTerm = (inp.json.searchQuery?.term || '').toLowerCase();\n  const results = inp.json.organicResults || [];\n\n  let paisDetectado = 'LATAM';\n  let tierDetectado = 2;\n  for (const p of paisItems) {\n    if (queryTerm.includes(p.json.pais.toLowerCase())) {\n      paisDetectado = p.json.pais;\n      tierDetectado = p.json.tier;\n      break;\n    }\n  }\n\n  for (const r of results) {\n    const url = r.url || '';\n    // Handle desde cualquier URL de TikTok: /@handle o /@handle/video/123\n    const m = url.match(/tiktok\\.com\\/@([a-zA-Z0-9._]+)/);\n    if (!m) continue;\n    const handle = m[1].toLowerCase();\n\n    // Nombre del creador: websiteTitle \"TikTok · Nombre\" es lo más confiable\n    let nombre = '';\n    const wt = r.websiteTitle || '';\n    if (wt.includes('·')) nombre = wt.split('·').pop().trim();\n    if (!nombre || nombre.toLowerCase() === 'tiktok') nombre = handle;\n\n    const views = parseViews(r.views || '');\n    const desc = r.description || '';\n\n    if (!creadores.has(handle)) {\n      creadores.set(handle, {\n        handle, nombre, pais: paisDetectado, tier: tierDetectado,\n        videos: 0, maxViews: 0, bio: desc.substring(0, 300)\n      });\n    }\n    const c = creadores.get(handle);\n    c.videos++;\n    if (views > c.maxViews) c.maxViews = views;\n    // Preferir nombre real sobre handle\n    if (c.nombre === c.handle && nombre !== handle) c.nombre = nombre;\n  }\n}\n\nconst out = [];\nfor (const [, c] of creadores) {\n  out.push({ json: {\n    tipo: 'TikTok',\n    nombre: c.nombre,\n    show: '@' + c.handle,\n    medio: 'TikTok',\n    pais: c.pais,\n    tier: c.tier,\n    website: 'https://www.tiktok.com/@' + c.handle,\n    rss: '',\n    genero: 'Creador finanzas/tech',\n    episodios: 0,\n    seguidores: c.maxViews,\n    email: '',\n    bio: c.bio,\n    notas_origen: 'TikTok - ' + c.pais + ' - @' + c.handle + ' - ' + (c.maxViews > 0 ? c.maxViews.toLocaleString() + ' views max' : 'sin datos de views') + ' - ' + c.videos + ' videos en resultados'\n  }});\n}\n\n// Más views primero\nout.sort((a, b) => (b.json.seguidores || 0) - (a.json.seguidores || 0));\nreturn out;"
+      },
+      "id": "4a9f78e1-9252-45d2-9923-0815e0e5a6ef",
+      "name": "Normalizar TikTok",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        912,
+        864
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Medios por tier de Xtract — los feeds rotos fallan silencioso (onError continue en Leer RSS)\nconst MEDIOS = [\n  // 🇦🇷 Argentina (Tier 1)\n  { medio: 'Infobae Tech',     pais: 'Argentina', tier: 1, idioma: 'es', rss: 'https://www.infobae.com/feeds/rss/tecno/' },\n  { medio: 'Infobae Economía', pais: 'Argentina', tier: 1, idioma: 'es', rss: 'https://www.infobae.com/feeds/rss/economia/' },\n  { medio: 'iProfesional',     pais: 'Argentina', tier: 1, idioma: 'es', rss: 'https://www.iprofesional.com/rss' },\n  { medio: 'La Nación Tec',   pais: 'Argentina', tier: 1, idioma: 'es', rss: 'https://www.lanacion.com.ar/arc/outboundfeeds/rss/category/tecnologia/?outputType=xml' },\n  { medio: 'El Cronista',      pais: 'Argentina', tier: 1, idioma: 'es', rss: 'https://www.cronista.com/rss/' },\n  { medio: 'Apertura',         pais: 'Argentina', tier: 1, idioma: 'es', rss: 'https://www.apertura.com/feed/' },\n  { medio: 'Ámbito Financiero',pais: 'Argentina', tier: 1, idioma: 'es', rss: 'https://www.ambito.com/rss/pages/home.xml' },\n\n  // 🇲🇽 México (Tier 1)\n  { medio: 'Expansión MX',    pais: 'México',    tier: 1, idioma: 'es', rss: 'https://expansion.mx/rss' },\n  { medio: 'El Financiero',    pais: 'México',    tier: 1, idioma: 'es', rss: 'https://www.elfinanciero.com.mx/rss/' },\n  { medio: 'Milenio Tech',     pais: 'México',    tier: 1, idioma: 'es', rss: 'https://www.milenio.com/rss/tecnologia' },\n  { medio: 'El CEO',           pais: 'México',    tier: 1, idioma: 'es', rss: 'https://elceo.com/feed/' },\n\n  // 🇧🇷 Brasil (Tier 1)\n  { medio: 'Tecnoblog',        pais: 'Brasil',    tier: 1, idioma: 'pt', rss: 'https://tecnoblog.net/feed/' },\n  { medio: 'Canaltech',        pais: 'Brasil',    tier: 1, idioma: 'pt', rss: 'https://canaltech.com.br/rss/' },\n  { medio: 'Olhar Digital',    pais: 'Brasil',    tier: 1, idioma: 'pt', rss: 'https://olhardigital.com.br/feed/' },\n  { medio: 'InfoMoney',        pais: 'Brasil',    tier: 1, idioma: 'pt', rss: 'https://www.infomoney.com.br/feed/' },\n  { medio: 'Mobile Time',      pais: 'Brasil',    tier: 1, idioma: 'pt', rss: 'https://www.mobiletime.com.br/feed/' },\n  { medio: 'Exame',            pais: 'Brasil',    tier: 1, idioma: 'pt', rss: 'https://exame.com/feed/' },\n\n  // 🇨🇴 Colombia (Tier 1)\n  { medio: 'El Espectador Tech',pais: 'Colombia', tier: 1, idioma: 'es', rss: 'https://www.elespectador.com/noticias/tecnologia/feed/' },\n  { medio: 'Portafolio',       pais: 'Colombia',  tier: 1, idioma: 'es', rss: 'https://www.portafolio.co/rss/portafolio.rss' },\n  { medio: 'La República CO',  pais: 'Colombia',  tier: 1, idioma: 'es', rss: 'https://www.larepublica.co/rss' },\n  { medio: 'El Tiempo Economía',pais: 'Colombia', tier: 1, idioma: 'es', rss: 'https://www.eltiempo.com/rss/economia.xml' },\n  { medio: 'Contxto',          pais: 'Colombia',  tier: 1, idioma: 'es', rss: 'https://contxto.com/feed/' },\n\n  // 🇨🇱 Chile (Tier 1)\n  { medio: 'La Tercera',       pais: 'Chile',     tier: 1, idioma: 'es', rss: 'https://www.latercera.com/rss/feed/' },\n  { medio: 'BioBioChile Tech', pais: 'Chile',     tier: 1, idioma: 'es', rss: 'https://www.biobiochile.cl/lista/categorias/tecnologia/feed' },\n  { medio: 'Diario Financiero',pais: 'Chile',     tier: 1, idioma: 'es', rss: 'https://www.df.cl/noticias/site/list/port/rss.xml' },\n\n  // 🇵🇪 Perú (Tier 1)\n  { medio: 'El Comercio Tech', pais: 'Perú',     tier: 1, idioma: 'es', rss: 'https://elcomercio.pe/arcio/rss/category/tecnologia/' },\n  { medio: 'Gestión',         pais: 'Perú',     tier: 1, idioma: 'es', rss: 'https://gestion.pe/arcio/rss/category/tecnologia/' },\n  { medio: 'La República PE',  pais: 'Perú',     tier: 1, idioma: 'es', rss: 'https://larepublica.pe/rss/economia.xml' },\n\n  // 🇪🇨 Ecuador (Tier 2)\n  { medio: 'El Universo Tech', pais: 'Ecuador',   tier: 2, idioma: 'es', rss: 'https://www.eluniverso.com/rss/' },\n  { medio: 'Primicias',        pais: 'Ecuador',   tier: 2, idioma: 'es', rss: 'https://www.primicias.ec/rss/' },\n  { medio: 'GK Ecuador',       pais: 'Ecuador',   tier: 2, idioma: 'es', rss: 'https://gk.city/feed/' },\n\n  // 🇺🇾 Uruguay (Tier 2)\n  { medio: 'El Observador',    pais: 'Uruguay',   tier: 2, idioma: 'es', rss: 'https://www.elobservador.com.uy/feed' },\n  { medio: 'El País Uruguay',  pais: 'Uruguay',   tier: 2, idioma: 'es', rss: 'https://www.elpais.com.uy/rss/' },\n\n  // 🇵🇦 Panamá (Tier 2)\n  { medio: 'La Prensa PA',     pais: 'Panamá',   tier: 2, idioma: 'es', rss: 'https://www.prensa.com/arc/outboundfeeds/rss/?outputType=xml' },\n\n  // 🇨🇷 Costa Rica (Tier 2)\n  { medio: 'El Financiero CR', pais: 'Costa Rica',tier: 2, idioma: 'es', rss: 'https://www.elfinancierocr.com/arc/outboundfeeds/rss/?outputType=xml' },\n  { medio: 'CRHoy',            pais: 'Costa Rica',tier: 2, idioma: 'es', rss: 'https://www.crhoy.com/feed/' },\n\n  // 🇬🇹 Guatemala (Tier 3)\n  { medio: 'Prensa Libre',     pais: 'Guatemala', tier: 3, idioma: 'es', rss: 'https://www.prensalibre.com/feed/' },\n\n  // 🇧🇴 Bolivia (Tier 3)\n  { medio: 'El Deber',         pais: 'Bolivia',   tier: 3, idioma: 'es', rss: 'https://eldeber.com.bo/rss/' },\n\n  // 🇸🇻 El Salvador (Tier 3)\n  { medio: 'La Prensa Gráfica',pais: 'El Salvador',tier: 3, idioma: 'es', rss: 'https://www.laprensagrafica.com/rss.xml' },\n  { medio: 'El Faro',          pais: 'El Salvador',tier: 3, idioma: 'es', rss: 'https://elfaro.net/rss.xml' },\n\n  // 🇵🇾 Paraguay (Tier 3)\n  { medio: 'ABC Color',        pais: 'Paraguay',  tier: 3, idioma: 'es', rss: 'https://www.abc.com.py/rss.xml' },\n  { medio: '5Días',            pais: 'Paraguay',  tier: 3, idioma: 'es', rss: 'https://www.5dias.com.py/rss' },\n\n  // 🇵🇷 Puerto Rico (Tier 3)\n  { medio: 'El Nuevo Día',     pais: 'Puerto Rico',tier: 3, idioma: 'es', rss: 'https://www.elnuevodia.com/arc/outboundfeeds/rss/?outputType=xml' },\n\n  // 🇪🇸 España\n  { medio: 'El País Tech',    pais: 'España',   tier: 1, idioma: 'es', rss: 'https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/section/tecnologia/portada' },\n  { medio: 'Genbeta',          pais: 'España',   tier: 1, idioma: 'es', rss: 'https://www.genbeta.com/rss' },\n  { medio: 'Expansión ES',    pais: 'España',   tier: 1, idioma: 'es', rss: 'https://www.expansion.com/rss/tecnologia.xml' },\n  { medio: 'El Confidencial',  pais: 'España',   tier: 1, idioma: 'es', rss: 'https://rss.elconfidencial.com/tecnologia/' },\n  { medio: 'Cinco Días',      pais: 'España',   tier: 1, idioma: 'es', rss: 'https://cincodias.elpais.com/seccion/rss/companias/' },\n\n  // 🇺🇸 USA / Global\n  { medio: 'TechCrunch',       pais: 'USA',       tier: 1, idioma: 'en', rss: 'https://techcrunch.com/feed/' },\n  { medio: 'Wired',            pais: 'USA',       tier: 1, idioma: 'en', rss: 'https://www.wired.com/feed/rss' },\n  { medio: 'MIT Tech Review',  pais: 'USA',       tier: 1, idioma: 'en', rss: 'https://www.technologyreview.com/feed/' },\n  { medio: 'The Verge',        pais: 'USA',       tier: 1, idioma: 'en', rss: 'https://www.theverge.com/rss/index.xml' },\n  { medio: 'Rest of World',    pais: 'USA',       tier: 1, idioma: 'en', rss: 'https://restofworld.org/feed/latest/' },\n  { medio: 'Bloomberg Línea',  pais: 'USA',       tier: 1, idioma: 'es', rss: 'https://www.bloomberglinea.com/arc/outboundfeeds/rss/?outputType=xml' },\n];\n\nreturn MEDIOS.map(m => ({ json: m }));"
+      },
+      "id": "d4eaaa8b-2fda-4170-9b5c-4ea8617a48dd",
+      "name": "Lista de Medios",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        16,
+        96
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.rss_url || $json.rss }}",
+        "options": {
+          "customFields": "author, creator, dc:creator, contentSnippet"
+        }
+      },
+      "id": "d1ef98f6-a4bb-4736-b673-70a0e1f6bfed",
+      "name": "Leer RSS",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.2,
+      "position": [
+        240,
+        96
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "function getHostname(url) {\n  const m = String(url).match(/^https?:\\/\\/([^\\/\\?#]+)/i);\n  return m ? m[1].replace(/^www\\./i, '').toLowerCase() : '';\n}\n\nconst DOMINIO_A_MEDIO = {\n  'infobae.com':           { medio: 'Infobae',            pais: 'Argentina',   idioma: 'es', tier: 1 },\n  'iprofesional.com':      { medio: 'iProfesional',       pais: 'Argentina',   idioma: 'es', tier: 1 },\n  'lanacion.com.ar':       { medio: 'La Nación Tec',      pais: 'Argentina',   idioma: 'es', tier: 1 },\n  'cronista.com':          { medio: 'El Cronista',        pais: 'Argentina',   idioma: 'es', tier: 1 },\n  'apertura.com':          { medio: 'Apertura',           pais: 'Argentina',   idioma: 'es', tier: 1 },\n  'ambito.com':            { medio: 'Ámbito Financiero',  pais: 'Argentina',   idioma: 'es', tier: 1 },\n  'expansion.mx':          { medio: 'Expansión MX',       pais: 'México',      idioma: 'es', tier: 1 },\n  'elfinanciero.com.mx':   { medio: 'El Financiero',      pais: 'México',      idioma: 'es', tier: 1 },\n  'milenio.com':           { medio: 'Milenio Tech',       pais: 'México',      idioma: 'es', tier: 1 },\n  'elceo.com':             { medio: 'El CEO',             pais: 'México',      idioma: 'es', tier: 1 },\n  'tecnoblog.net':         { medio: 'Tecnoblog',          pais: 'Brasil',      idioma: 'pt', tier: 1 },\n  'canaltech.com.br':      { medio: 'Canaltech',          pais: 'Brasil',      idioma: 'pt', tier: 1 },\n  'olhardigital.com.br':   { medio: 'Olhar Digital',      pais: 'Brasil',      idioma: 'pt', tier: 1 },\n  'infomoney.com.br':      { medio: 'InfoMoney',          pais: 'Brasil',      idioma: 'pt', tier: 1 },\n  'mobiletime.com.br':     { medio: 'Mobile Time',        pais: 'Brasil',      idioma: 'pt', tier: 1 },\n  'exame.com':             { medio: 'Exame',              pais: 'Brasil',      idioma: 'pt', tier: 1 },\n  'elespectador.com':      { medio: 'El Espectador Tech', pais: 'Colombia',    idioma: 'es', tier: 1 },\n  'portafolio.co':         { medio: 'Portafolio',         pais: 'Colombia',    idioma: 'es', tier: 1 },\n  'larepublica.co':        { medio: 'La República CO',    pais: 'Colombia',    idioma: 'es', tier: 1 },\n  'eltiempo.com':          { medio: 'El Tiempo Economía', pais: 'Colombia',    idioma: 'es', tier: 1 },\n  'contxto.com':           { medio: 'Contxto',            pais: 'Colombia',    idioma: 'es', tier: 1 },\n  'latercera.com':         { medio: 'La Tercera',         pais: 'Chile',       idioma: 'es', tier: 1 },\n  'biobiochile.cl':        { medio: 'BioBioChile Tech',   pais: 'Chile',       idioma: 'es', tier: 1 },\n  'df.cl':                 { medio: 'Diario Financiero',  pais: 'Chile',       idioma: 'es', tier: 1 },\n  'elcomercio.pe':         { medio: 'El Comercio Tech',   pais: 'Perú',       idioma: 'es', tier: 1 },\n  'gestion.pe':            { medio: 'Gestión',            pais: 'Perú',       idioma: 'es', tier: 1 },\n  'larepublica.pe':        { medio: 'La República PE',    pais: 'Perú',       idioma: 'es', tier: 1 },\n  'eluniverso.com':        { medio: 'El Universo Tech',   pais: 'Ecuador',     idioma: 'es', tier: 2 },\n  'primicias.ec':          { medio: 'Primicias',          pais: 'Ecuador',     idioma: 'es', tier: 2 },\n  'gk.city':               { medio: 'GK Ecuador',         pais: 'Ecuador',     idioma: 'es', tier: 2 },\n  'elobservador.com.uy':   { medio: 'El Observador',      pais: 'Uruguay',     idioma: 'es', tier: 2 },\n  'elpais.com.uy':         { medio: 'El País Uruguay',    pais: 'Uruguay',     idioma: 'es', tier: 2 },\n  'prensa.com':            { medio: 'La Prensa PA',       pais: 'Panamá',     idioma: 'es', tier: 2 },\n  'elfinancierocr.com':    { medio: 'El Financiero CR',   pais: 'Costa Rica',  idioma: 'es', tier: 2 },\n  'crhoy.com':             { medio: 'CRHoy',              pais: 'Costa Rica',  idioma: 'es', tier: 2 },\n  'prensalibre.com':       { medio: 'Prensa Libre',       pais: 'Guatemala',   idioma: 'es', tier: 3 },\n  'eldeber.com.bo':        { medio: 'El Deber',           pais: 'Bolivia',     idioma: 'es', tier: 3 },\n  'laprensagrafica.com':   { medio: 'La Prensa Gráfica',  pais: 'El Salvador', idioma: 'es', tier: 3 },\n  'elfaro.net':            { medio: 'El Faro',            pais: 'El Salvador', idioma: 'es', tier: 3 },\n  'abc.com.py':            { medio: 'ABC Color',          pais: 'Paraguay',    idioma: 'es', tier: 3 },\n  '5dias.com.py':          { medio: '5Días',              pais: 'Paraguay',    idioma: 'es', tier: 3 },\n  'elnuevodia.com':        { medio: 'El Nuevo Día',       pais: 'Puerto Rico', idioma: 'es', tier: 3 },\n  'elpais.com':            { medio: 'El País Tech',       pais: 'España',     idioma: 'es', tier: 1 },\n  'genbeta.com':           { medio: 'Genbeta',            pais: 'España',     idioma: 'es', tier: 1 },\n  'expansion.com':         { medio: 'Expansión ES',       pais: 'España',     idioma: 'es', tier: 1 },\n  'elconfidencial.com':    { medio: 'El Confidencial',    pais: 'España',     idioma: 'es', tier: 1 },\n  'cincodias.elpais.com':  { medio: 'Cinco Días',         pais: 'España',     idioma: 'es', tier: 1 },\n  'techcrunch.com':        { medio: 'TechCrunch',         pais: 'USA',         idioma: 'en', tier: 1 },\n  'wired.com':             { medio: 'Wired',              pais: 'USA',         idioma: 'en', tier: 1 },\n  'technologyreview.com':  { medio: 'MIT Tech Review',    pais: 'USA',         idioma: 'en', tier: 1 },\n  'theverge.com':          { medio: 'The Verge',          pais: 'USA',         idioma: 'en', tier: 1 },\n  'restofworld.org':       { medio: 'Rest of World',      pais: 'USA',         idioma: 'en', tier: 1 },\n  'bloomberglinea.com':    { medio: 'Bloomberg Línea',    pais: 'USA',         idioma: 'es', tier: 1 },\n};\n\nfunction getMedioFromUrl(url) {\n  const hostname = getHostname(url);\n  if (!hostname) return null;\n  let best = null, bestLen = 0;\n  for (const [domain, data] of Object.entries(DOMINIO_A_MEDIO)) {\n    if ((hostname === domain || hostname.endsWith('.' + domain)) && domain.length > bestLen) {\n      best = data; bestLen = domain.length;\n    }\n  }\n  return best;\n}\n\nconst SKIP_AUTOR = new Set(['staff','redacción','redaccion','admin','editor','equipo','team','np','n/a','agencia','reuters','efe','ap','afp']);\nconst hace90 = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);\n\nconst TECH_KW = [\n  'ai','ia','inteligencia artificial','machine learning','llm','gpt','openai','chatgpt',\n  'tech','tecnolog','software','startup','app','digital','cloud','data','cyber','hack',\n  'robot','automat','bitcoin','crypto','blockchain','fintech','saas','api','developer',\n  'programac','código','algoritmo','silicon','venture','ronda de','unicornio',\n  'ecommerce','e-commerce','marketplace','plataforma','streaming','contabilidad','facturación',\n  'iphone','android','google','apple','meta','microsoft','amazon','nvidia','tesla',\n  'intel','samsung','xiaomi','drone','5g','semiconductor','chip','computadora',\n  'laptop','smartphone','wearable','iot','internet of things','electric vehicle',\n  'vehículo eléctrico','ciberseguridad','seguridad inform','privacidad digital',\n  'inversión','financiamiento','levantamiento','capital','vc','emprendimiento','pyme','sme',\n  'negocios digitales','transformación digital','economía digital','impuestos','fiscal','tributari'\n];\n\nconst MEDIOS_MIXTOS = new Set([\n  'Wired','MIT Tech Review','The Verge','El País Tech','Prensa Libre','El Deber',\n  'La Prensa Gráfica','El Faro','ABC Color','El Nuevo Día','La Prensa PA','CRHoy',\n  'El País Uruguay','Primicias','El Tiempo Economía','La Tercera','El Confidencial'\n]);\n\nconst out = [];\nfor (const inp of $input.all()) {\n  const item = inp.json;\n  if (item.error) continue;\n\n  const titulo = (item.title || '').trim();\n  const url    = item.link || item.guid || '';\n  if (!titulo || !url) continue;\n\n  const medioData = getMedioFromUrl(url);\n  if (!medioData) continue;\n\n  const { medio, pais, idioma, tier } = medioData;\n\n  if (MEDIOS_MIXTOS.has(medio)) {\n    const textoLow = (titulo + ' ' + (item.contentSnippet || '')).toLowerCase();\n    if (!TECH_KW.some(k => textoLow.includes(k))) continue;\n  }\n\n  const autorRaw = (\n    item['dc:creator'] || item.creator || item.author || item['itunes:author'] || ''\n  ).replace(/<[^>]*>/g, '').trim();\n  const autorFinal = autorRaw.length > 2 && !SKIP_AUTOR.has(autorRaw.toLowerCase()) ? autorRaw : '';\n\n  const fechaStr = item.isoDate || item.pubDate || '';\n  const fecha    = fechaStr ? new Date(fechaStr) : new Date();\n  if (!isNaN(fecha.getTime()) && fecha < hace90) continue;\n  const fechaISO = !isNaN(fecha.getTime()) ? fecha.toISOString().split('T')[0] : new Date().toISOString().split('T')[0];\n\n  out.push({ json: {\n    autor: autorFinal,\n    medio, pais, idioma, tier,\n    titulo, url, fecha: fechaISO,\n    snippet: (item.contentSnippet || item['content:encodedSnippet'] || '').replace(/<[^>]*>/g, '').substring(0, 250)\n  } });\n}\nreturn out;"
+      },
+      "id": "e13368bc-e046-4872-84c7-7c607a392716",
+      "name": "Enriquecer con medio",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        464,
+        96
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Agrupa por autor+medio, guarda los 3 artículos más recientes\nconst grupos = new Map();\n\nfor (const inp of $input.all()) {\n  const { autor, medio, pais, idioma, tier, titulo, url, fecha, snippet } = inp.json;\n  if (!url || !titulo) continue;\n\n  const nombreAutor = autor || '[Sin autor - ' + medio + ']';\n  const key = nombreAutor.toLowerCase().trim() + '|||' + medio.toLowerCase();\n\n  if (!grupos.has(key)) {\n    grupos.set(key, {\n      autor: nombreAutor, medio, pais, idioma, tier: tier || 3,\n      articulos: [], snippet_bio: snippet || ''\n    });\n  }\n  grupos.get(key).articulos.push({ titulo, url, fecha });\n}\n\n// Beat: tema dominante en los títulos del autor\nconst BEATS = {\n  'IA':               ['ai','ia','inteligencia artificial','machine learning','llm','gpt','openai','chatgpt','gemini','copilot'],\n  'Fintech/Finanzas': ['fintech','banco','pagos','payments','cripto','crypto','bitcoin','finanzas','inversión','capital','impuesto','fiscal','tributari','contabilidad','facturación'],\n  'Startups/VC':      ['startup','emprend','venture','vc','ronda','levantamiento','unicornio','aceleradora','founder'],\n  'Negocios':         ['empresa','negocio','mercado','economía','pyme','industria','comercio','ceo','directorio'],\n  'Ciberseguridad':   ['ciberseguridad','hacker','ransomware','phishing','seguridad inform','vulnerabilidad','malware'],\n  'Gadgets/Consumo':  ['iphone','android','samsung','xiaomi','smartphone','laptop','gadget','review','reseña','oferta','descuento','promo'],\n  'Tech General':     ['tech','tecnolog','software','app','digital','google','apple','meta','microsoft','amazon']\n};\n\nfunction detectBeat(titulos) {\n  const texto = titulos.join(' ').toLowerCase();\n  let best = 'Tech General', bestCount = 0;\n  for (const [beat, kws] of Object.entries(BEATS)) {\n    const count = kws.filter(k => texto.includes(k)).length;\n    if (count > bestCount) { bestCount = count; best = beat; }\n  }\n  return best;\n}\n\nconst out = [];\nfor (const [, data] of grupos) {\n  if (data.autor.startsWith('[Sin autor')) continue;\n\n  data.articulos.sort((a, b) => b.fecha.localeCompare(a.fecha));\n  const top3 = data.articulos.slice(0, 3);\n  const beat = detectBeat(data.articulos.map(a => a.titulo));\n\n  out.push({ json: {\n    autor:             data.autor,\n    medio:             data.medio,\n    pais:              data.pais,\n    idioma:            data.idioma,\n    tier:              data.tier,\n    beat,\n    cantidad_arts:     data.articulos.length,\n    articulo_1_url:    top3[0]?.url    || '',\n    articulo_1_titulo: top3[0]?.titulo || '',\n    articulo_2_url:    top3[1]?.url    || '',\n    articulo_2_titulo: top3[1]?.titulo || '',\n    articulo_3_url:    top3[2]?.url    || '',\n    articulo_3_titulo: top3[2]?.titulo || '',\n    snippet_bio:       data.snippet_bio\n  }});\n}\n\nout.sort((a, b) => b.json.cantidad_arts - a.json.cantidad_arts);\nreturn out;"
+      },
+      "id": "4c646c24-1123-481b-bb2b-4a49dde2a241",
+      "name": "Agrupar por autor",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        688,
+        96
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Construye queries Apify para buscar LinkedIn de cada autor\nconst autores = $input.all();\n\nconst queries = autores.map(inp => {\n  const { autor, medio } = inp.json;\n  return '\"' + autor + '\" \"' + medio + '\" site:linkedin.com';\n}).join('\\n');\n\nreturn [{ json: { queries, total: autores.length } }];"
+      },
+      "id": "87c98ea2-4b9d-4191-81fb-bf5e7c38ad9d",
+      "name": "Preparar queries LinkedIn",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        912,
+        96
+      ],
+      "executeOnce": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apify.com/v2/acts/apify~google-search-scraper/run-sync-get-dataset-items",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "token",
+              "value": "REEMPLAZAR_APIFY_TOKEN"
+            },
+            {
+              "name": "timeout",
+              "value": "180"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({ queries: $json.queries, resultsPerPage: 5, maxPagesPerQuery: 1, languageCode: \"es\" }) }}",
+        "options": {}
+      },
+      "id": "656ee6f7-ba57-4052-b063-917a14d1000f",
+      "name": "Apify - Buscar LinkedIn",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1136,
+        96
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Cruzar resultados de Apify con los autores del RSS\nconst autores = $('Agrupar por autor').all();\nconst apifyItems = $input.all();\n\nconst linkedinMap = new Map();\nfor (const inp of apifyItems) {\n  const results = inp.json.organicResults || [];\n  const queryTerm = (inp.json.searchQuery?.term || '').toLowerCase();\n\n  for (const r of results) {\n    const url = r.url || '';\n    if (!url.includes('linkedin.com/in/')) continue;\n    const matchMedio = queryTerm.match(/\"([^\"]+)\"\\s*\"([^\"]+)\"/);\n    if (matchMedio) {\n      const keyAutor = matchMedio[1].toLowerCase().trim();\n      const keyMedio = matchMedio[2].toLowerCase().trim();\n      linkedinMap.set(keyAutor + '|' + keyMedio, url);\n    }\n    break;\n  }\n}\n\nconst BEAT_SCORE = {\n  'Fintech/Finanzas': 3, 'IA': 3, 'Startups/VC': 2, 'Negocios': 2,\n  'Tech General': 1, 'Ciberseguridad': 0, 'Gadgets/Consumo': 0\n};\n\nconst out = [];\nfor (const inp of autores) {\n  const o = inp.json;\n  const keyAutor = o.autor.toLowerCase().trim();\n  const keyMedio = o.medio.toLowerCase().trim();\n  const linkedin = linkedinMap.get(keyAutor + '|' + keyMedio) || '';\n\n  let score = Math.min(o.cantidad_arts, 3);\n  score += BEAT_SCORE[o.beat] ?? 1;\n  score += o.tier === 1 ? 2 : o.tier === 2 ? 1 : 0;\n  if (linkedin) score += 2;\n  score = Math.min(10, Math.max(1, score));\n\n  const prioridad = score >= 8 ? 'Alta' : score >= 5 ? 'Media' : 'Baja';\n\n  const mensaje = 'Hola ' + o.autor.split(' ')[0] + '! Leí tus notas en ' + o.medio + ' (' + (o.articulo_1_titulo || 'tu última nota') + '). Te escribo de Xtract (xtract.app) — automatizamos contabilidad con IA para empresas LATAM. Charlamos 10 min?';\n\n  const articulos = [];\n  if (o.articulo_1_titulo) articulos.push(o.articulo_1_titulo);\n  if (o.articulo_2_titulo) articulos.push(o.articulo_2_titulo);\n  if (o.articulo_3_titulo) articulos.push(o.articulo_3_titulo);\n\n  out.push({ json: {\n    Nombre:               o.autor,\n    'Tipo de contacto':   'Periodista',\n    Status:               'No Contactado',\n    Medio:                o.medio,\n    Linkedin:             linkedin,\n    'Twitter - Bluesky':  '',\n    Telefono:             '',\n    'Correo electronico': '',\n    Website:              '',\n    'Posible mensaje a enviar para generar una reunión en base a notas publicadas/perfil de la persona': mensaje,\n    Prioridad:            prioridad,\n    'Score de Relevancia': score,\n    'País':               o.pais,\n    'Dedicación / Nicho': o.beat,\n    'Fuente de Prospección': 'RSS + Apify LinkedIn',\n    'Notas / Descripción': (o.cantidad_arts || 0) + ' arts/30 días | ' + articulos.join(' · ')\n  }});\n}\nreturn out;"
+      },
+      "id": "d3634dde-e7f9-4a68-b8da-90ae87710804",
+      "name": "Normalizar y armar fila",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1360,
+        96
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "url": "https://dev.to/api/articles",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "tag",
+              "value": "argentina"
+            },
+            {
+              "name": "per_page",
+              "value": "30"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "bfbdf8d8-6909-4934-ae6a-7afd2f622ff0",
+      "name": "Dev.to - Autores AR",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        688,
+        288
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Normaliza autores de Dev.to\nconst items = $input.all();\nconst seen = new Set();\nconst out = [];\n\nfor (const item of items) {\n  const a = item.json;\n  const user = a.user || {};\n  const key = user.username;\n  if (!key || seen.has(key)) continue;\n  seen.add(key);\n\n  out.push({\n    json: {\n      nombre: user.name || user.username,\n      fuente: 'Dev.to',\n      linkedin: '',\n      twitter: user.twitter_username ? `https://twitter.com/${user.twitter_username}` : '',\n      github: user.github_username ? `https://github.com/${user.github_username}` : '',\n      email: '',\n      bio: a.description || '',\n      website: user.website_url || `https://dev.to/${user.username}`,\n      pais: 'Argentina',\n      seguidores: 0,\n      notas_origen: `Dev.to - Artículo: \"${a.title}\"`\n    }\n  });\n}\n\nreturn out;"
+      },
+      "id": "707e7bd3-54ea-48e6-87fe-4c02a01ece10",
+      "name": "Normalizar datos Dev.to",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        912,
+        288
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst seen = new Map();\n\nfor (const item of items) {\n  const j = item.json;\n  if (!j.nombre) continue;\n\n  const rawKey = String(j.linkedin || j.twitter || j.github || j.nombre || '');\n  const key = rawKey\n    .toLowerCase()\n    .replace(/https?:\\/\\/(www\\.)?/, '')\n    .replace(/\\/$/, '')\n    .trim();\n\n  if (!key) continue;\n\n  if (!seen.has(key)) {\n    seen.set(key, j);\n  } else {\n    const existing = seen.get(key);\n    for (const field of ['linkedin', 'twitter', 'github', 'email', 'bio', 'website']) {\n      if (!existing[field] && j[field]) existing[field] = j[field];\n    }\n  }\n}\n\nreturn Array.from(seen.values()).map(json => ({ json }));"
+      },
+      "id": "d2368154-3d78-437c-af2b-de67936b5f31",
+      "name": "Deduplicar candidatos",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1136,
+        288
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const nichos = {\n  'Inteligencia Artificial': ['ia', 'ai', 'machine learning', 'deep learning', 'llm', 'gpt', 'neural', 'inteligencia artificial', 'nlp', 'computer vision', 'data science'],\n  'Ciberseguridad': ['security', 'seguridad', 'hacking', 'pentest', 'ciberseguridad', 'ctf', 'vulnerabilidad', 'malware', 'infosec'],\n  'Cloud/DevOps': ['cloud', 'devops', 'aws', 'azure', 'gcp', 'kubernetes', 'docker', 'terraform', 'ci/cd', 'sre', 'infraestructura'],\n  'Desarrollo Web': ['frontend', 'backend', 'fullstack', 'react', 'vue', 'angular', 'node', 'javascript', 'typescript', 'web developer', 'desarrollador web'],\n  'Data': ['data', 'analytics', 'bigquery', 'sql', 'python', 'pandas', 'etl', 'bi', 'dashboard', 'tableau', 'spark'],\n  'Mobile': ['mobile', 'ios', 'android', 'flutter', 'react native', 'swift', 'kotlin'],\n  'Open Source': ['open source', 'opensource', 'contribuidor', 'maintainer'],\n  'Tecnología & Innovación': ['tecnologia', 'tecnología', 'innovacion', 'innovación', 'startup', 'emprendedor', 'cto', 'tech lead']\n};\n\nconst out = [];\n\nfor (const item of $input.all()) {\n  const o = item.json;\n\n  const medio_contacto = o.linkedin || o.twitter || o.email || o.github || o.website;\n  if (!medio_contacto || !o.nombre) continue;\n\n  const texto = (o.bio || '').toLowerCase() + ' ' + (o.notas_origen || '').toLowerCase();\n  const fuente = o.fuente || '';\n  const seguidores = o.seguidores || 0;\n\n  const pais = o.pais_real || o.pais || 'No especificado';\n\n  let nicho_detectado = 'Tech General';\n  let max_matches = 0;\n  for (const [nicho, keywords] of Object.entries(nichos)) {\n    const matches = keywords.filter(k => texto.includes(k)).length;\n    if (matches > max_matches) { max_matches = matches; nicho_detectado = nicho; }\n  }\n\n  let score = 0;\n  if (seguidores > 5000) score += 4;\n  else if (seguidores > 1000) score += 3;\n  else if (seguidores > 300) score += 2;\n  else if (seguidores > 0) score += 1;\n\n  if (fuente === 'Nerdear.la (speakers)') score += 3;\n  else if (fuente === 'GitHub' || fuente === 'Dev.to') score += 2;\n  else if (fuente === 'Google Search') score += 1;\n\n  if (o.linkedin) score += 2;\n  else if (o.email) score += 1;\n  else if (o.website) score += 1;\n\n  score += Math.min(max_matches, 3);\n  score = Math.min(10, Math.max(1, score));\n\n  if (score < 2) continue;\n\n  let prioridad;\n  if (score >= 7) prioridad = 'Alta';\n  else if (score >= 4) prioridad = 'Media';\n  else prioridad = 'Baja';\n\n  let tipo_contacto;\n  if (o.linkedin) tipo_contacto = 'LinkedIn';\n  else if (o.twitter) tipo_contacto = 'Twitter/X';\n  else if (o.email) tipo_contacto = 'Email';\n  else if (o.github) tipo_contacto = 'GitHub';\n  else tipo_contacto = 'Website';\n\n  const mensajes = {\n    'GitHub': `¡Hola ${o.nombre.split(' ')[0]}! Vi tu trabajo en GitHub y me parece muy interesante. Te escribo de Xtract (xtract.app) — automatizamos contabilidad y facturas con IA. ¿Charlamos 10 min?`,\n    'Dev.to': `¡Hola ${o.nombre.split(' ')[0]}! Leí tus artículos en Dev.to, excelente contenido. Te escribo de Xtract (xtract.app) — automatizamos contabilidad con IA. ¿Charlamos 10 min?`,\n    'Nerdear.la (speakers)': `¡Hola ${o.nombre.split(' ')[0]}! Vi tu charla en Nerdear.la, muy valioso. Te escribo de Xtract (xtract.app) — automatizamos contabilidad y facturas con IA. ¿Charlamos 10 min?`,\n    'Google Search': `¡Hola ${o.nombre.split(' ')[0]}! Encontré tu perfil buscando referentes tech en Argentina. Te escribo de Xtract (xtract.app) — automatizamos contabilidad con IA. ¿Charlamos 10 min?`\n  };\n  const mensaje = mensajes[fuente] || `¡Hola ${o.nombre.split(' ')[0]}! Te escribo de Xtract (xtract.app) — automatizamos contabilidad y facturas con IA. ¿Charlamos 10 min?`;\n\n  const descripcion = [];\n  if (o.bio) descripcion.push(o.bio);\n  if (o.notas_origen) descripcion.push(o.notas_origen);\n\n  out.push({\n    json: {\n      Nombre: o.nombre,\n      'Tipo de contacto': tipo_contacto,\n      Status: 'No Contactado',\n      Medio: '',\n      Linkedin: o.linkedin || '',\n      'Twitter - Bluesky': o.twitter || '',\n      Telefono: '',\n      'Correo electronico': o.email || '',\n      Website: o.github || o.website || '',\n      'Posible mensaje a enviar para generar una reunión en base a notas publicadas/perfil de la persona': mensaje,\n      Prioridad: prioridad,\n      'Score de Relevancia': score,\n      'País': pais,\n      'Dedicación / Nicho': nicho_detectado,\n      'Fuente de Prospección': fuente,\n      'Notas / Descripción': descripcion.join(' | ')\n    }\n  });\n}\n\nreturn out;"
+      },
+      "id": "5c7da92f-9a5b-411e-b93f-5e5f5349ee2d",
+      "name": "Armar fila final",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1360,
+        288
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "numberInputs": 4
+      },
+      "id": "34e596f9-daf5-4c83-ae2d-d06c06b3610f",
+      "name": "Merge final",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1584,
+        448
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtDay": [
+                1
+              ],
+              "triggerAtHour": 8
+            }
+          ]
+        }
+      },
+      "id": "dac01ff5-cf3a-4e7d-9948-b75a51fdae36",
+      "name": "Cada lunes 8am",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -208,
+        464
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtDay": [
+                1
+              ],
+              "triggerAtHour": 9
+            }
+          ]
+        }
+      },
+      "id": "318b619c-34e8-4832-bc3c-33f12e0eb5fe",
+      "name": "Trigger Semanal (Lunes 9 AM)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -240,
+        1584
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "REEMPLAZAR_ID_DE_TU_GOOGLE_SHEET"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Potenciales"
+        },
+        "options": {}
+      },
+      "id": "027afe41-c4d3-491d-8bc3-1c982976b089",
+      "name": "Leer Hoja Potenciales",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -16,
+        1488
+      ],
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "googleApi": {
+          "id": "REEMPLAZAR",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "append",
+        "numberInputs": 3
+      },
+      "id": "4814cd2d-3fc5-45f1-ae43-e0922fda7306",
+      "name": "Combinar Hojas",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        208,
+        1584
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "REEMPLAZAR_ID_DE_TU_GOOGLE_SHEET"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Influencers"
+        },
+        "options": {}
+      },
+      "id": "a165b559-036b-4aa8-92c7-1ecbabc83e1e",
+      "name": "Leer Hoja Influencers",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -16,
+        1680
+      ],
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "googleApi": {
+          "id": "REEMPLAZAR",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const priorityWeights = { \"alta\": 3, \"media\": 2, \"baja\": 1 };\nconst cerrados = [\"contactado\", \"respondio\", \"descartado\", \"no interesa\", \"no interesado\", \"cliente\"];\n\nfunction normKey(s){ return (s || \"\").toString().normalize(\"NFD\").replace(/[̀-ͯ]/g, \"\").toLowerCase().replace(/\\s+/g, \" \").trim(); }\nfunction canales(r){ return [r[\"Email\"], r[\"LinkedIn\"], r[\"Instagram\"], r[\"TikTok\"]].filter(v => (v || \"\").toString().trim()).length; }\nfunction esHunter(fuente){ return normKey(fuente).includes(\"hunter\"); }\nfunction verifValue(prevVal, fuente){ const p = (prevVal || \"\").toString().trim().toLowerCase(); if (p === \"sí\" || p === \"si\") return \"Sí\"; return esHunter(fuente) ? \"Sí\" : \"No\"; }\n\nconst MSG_KEY = \"Posible mensaje a enviar para generar una reunión en base a notas publicadas/perfil de la persona\";\n\n// Nombres que ya están en Seguimiento (ya contactados) -> nunca re-ingresan a Potenciales\nconst enSeguimiento = new Set();\nfor (const it of $('Leer Hoja Seguimiento').all()) { const n = (it.json[\"Nombre\"] || \"\").trim(); if (n) enSeguimiento.add(normKey(n)); }\n\nconst map = new Map();\nfor (const item of $input.all()) {\n  const row = item.json;\n  const name = (row[\"Nombre\"] || \"\").trim();\n  if (!name) continue;\n  // Lee AMBOS formatos: Potenciales y el formato entregable de Influencers\n  const lead = {\n    Nombre: row[\"Nombre\"] || \"\",\n    Tipo: row[\"Tipo\"] || row[\"Tipo de contacto\"] || \"\",\n    Status: row[\"Status\"] || \"\",\n    Medio: row[\"Medio\"] || \"\",\n    LinkedIn: row[\"LinkedIn\"] || row[\"Linkedin\"] || \"\",\n    Instagram: row[\"Instagram\"] || row[\"Instagram / X\"] || row[\"Twitter - Bluesky\"] || \"\",\n    TikTok: row[\"TikTok\"] || \"\",\n    Email: row[\"Email\"] || row[\"Correo electronico\"] || \"\",\n    Website: row[\"Website\"] || \"\",\n    Mensaje: row[\"Mensaje\"] || row[MSG_KEY] || row[\"Pitch\"] || \"\",\n    Prioridad: row[\"Prioridad\"] || \"Media\",\n    Score: row[\"Score\"] || row[\"Score de Relevancia\"] || \"7\",\n    \"País\": row[\"País\"] || \"Otros\",\n    Nicho: row[\"Nicho\"] || row[\"Dedicación / Nicho\"] || \"\",\n    \"Fuente de Prospección\": row[\"Fuente de Prospección\"] || \"\",\n    \"Notas / Descripción\": row[\"Notas / Descripción\"] || \"\"\n  };\n  const key = normKey(name);\n  const prev = map.get(key);\n  if (!prev) map.set(key, lead);\n  else { for (const k of Object.keys(lead)) { if (!((prev[k] || \"\").toString().trim()) && (lead[k] || \"\").toString().trim()) prev[k] = lead[k]; } }\n}\n\nconst elegibles = Array.from(map.values()).filter(r => {\n  const st = normKey(r[\"Status\"]);\n  const k = normKey(r[\"Nombre\"]);\n  return !cerrados.includes(st) && !enSeguimiento.has(k) && canales(r) > 0;\n});\nelegibles.sort((a, b) => {\n  const sB = parseInt(b[\"Score\"]) || 0, sA = parseInt(a[\"Score\"]) || 0;\n  if (sB !== sA) return sB - sA;\n  return (priorityWeights[normKey(b[\"Prioridad\"])] || 0) - (priorityWeights[normKey(a[\"Prioridad\"])] || 0);\n});\nconst rankByKey = new Map();\nelegibles.forEach((r, i) => rankByKey.set(normKey(r[\"Nombre\"]), i + 1));\n\nconst existentes = new Set();\nfor (const it of $('Leer Hoja Potenciales').all()) { const n = (it.json[\"Nombre\"] || \"\").trim(); if (n) existentes.add(normKey(n)); }\n\nconst out = [];\nfor (const it of $('Leer Hoja Potenciales').all()) {\n  const n = (it.json[\"Nombre\"] || \"\").trim();\n  if (!n) continue;\n  const rank = rankByKey.get(normKey(n));\n  const enCola = (rank && rank <= 120) ? \"Sí\" : \"No\";\n  out.push({ json: { Nombre: n, \"En Cola\": enCola, \"Ranking\": (rank && rank <= 120) ? rank : \"\", \"Verificado\": verifValue(it.json[\"Verificado\"], it.json[\"Fuente de Prospección\"]), _ruta: \"update\" } });\n}\nfor (const r of elegibles) {\n  const key = normKey(r[\"Nombre\"]);\n  const rank = rankByKey.get(key);\n  if (rank > 120) continue;\n  if (existentes.has(key)) continue;\n  out.push({ json: {\n    Nombre: r.Nombre,\n    Tipo: r.Tipo,\n    Status: r.Status || \"No Contactado\",\n    Medio: r.Medio,\n    LinkedIn: r.LinkedIn,\n    \"Instagram / X\": r.Instagram,\n    TikTok: r.TikTok,\n    Email: r.Email,\n    \"Verificado\": esHunter(r[\"Fuente de Prospección\"]) ? \"Sí\" : \"No\",\n    Website: r.Website,\n    Mensaje: r.Mensaje,\n    Prioridad: r.Prioridad,\n    Score: r.Score,\n    \"País\": r[\"País\"],\n    Nicho: r.Nicho,\n    \"Fuente de Prospección\": r[\"Fuente de Prospección\"],\n    \"Notas / Descripción\": r[\"Notas / Descripción\"],\n    \"En Cola\": \"Sí\",\n    \"Ranking\": rank,\n    _ruta: \"append\"\n  }});\n}\n\nreturn out;"
+      },
+      "id": "32aa449e-4221-4f3f-b893-f173fdf1aab7",
+      "name": "Filtrar Top 120",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        432,
+        1584
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json._ruta }}",
+              "rightValue": "update",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "373a98ac-c833-402b-8533-7d45f4f549c4",
+      "name": "Ya existe?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        656,
+        1584
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "REEMPLAZAR_ID_DE_TU_GOOGLE_SHEET"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Potenciales"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "matchingColumns": [
+            "Nombre"
+          ],
+          "value": {
+            "Nombre": "={{ $json.Nombre }}",
+            "En Cola": "={{ $json['En Cola'] }}",
+            "Ranking": "={{ $json.Ranking }}",
+            "Verificado": "={{ $json.Verificado }}"
+          },
+          "schema": [
+            {
+              "id": "Nombre",
+              "displayName": "Nombre",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "En Cola",
+              "displayName": "En Cola",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "Ranking",
+              "displayName": "Ranking",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "Verificado",
+              "displayName": "Verificado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "97bd4fbb-e15d-4c2a-802f-7dbe159386ec",
+      "name": "Actualizar Flags",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        880,
+        1488
+      ],
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "googleApi": {
+          "id": "REEMPLAZAR",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "REEMPLAZAR_ID_DE_TU_GOOGLE_SHEET"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Potenciales"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": []
+        },
+        "options": {}
+      },
+      "id": "ff527b4a-e9eb-4e07-a398-fb6271a58b0e",
+      "name": "Agregar Nuevos",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        880,
+        1680
+      ],
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "googleApi": {
+          "id": "REEMPLAZAR",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "REEMPLAZAR_ID_DE_TU_GOOGLE_SHEET"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Potenciales"
+        },
+        "options": {}
+      },
+      "id": "2e4641bf-515d-411d-9c4d-1869ab5ee105",
+      "name": "Leer Potenciales",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1104,
+        1680
+      ],
+      "executeOnce": true,
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "googleApi": {
+          "id": "REEMPLAZAR",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const out = [];\nfor (const it of $input.all()) {\n  const row = it.json;\n  const nombre = (row['Nombre'] || '').toString().trim();\n  if (!nombre) continue;\n  const medio = (row['Medio'] || '').toString().trim();\n  const q = medio ? '\"' + nombre + '\" ' + medio : '\"' + nombre + '\"';\n  const feedUrl = 'https://news.google.com/rss/search?q=' + encodeURIComponent(q) + '&hl=es-419&gl=US&ceid=US:es-419';\n  out.push({ json: { Nombre: nombre, feedUrl } });\n}\nreturn out;"
+      },
+      "id": "6ee75038-096a-435e-ac64-ad4dcfc40968",
+      "name": "Preparar Feeds",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1328,
+        1680
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.feedUrl }}",
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 10,
+              "batchInterval": 800
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "id": "eeecd853-f319-4a4a-b7e5-4e55f260ab1f",
+      "name": "Leer RSS Google News",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1552,
+        1680
+      ],
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const feeds = $('Preparar Feeds').all();\nconst items = $input.all();\n\nfunction clean(s){\n  return (s || '')\n    .replace(/<!\\[CDATA\\[|\\]\\]>/g, '')\n    .replace(/&amp;/g, '&').replace(/&#39;/g, \"'\").replace(/&quot;/g, '\"')\n    .replace(/&lt;/g, '<').replace(/&gt;/g, '>')\n    .trim();\n}\n\nconst results = [];\nfor (let i = 0; i < items.length; i++) {\n  const nombre = feeds[i] && feeds[i].json && feeds[i].json.Nombre;\n  if (!nombre) continue;\n  const xml = (items[i].json.data || items[i].json.body || items[i].json || '').toString();\n  const arts = [];\n  const re = /<item>([\\s\\S]*?)<\\/item>/g;\n  let m;\n  while ((m = re.exec(xml)) && arts.length < 4) {\n    const block = m[1];\n    const t = clean((block.match(/<title>([\\s\\S]*?)<\\/title>/) || [null, ''])[1]);\n    const l = clean((block.match(/<link>([\\s\\S]*?)<\\/link>/) || [null, ''])[1]);\n    if (t && l) arts.push({ t, l });\n  }\n  if (!arts.length) continue;\n  const fila = { Nombre: nombre };\n  for (let k = 0; k < 4; k++) {\n    fila['Articulo ' + (k + 1)] = arts[k] ? arts[k].t : '';\n    fila['Link ' + (k + 1)] = arts[k] ? arts[k].l : '';\n  }\n  results.push({ json: fila });\n}\nreturn results.length ? results : [{ json: { _sentinel: true } }];"
+      },
+      "id": "cb392e12-ccde-4aab-abf1-c80de997a805",
+      "name": "Parsear Articulos",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1776,
+        1680
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "REEMPLAZAR_ID_DE_TU_GOOGLE_SHEET"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Potenciales"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "Nombre"
+          ],
+          "schema": [
+            {
+              "id": "Nombre",
+              "displayName": "Nombre",
+              "required": true,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Articulo 1",
+              "displayName": "Articulo 1",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "Link 1",
+              "displayName": "Link 1",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "Articulo 2",
+              "displayName": "Articulo 2",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "Link 2",
+              "displayName": "Link 2",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "Articulo 3",
+              "displayName": "Articulo 3",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "Link 3",
+              "displayName": "Link 3",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "Articulo 4",
+              "displayName": "Articulo 4",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "Link 4",
+              "displayName": "Link 4",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "d9748b8c-310a-464b-86e3-dd7213e0a784",
+      "name": "Actualizar Potenciales",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        2000,
+        1680
+      ],
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "googleApi": {
+          "id": "REEMPLAZAR",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const medios = [\n{medio:\"Whitepaper\",dominio:\"whitepaper.mx\",pais:\"Mexico\"},\n{medio:\"Fast Company Mexico\",dominio:\"fastcompany.mx\",pais:\"Mexico\"},\n{medio:\"El Economista MX\",dominio:\"eleconomista.com.mx\",pais:\"Mexico\"},\n{medio:\"Milenio\",dominio:\"milenio.com\",pais:\"Mexico\"},\n{medio:\"Unocero\",dominio:\"unocero.com\",pais:\"Mexico\"},\n{medio:\"Xataka Mexico\",dominio:\"xataka.com.mx\",pais:\"Mexico\"},\n{medio:\"Expansion MX\",dominio:\"expansion.mx\",pais:\"Mexico\"},\n{medio:\"Forbes Mexico\",dominio:\"forbes.com.mx\",pais:\"Mexico\"},\n{medio:\"Tekios\",dominio:\"tekiosmag.com\",pais:\"Mexico\"},\n{medio:\"Contxto\",dominio:\"contxto.com\",pais:\"Mexico\"},\n{medio:\"iProfesional\",dominio:\"iprofesional.com\",pais:\"Argentina\"},\n{medio:\"Apertura\",dominio:\"apertura.com\",pais:\"Argentina\"},\n{medio:\"Ambito Financiero\",dominio:\"ambito.com\",pais:\"Argentina\"},\n{medio:\"La Nacion AR\",dominio:\"lanacion.com.ar\",pais:\"Argentina\"},\n{medio:\"Clarin\",dominio:\"clarin.com\",pais:\"Argentina\"},\n{medio:\"iProUP\",dominio:\"iproup.com\",pais:\"Argentina\"},\n{medio:\"El Cronista / InfoTechnology\",dominio:\"cronista.com\",pais:\"Argentina\"},\n{medio:\"Infobae\",dominio:\"infobae.com\",pais:\"Argentina\"},\n{medio:\"TyN Magazine\",dominio:\"tynmagazine.com\",pais:\"Argentina\"},\n{medio:\"Startups BR\",dominio:\"startups.com.br\",pais:\"Brasil\"},\n{medio:\"NeoFeed\",dominio:\"neofeed.com.br\",pais:\"Brasil\"},\n{medio:\"Canaltech\",dominio:\"canaltech.com.br\",pais:\"Brasil\"},\n{medio:\"Mobile Time\",dominio:\"mobiletime.com.br\",pais:\"Brasil\"},\n{medio:\"TI Inside\",dominio:\"tiinside.com.br\",pais:\"Brasil\"},\n{medio:\"Brazil Journal\",dominio:\"braziljournal.com\",pais:\"Brasil\"},\n{medio:\"Exame\",dominio:\"exame.com.br\",pais:\"Brasil\"},\n{medio:\"InfoMoney\",dominio:\"infomoney.com.br\",pais:\"Brasil\"},\n{medio:\"StartSe\",dominio:\"startse.com\",pais:\"Brasil\"},\n{medio:\"La Republica CO\",dominio:\"larepublica.co\",pais:\"Colombia\"},\n{medio:\"Portafolio\",dominio:\"portafolio.co\",pais:\"Colombia\"},\n{medio:\"El Tiempo\",dominio:\"eltiempo.com\",pais:\"Colombia\"},\n{medio:\"Enter.co\",dominio:\"enter.co\",pais:\"Colombia\"},\n{medio:\"Forbes Colombia\",dominio:\"forbes.co\",pais:\"Colombia\"},\n{medio:\"Impacto TIC\",dominio:\"impactotic.co\",pais:\"Colombia\"},\n{medio:\"Halcones y Palomas\",dominio:\"halconesypalomas.com\",pais:\"Colombia\"},\n{medio:\"Emol\",dominio:\"emol.com\",pais:\"Chile\"},\n{medio:\"Pisapapeles\",dominio:\"pisapapeles.net\",pais:\"Chile\"},\n{medio:\"FayerWayer\",dominio:\"fayerwayer.com\",pais:\"Chile\"},\n{medio:\"Diario Financiero / DF MAS\",dominio:\"df.cl\",pais:\"Chile\"},\n{medio:\"La Tercera / Mouse\",dominio:\"latercera.com\",pais:\"Chile\"},\n{medio:\"TrendTIC\",dominio:\"trendtic.cl\",pais:\"Chile\"},\n{medio:\"Gestion PE\",dominio:\"gestion.pe\",pais:\"Peru\"},\n{medio:\"El Comercio PE\",dominio:\"elcomercio.pe\",pais:\"Peru\"},\n{medio:\"RPP Noticias\",dominio:\"rpp.pe\",pais:\"Peru\"},\n{medio:\"Gan@Mas\",dominio:\"revistaganamas.com.pe\",pais:\"Peru\"},\n{medio:\"Semana Economica\",dominio:\"semanaeconomica.com\",pais:\"Peru\"},\n{medio:\"Portal PQS\",dominio:\"pqs.pe\",pais:\"Peru\"},\n{medio:\"El Observador / Cromo\",dominio:\"elobservador.com.uy\",pais:\"Uruguay\"},\n{medio:\"SmartTalent\",dominio:\"smarttalent.uy\",pais:\"Uruguay\"},\n{medio:\"Montevideo Portal\",dominio:\"montevideo.com.uy\",pais:\"Uruguay\"},\n{medio:\"El Financiero CR\",dominio:\"elfinancierocr.com\",pais:\"Costa Rica\"},\n{medio:\"Delfino.cr\",dominio:\"delfino.cr\",pais:\"Costa Rica\"},\n{medio:\"IT Ahora\",dominio:\"itahora.com\",pais:\"Costa Rica\"},\n{medio:\"Ekos Negocios\",dominio:\"ekosnegocios.com\",pais:\"Ecuador\"},\n{medio:\"El Universo\",dominio:\"eluniverso.com\",pais:\"Ecuador\"},\n{medio:\"Revista Gestion EC\",dominio:\"revistagestion.ec\",pais:\"Ecuador\"},\n{medio:\"Martes Financiero\",dominio:\"prensa.com\",pais:\"Panama\"},\n{medio:\"Capital Financiero\",dominio:\"elcapitalfinanciero.com\",pais:\"Panama\"},\n{medio:\"Bloomberg Linea\",dominio:\"bloomberglinea.com\",pais:\"Regional\"},\n{medio:\"America Economia\",dominio:\"americaeconomia.com\",pais:\"Regional\"},\n{medio:\"SiliconWeek\",dominio:\"siliconweek.com\",pais:\"Regional\"},\n{medio:\"Hipertextual\",dominio:\"hipertextual.com\",pais:\"Regional\"},\n{medio:\"Rest of World\",dominio:\"restofworld.org\",pais:\"Regional\"}\n];\nreturn medios.map(m => ({ json: m }));"
+      },
+      "id": "c3a650af-5420-4264-a8cd-71d750464258",
+      "name": "Lista de Dominios Hunter",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        1104
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "url": "https://api.hunter.io/v2/domain-search",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "domain",
+              "value": "={{ $json.dominio }}"
+            },
+            {
+              "name": "api_key",
+              "value": "REEMPLAZAR_HUNTER_API_KEY"
+            },
+            {
+              "name": "type",
+              "value": "personal"
+            },
+            {
+              "name": "limit",
+              "value": "10"
+            }
+          ]
+        },
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 5,
+              "batchInterval": 2000
+            }
+          }
+        }
+      },
+      "id": "0dc51dab-7d21-4a67-9747-5e5c198c87c4",
+      "name": "Hunter Domain Search",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        704,
+        1104
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const lista = $('Lista de Dominios Hunter').all();\nconst domToMeta = {};\nfor (const it of lista) domToMeta[(it.json.dominio || '').toLowerCase()] = it.json;\n\nconst JOURNO_RE = /editor|journalist|periodis|reporter|report|redac|writer|columnist|cronista|corresponsal|editorial|noticias|content|founder|fundador|ceo|director|managing|publisher|chief|head|prensa|press|media|blog|podcast|host/i;\nfunction esPrensa(e){\n  if (['communication','executive','editorial'].includes(e.department)) return true;\n  const t = ((e.position || '') + ' ' + (e.position_raw || ''));\n  if (JOURNO_RE.test(t)) return true;\n  if (!e.position && !e.position_raw) return true;\n  return false;\n}\nfunction prioridadDe(c){ return c >= 90 ? 'Alta' : c >= 75 ? 'Media' : 'Baja'; }\nfunction scoreDe(c){ return Math.max(1, Math.min(10, Math.round((c || 60) / 10))); }\n\nconst results = [];\nfor (const item of $input.all()) {\n  const data = item.json && item.json.data;\n  if (!data || !Array.isArray(data.emails)) continue;\n  const dom = (data.domain || '').toLowerCase();\n  const meta = domToMeta[dom] || {};\n  for (const e of data.emails) {\n    if (!e || !e.value) continue;\n    if (e.type && e.type !== 'personal') continue;\n    if (!e.first_name) continue;\n    if (!esPrensa(e)) continue;\n    const conf = (e.confidence != null ? e.confidence : 0);\n    if (conf < 60) continue;\n\n    const nombre = ((e.first_name || '') + ' ' + (e.last_name || '')).trim();\n    const cargo = e.position || e.position_raw || '';\n    const first = (e.first_name || '').split(' ')[0];\n    const mensaje = '¡Hola ' + first + '! Vi tu trabajo en ' + (meta.medio || dom) + (cargo ? (' como ' + cargo) : '') + '. Te escribo de Xtract (xtract.app) — automatizamos contabilidad y facturas con IA. ¿Charlamos 10 min?';\n    const verif = (e.verification && e.verification.status) ? e.verification.status : '';\n    const notas = [cargo, verif ? ('Verificado: ' + verif) : '', 'Confianza: ' + conf].filter(Boolean).join(' | ');\n\n    results.push({ json: {\n      Nombre: nombre,\n      'Tipo de contacto': 'Email',\n      Status: 'No Contactado',\n      Medio: meta.medio || dom,\n      Linkedin: e.linkedin || '',\n      'Twitter - Bluesky': e.twitter ? ('https://twitter.com/' + e.twitter) : '',\n      Telefono: e.phone_number || '',\n      'Correo electronico': e.value,\n      Website: dom ? ('https://' + dom) : '',\n      'Posible mensaje a enviar para generar una reunión en base a notas publicadas/perfil de la persona': mensaje,\n      Prioridad: prioridadDe(conf),\n      'Score de Relevancia': scoreDe(conf),\n      'País': meta.pais || '',\n      'Dedicación / Nicho': 'Prensa/Periodismo',\n      'Fuente de Prospección': 'Hunter.io',\n      'Notas / Descripción': notas\n    }});\n  }\n}\nreturn results;"
+      },
+      "id": "217bfedf-3820-4b46-a1c3-73fdc0b61c65",
+      "name": "Normalizar Entregable",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        928,
+        1104
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "path": "doc-potencial-entregable",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "96772e01-f68a-4226-bed7-45ebb106d6a2",
+      "name": "Documentacion Web",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        128,
+        1968
+      ],
+      "webhookId": "a144e605-0f67-49ec-bc82-2dd88ca89a6a"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "<!DOCTYPE html>\n<html lang=\"es\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>Xtract — Arquitectura de Prospección</title>\n    <script src=\"https://cdn.tailwindcss.com\"></script>\n    <link href=\"https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap\" rel=\"stylesheet\">\n    \n    <!-- Importación moderna de Mermaid via ES Modules -->\n    <script type=\"module\">\n        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';\n        mermaid.initialize({ \n            startOnLoad: true, \n            theme: 'neutral',\n            fontFamily: \"'Inter', sans-serif\",\n            securityLevel: 'loose'\n        });\n    </script>\n\n    <style>\n        :root {\n            /* Modo Claro (Enterprise SaaS) */\n            --bg-body: #f8fafc;\n            --sidebar: #ffffff;\n            --paper: #ffffff;\n            --ink: #0f172a;\n            --muted: #64748b;\n            --faint: #94a3b8;\n            --line: #e2e8f0;\n            --accent: #0ea5e9;\n            --accent-soft: #e0f2fe;\n            --accent-ink: #0369a1;\n            --code-bg: #f1f5f9;\n            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);\n            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);\n        }\n\n        [data-theme=\"dark\"] {\n            /* Modo Oscuro */\n            --bg-body: #0f172a;\n            --sidebar: #1e293b;\n            --paper: #1e293b;\n            --ink: #f8fafc;\n            --muted: #94a3b8;\n            --faint: #64748b;\n            --line: #334155;\n            --accent: #38bdf8;\n            --accent-soft: #0c4a6e;\n            --accent-ink: #bae6fd;\n            --code-bg: #0f172a;\n            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.5);\n            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4);\n        }\n\n        body {\n            background-color: var(--bg-body);\n            color: var(--ink);\n            font-family: 'Inter', sans-serif;\n            transition: background-color 0.3s ease, color 0.3s ease;\n            display: flex;\n            margin: 0;\n            min-height: 100vh;\n        }\n\n        .sidebar {\n            width: 280px;\n            background: var(--sidebar);\n            border-right: 1px solid var(--line);\n            padding: 2rem 1.5rem;\n            position: fixed;\n            height: 100vh;\n            overflow-y: auto;\n            transition: all 0.3s ease;\n        }\n\n        .main-content {\n            margin-left: 280px;\n            padding: 4rem;\n            max-width: 900px;\n            width: 100%;\n        }\n\n        h1, h2, h3, h4 { color: var(--ink); font-weight: 600; }\n        h1 { font-size: 2.25rem; letter-spacing: -0.02em; margin-bottom: 1rem; }\n        h2 { font-size: 1.5rem; margin-top: 3.5rem; margin-bottom: 1.5rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--line); }\n        h3 { font-size: 1.15rem; margin-top: 2rem; margin-bottom: 0.75rem; color: var(--accent); }\n        \n        p, li { line-height: 1.7; color: var(--muted); margin-bottom: 1rem; }\n        \n        .code-block {\n            font-family: 'JetBrains Mono', monospace;\n            background: var(--code-bg);\n            padding: 0.2rem 0.4rem;\n            border-radius: 4px;\n            font-size: 0.85em;\n            color: var(--accent);\n        }\n\n        .nav-link {\n            display: block;\n            padding: 0.5rem 0.75rem;\n            color: var(--muted);\n            text-decoration: none;\n            border-radius: 6px;\n            margin-bottom: 0.25rem;\n            font-size: 0.95rem;\n            transition: all 0.2s;\n        }\n        .nav-link:hover, .nav-link.active {\n            background: var(--accent-soft);\n            color: var(--accent-ink);\n        }\n\n        .card {\n            background: var(--paper);\n            border: 1px solid var(--line);\n            border-radius: 12px;\n            padding: 1.5rem;\n            margin-bottom: 1.5rem;\n            box-shadow: var(--shadow-sm);\n            transition: transform 0.2s, box-shadow 0.2s;\n        }\n        .card:hover {\n            box-shadow: var(--shadow-md);\n            transform: translateY(-2px);\n        }\n\n        table { width: 100%; border-collapse: collapse; margin: 1.5rem 0; font-size: 0.95rem; }\n        th, td { padding: 0.75rem 1rem; text-align: left; border-bottom: 1px solid var(--line); }\n        th { background: var(--code-bg); font-weight: 600; color: var(--ink); }\n        \n        .score-badge {\n            display: inline-flex;\n            align-items: center;\n            justify-content: center;\n            background: var(--accent);\n            color: white;\n            width: 24px;\n            height: 24px;\n            border-radius: 50%;\n            font-size: 0.8rem;\n            font-weight: bold;\n            margin-right: 0.5rem;\n        }\n\n        .theme-toggle {\n            cursor: pointer;\n            display: flex;\n            align-items: center;\n            padding: 0.5rem 0.75rem;\n            border-radius: 6px;\n            background: var(--code-bg);\n            color: var(--ink);\n            border: 1px solid var(--line);\n            margin-top: 2rem;\n            width: 100%;\n            font-size: 0.9rem;\n            transition: all 0.2s;\n        }\n        .theme-toggle:hover { background: var(--line); }\n\n        .diagram-container {\n            background: var(--paper);\n            border: 1px solid var(--line);\n            border-radius: 12px;\n            padding: 2rem;\n            margin: 2.5rem 0;\n            box-shadow: var(--shadow-sm);\n            display: flex;\n            justify-content: center;\n            overflow-x: auto;\n        }\n\n        @media (max-width: 768px) {\n            body { flex-direction: column; }\n            .sidebar { width: 100%; height: auto; position: static; border-right: none; border-bottom: 1px solid var(--line); padding: 1.5rem; }\n            .main-content { margin-left: 0; padding: 2rem; }\n        }\n    </style>\n</head>\n<body>\n\n    <aside class=\"sidebar\">\n        <div style=\"margin-bottom: 2rem;\">\n            <div style=\"width: 32px; height: 32px; background: var(--accent); border-radius: 8px; display: inline-block; vertical-align: middle; margin-right: 10px;\"></div>\n            <span style=\"font-weight: 700; font-size: 1.2rem; vertical-align: middle;\">Xtract Docs</span>\n        </div>\n\n        <nav id=\"nav-menu\">\n            <a href=\"#arquitectura\" class=\"nav-link active\">1. Arquitectura General</a>\n            <a href=\"#hojas\" class=\"nav-link\">2. Estructura de Datos</a>\n            <a href=\"#flujo-descubrimiento\" class=\"nav-link\">3. Flujo: Descubrimiento</a>\n            <a href=\"#flujo-seleccion\" class=\"nav-link\">4. Flujo: Selección Top 120</a>\n            <a href=\"#scoring\" class=\"nav-link\">5. Algoritmo de Scoring</a>\n            <a href=\"#mantenimiento\" class=\"nav-link\">6. Credenciales y Límites</a>\n        </nav>\n\n        <button class=\"theme-toggle\" onclick=\"toggleTheme()\">\n            <span id=\"theme-icon\">🌙</span> <span style=\"margin-left: 8px;\">Cambiar Tema</span>\n        </button>\n    </aside>\n\n    <main class=\"main-content\">\n        <header>\n            <div style=\"color: var(--accent); font-weight: 600; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;\">Documentación Técnica · Entorno de Producción</div>\n            <h1>Sistema Automático de Prospección</h1>\n            <p style=\"font-size: 1.15rem; max-width: 600px;\">Esta documentación detalla la lógica, los algoritmos y la arquitectura del motor de scraping y cualificación de leads montado en n8n para el equipo de ventas de Xtract.</p>\n        </header>\n\n        <section id=\"arquitectura\">\n            <h2>1. Arquitectura General del Sistema</h2>\n            <p>El sistema está compuesto por un único archivo de workflow de n8n que orquesta tres flujos de trabajo principales, diseñados para ejecutarse de manera secuencial y automatizada.</p>\n            \n            <div class=\"diagram-container\">\n                <div class=\"mermaid\">\n                    graph TD\n                        A(Lunes 08:00 AM) -->|Disparador| B[Fase 1: Descubrimiento y Scoring]\n                        B -->|Nuevos Perfiles| C[(Google Sheets: Histórico)]\n                        D(Lunes 09:00 AM) -->|Disparador| E[Fase 2: Selección Top 120]\n                        C --> E\n                        E -->|Filtro y Ranking| F[Fase 3: Enriquecimiento RSS]\n                        F -->|Búsqueda de Notas| G[(Google Sheets: Potenciales Activos)]\n                        \n                        style A fill:#0ea5e9,stroke:#0369a1,color:#fff\n                        style D fill:#0ea5e9,stroke:#0369a1,color:#fff\n                        style C fill:#10b981,stroke:#064e3b,color:#fff\n                        style G fill:#10b981,stroke:#064e3b,color:#fff\n                </div>\n            </div>\n\n            <ul>\n                <li><strong>Fase 1: Descubrimiento (8:00 AM):</strong> Raspa múltiples fuentes de internet en simultáneo para buscar menciones sobre tecnología, startups y finanzas en LATAM.</li>\n                <li><strong>Fase 2: Asignación (9:00 AM):</strong> Evalúa matemáticamente todos los contactos no contactados, selecciona los 120 mejores y los pone \"En Cola\".</li>\n                <li><strong>Fase 3: Enriquecimiento (Inmediato tras Fase 2):</strong> Busca las últimas noticias publicadas por los periodistas seleccionados en Google News.</li>\n            </ul>\n        </section>\n\n        <section id=\"hojas\">\n            <h2>2. Estructura de Datos (Google Sheets)</h2>\n            <p>El sistema centraliza toda la información en un único documento de Google Sheets utilizando dos solapas clave.</p>\n            \n            <div class=\"card\">\n                <h3>Hoja: Influencers (El Histórico)</h3>\n                <p>Es la base de datos cruda (\"Pool\"). Contiene a absolutamente todos los perfiles encontrados. Solo se agregan filas nuevas, nunca se borran. Las columnas clave son:</p>\n                <div style=\"display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem;\">\n                    <span class=\"code-block\">Nombre</span> <span class=\"code-block\">Tipo de contacto</span> <span class=\"code-block\">Status</span> <span class=\"code-block\">Linkedin</span> <span class=\"code-block\">Email</span> <span class=\"code-block\">Posible mensaje...</span> <span class=\"code-block\">Prioridad</span> <span class=\"code-block\">Score</span>\n                </div>\n            </div>\n\n            <div class=\"card\">\n                <h3>Hoja: Potenciales (El Top 120 Activo)</h3>\n                <p>Es la \"lista de trabajo\" del equipo comercial. Posee la misma estructura que \"Influencers\" pero añade campos de control y enriquecimiento dinámico:</p>\n                <div style=\"display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem;\">\n                    <span class=\"code-block\">En Cola (Sí/No)</span> <span class=\"code-block\">Ranking (1 al 120)</span> <span class=\"code-block\">Articulo 1..4</span> <span class=\"code-block\">Link 1..4</span>\n                </div>\n            </div>\n        </section>\n\n        <section id=\"flujo-descubrimiento\">\n            <h2>3. Explicación de Nodos: Motor de Descubrimiento</h2>\n            <p>Este flujo se dispara mediante el nodo <span class=\"code-block\">Cada lunes 8am</span> y se divide en múltiples ramas que operan en paralelo para maximizar la cobertura.</p>\n\n            <div class=\"diagram-container\">\n                <div class=\"mermaid\">\n                    graph LR\n                        T((Trigger)) --> P[Podcasts]\n                        T --> N[Newsletters]\n                        T --> TK[TikTok]\n                        T --> R[Periodistas RSS]\n                        T --> D[Dev.to]\n                        T --> H[Prensa Hunter]\n\n                        P & N & TK & R & D & H --> M{Merge & Deduplicar}\n                        M --> S[Scoring IA]\n                        S --> BD[(Base de Datos)]\n\n                        style T fill:#f59e0b,stroke:#78350f,color:#fff\n                        style M fill:#64748b,stroke:#334155,color:#fff\n                        style S fill:#0ea5e9,stroke:#0369a1,color:#fff\n                </div>\n            </div>\n\n            <div class=\"card\">\n                <h3>Rama A: Podcasts (API de iTunes)</h3>\n                <p>Consulta la API oficial de Apple por las palabras <span class=\"code-block\">negocios tecnologia startups</span> segmentado por 16 países de LATAM, España y USA. Filtra resultados duplicados.</p>\n            </div>\n\n            <div class=\"card\">\n                <h3>Rama B: Periodistas e Influencers Tech (RSS + Apify)</h3>\n                <p>Lee el feed RSS de <strong>más de 50 medios de tecnología</strong> de la región (Infobae Tech, Xataka, DF, etc.). Luego, agrupa los artículos por \"Autor\" y utiliza la API de Apify para buscar automáticamente en Google el perfil de LinkedIn de dicho autor usando Dorks: <span class=\"code-block\">\"Nombre Autor\" \"Medio\" site:linkedin.com</span>.</p>\n            </div>\n\n            <div class=\"card\">\n                <h3>Rama C: TikTok (Apify Google Search)</h3>\n                <p>Busca creadores de contenido usando Dorks específicos: <span class=\"code-block\">finanzas emprendedores [País] site:tiktok.com/@</span>. Luego aplica expresiones regulares (RegEx) para limpiar el Handle y sumar la cantidad máxima de visualizaciones.</p>\n            </div>\n        </section>\n\n        <section id=\"flujo-seleccion\">\n            <h2>4. Flujo: Selección Top 120</h2>\n            <p>El nodo <span class=\"code-block\">Trigger Semanal (Lunes 9 AM)</span> orquesta la asignación de trabajo para el equipo de ventas.</p>\n            \n            <ol>\n                <li>Descarga toda la base de datos de \"Influencers\".</li>\n                <li>Filtra y elimina de la evaluación a los que tienen Status \"Contactado\", \"Respondio\" o \"Cliente\".</li>\n                <li>Verifica que el prospecto tenga al menos una vía de contacto válida (Email, LinkedIn, IG o TikTok). Si no tiene, se descarta.</li>\n                <li>Ordena la lista de mayor a menor utilizando el <strong>Score de Relevancia</strong> y la <strong>Prioridad</strong>.</li>\n                <li>Toma los primeros 120 perfiles. A esos, en la hoja \"Potenciales\", les asigna <span class=\"code-block\">En Cola = Sí</span> y un <span class=\"code-block\">Ranking</span> numérico. Al resto les asigna \"No\".</li>\n            </ol>\n        </section>\n\n        <section id=\"scoring\">\n            <h2>5. Algoritmo Matemático de Scoring</h2>\n            <p>Para evitar enviar contactos basura al equipo comercial, el sistema evalúa cada prospecto con una puntuación del 1 al 10 en base a parámetros objetivos.</p>\n\n            <div class=\"card\">\n                <h3>Fórmula para Podcasts y Newsletters</h3>\n                <table>\n                    <thead><tr><th>Criterio evaluado</th><th>Puntos asignados</th></tr></thead>\n                    <tbody>\n                        <tr><td>Afinidad de Keywords en su bio/título (fintech, startup, etc)</td><td>+2 pts por cada coincidencia (Máx 4)</td></tr>\n                        <tr><td>El país pertenece al Tier 1 (AR, MX, BR, CO, CL, PE, ES, US)</td><td>+2 pts</td></tr>\n                        <tr><td>El país pertenece al Tier 2 (EC, UY, PA, CR)</td><td>+1 pt</td></tr>\n                        <tr><td>Es un Newsletter (Alto ratio de apertura en VCs)</td><td>+2 pts</td></tr>\n                        <tr><td>Tiene más de 50 episodios publicados</td><td>+2 pts</td></tr>\n                        <tr><td>Posee un email de contacto extraído</td><td>+1 pt</td></tr>\n                    </tbody>\n                </table>\n            </div>\n\n            <div class=\"card\">\n                <h3>Fórmula para Periodistas (Medios RSS)</h3>\n                <table>\n                    <thead><tr><th>Criterio evaluado</th><th>Puntos asignados</th></tr></thead>\n                    <tbody>\n                        <tr><td>Cantidad de artículos publicados en los últimos 90 días</td><td>+1 pt por artículo (Máx 3)</td></tr>\n                        <tr><td>Su temática dominante (\"Beat\") es Fintech o Inteligencia Artificial</td><td>+3 pts</td></tr>\n                        <tr><td>Su temática dominante es Startups o Negocios</td><td>+2 pts</td></tr>\n                        <tr><td>Medio Tier 1 (Ej: TechCrunch, Forbes, Infobae)</td><td>+2 pts</td></tr>\n                        <tr><td>Se encontró exitosamente su perfil de LinkedIn</td><td>+2 pts</td></tr>\n                    </tbody>\n                </table>\n            </div>\n\n            <div class=\"card\" style=\"background: var(--accent-soft); border-color: var(--accent);\">\n                <h3>Traducción a Niveles de Prioridad</h3>\n                <p style=\"color: var(--accent-ink);\">El puntaje final (limitado entre 1 y 10) se traduce directamente a una etiqueta semántica que consume el CRM:</p>\n                <ul>\n                    <li><strong style=\"color: #10b981;\">Score 8 a 10 → Prioridad Alta:</strong> Leads perfectos. Contacto inmediato.</li>\n                    <li><strong style=\"color: #f59e0b;\">Score 5 a 7 → Prioridad Media:</strong> Buenos leads, requieren revisión manual rápida.</li>\n                    <li><strong style=\"color: #ef4444;\">Score 1 a 4 → Prioridad Baja:</strong> Descartados temporalmente o guardados para remarketing.</li>\n                </ul>\n            </div>\n        </section>\n\n        <section id=\"mantenimiento\">\n            <h2>6. Credenciales y Mantenimiento</h2>\n            <ul>\n                <li><strong>Apify API Key:</strong> Utilizada en los nodos HTTP Request de búsqueda. Asegurarse de tener fondos o un plan activo para no interrumpir el scraping.</li>\n                <li><strong>Hunter.io:</strong> Limitado por el plan free (aprox 50 búsquedas). El sistema procesa por lotes (batching) con retrasos de 2 segundos para evitar rate-limits.</li>\n                <li><strong>Google Sheets Service Account:</strong> El correo de la credencial (ej. <code>xtract-n8n@project.iam.gserviceaccount.com</code>) debe tener permisos explícitos de <em>Editor</em> en el archivo Spreadsheet.</li>\n            </ul>\n        </section>\n\n        <footer style=\"margin-top: 5rem; padding-top: 2rem; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.9rem; text-align: center;\">\n            Documentación generada para Xtract. Actualizado automáticamente.\n        </footer>\n    </main>\n\n    <script>\n        // Lógica del modo Oscuro/Claro\n        function toggleTheme() {\n            const body = document.body;\n            const currentTheme = body.getAttribute('data-theme');\n            const icon = document.getElementById('theme-icon');\n            \n            if (currentTheme === 'dark') {\n                body.removeAttribute('data-theme');\n                icon.textContent = '🌙';\n            } else {\n                body.setAttribute('data-theme', 'dark');\n                icon.textContent = '☀️';\n            }\n        }\n\n        // Lógica del ScrollSpy para el menú lateral\n        const sections = document.querySelectorAll('section');\n        const navLinks = document.querySelectorAll('.nav-link');\n\n        window.addEventListener('scroll', () => {\n            let current = '';\n            sections.forEach(section => {\n                const sectionTop = section.offsetTop;\n                if (scrollY >= sectionTop - 150) {\n                    current = section.getAttribute('id');\n                }\n            });\n\n            navLinks.forEach(link => {\n                link.classList.remove('active');\n                if (link.getAttribute('href').substring(1) === current) {\n                    link.classList.add('active');\n                }\n            });\n        });\n    </script>\n</body>\n</html>",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "text/html; charset=utf-8"
+              }
+            ]
+          }
+        }
+      },
+      "id": "9bbae08e-5027-46c1-bf7f-53e0bd187323",
+      "name": "Servir HTML",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        384,
+        1968
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 🔗 Accesos rápidos\n\n**📄 Documentación (página HTML)**\nServida por este workflow — activá el webhook `Documentacion Web` y entrá a:\n[http://localhost:5678/webhook/doc-potencial-entregable]\n\n\n**📊 Planilla (Google Sheets)**\nhttps://docs.google.com/spreadsheets/d/REEMPLAZAR_ID_DE_TU_GOOGLE_SHEET/edit?gid=427378906#gid=427378906",
+        "height": 580,
+        "width": 520,
+        "color": 5
+      },
+      "id": "f352af85-51ef-4e75-bf05-7c9403a5a2ea",
+      "name": "Enlaces",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -992,
+        240
+      ]
+    },
+    {
+      "id": "7024d6d0-edcb-44f3-bd14-c1e94a54a3e9",
+      "name": "Leer Hoja Seguimiento",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -16,
+        1860
+      ],
+      "parameters": {
+        "authentication": "serviceAccount",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "REEMPLAZAR_ID_DE_TU_GOOGLE_SHEET"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Seguimiento"
+        },
+        "options": {}
+      },
+      "onError": "continueRegularOutput",
+      "executeOnce": true,
+      "credentials": {
+        "googleApi": {
+          "id": "REEMPLAZAR",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Config países": {
+      "main": [
+        [
+          {
+            "node": "iTunes - Buscar podcasts",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Queries newsletters VC",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Queries TikTok",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "iTunes - Buscar podcasts": {
+      "main": [
+        [
+          {
+            "node": "Normalizar podcasts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalizar podcasts": {
+      "main": [
+        [
+          {
+            "node": "Merge fuentes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge fuentes": {
+      "main": [
+        [
+          {
+            "node": "Calificar y armar fila",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Queries newsletters VC": {
+      "main": [
+        [
+          {
+            "node": "Apify - Buscar newsletters",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apify - Buscar newsletters": {
+      "main": [
+        [
+          {
+            "node": "Normalizar newsletters",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalizar newsletters": {
+      "main": [
+        [
+          {
+            "node": "Merge fuentes",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Leer contactos existentes": {
+      "main": [
+        [
+          {
+            "node": "Filtrar solo nuevos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filtrar solo nuevos": {
+      "main": [
+        [
+          {
+            "node": "Agregar al Google Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Queries TikTok": {
+      "main": [
+        [
+          {
+            "node": "Apify - Buscar TikTok",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apify - Buscar TikTok": {
+      "main": [
+        [
+          {
+            "node": "Normalizar TikTok",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalizar TikTok": {
+      "main": [
+        [
+          {
+            "node": "Merge fuentes",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Lista de Medios": {
+      "main": [
+        [
+          {
+            "node": "Leer RSS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leer RSS": {
+      "main": [
+        [
+          {
+            "node": "Enriquecer con medio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enriquecer con medio": {
+      "main": [
+        [
+          {
+            "node": "Agrupar por autor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agrupar por autor": {
+      "main": [
+        [
+          {
+            "node": "Preparar queries LinkedIn",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar queries LinkedIn": {
+      "main": [
+        [
+          {
+            "node": "Apify - Buscar LinkedIn",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apify - Buscar LinkedIn": {
+      "main": [
+        [
+          {
+            "node": "Normalizar y armar fila",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dev.to - Autores AR": {
+      "main": [
+        [
+          {
+            "node": "Normalizar datos Dev.to",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Deduplicar candidatos": {
+      "main": [
+        [
+          {
+            "node": "Armar fila final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge final": {
+      "main": [
+        [
+          {
+            "node": "Leer contactos existentes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cada lunes 8am": {
+      "main": [
+        [
+          {
+            "node": "Config países",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Lista de Medios",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Dev.to - Autores AR",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Lista de Dominios Hunter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalizar y armar fila": {
+      "main": [
+        [
+          {
+            "node": "Merge final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Armar fila final": {
+      "main": [
+        [
+          {
+            "node": "Merge final",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Calificar y armar fila": {
+      "main": [
+        [
+          {
+            "node": "Merge final",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Normalizar datos Dev.to": {
+      "main": [
+        [
+          {
+            "node": "Deduplicar candidatos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger Semanal (Lunes 9 AM)": {
+      "main": [
+        [
+          {
+            "node": "Leer Hoja Potenciales",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Leer Hoja Influencers",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Leer Hoja Seguimiento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leer Hoja Potenciales": {
+      "main": [
+        [
+          {
+            "node": "Combinar Hojas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combinar Hojas": {
+      "main": [
+        [
+          {
+            "node": "Filtrar Top 120",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leer Hoja Influencers": {
+      "main": [
+        [
+          {
+            "node": "Combinar Hojas",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Filtrar Top 120": {
+      "main": [
+        [
+          {
+            "node": "Ya existe?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ya existe?": {
+      "main": [
+        [
+          {
+            "node": "Actualizar Flags",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Agregar Nuevos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leer Potenciales": {
+      "main": [
+        [
+          {
+            "node": "Preparar Feeds",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Feeds": {
+      "main": [
+        [
+          {
+            "node": "Leer RSS Google News",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leer RSS Google News": {
+      "main": [
+        [
+          {
+            "node": "Parsear Articulos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parsear Articulos": {
+      "main": [
+        [
+          {
+            "node": "Actualizar Potenciales",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lista de Dominios Hunter": {
+      "main": [
+        [
+          {
+            "node": "Hunter Domain Search",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hunter Domain Search": {
+      "main": [
+        [
+          {
+            "node": "Normalizar Entregable",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalizar Entregable": {
+      "main": [
+        [
+          {
+            "node": "Merge final",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "Actualizar Flags": {
+      "main": [
+        [
+          {
+            "node": "Leer Potenciales",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agregar Nuevos": {
+      "main": [
+        [
+          {
+            "node": "Leer Potenciales",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Documentacion Web": {
+      "main": [
+        [
+          {
+            "node": "Servir HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leer Hoja Seguimiento": {
+      "main": [
+        [
+          {
+            "node": "Combinar Hojas",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": true,
+    "binaryMode": "separate"
+  },
+  "active": false
+}

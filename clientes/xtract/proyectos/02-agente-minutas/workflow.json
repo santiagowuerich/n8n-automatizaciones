@@ -1,0 +1,410 @@
+{
+  "name": "Agente de Minutas (Hunting / Integraciones / Engagement)",
+  "active": false,
+  "nodes": [
+    {
+      "id": "0009577e-4247-4ccb-9741-96d47e303868",
+      "name": "Drive - Nueva transcripcion Hunting",
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "typeVersion": 1,
+      "position": [-800, 400],
+      "parameters": {
+        "authentication": "oAuth2",
+        "triggerOn": "specificFolder",
+        "folderToWatch": { "__rl": true, "mode": "id", "value": "REEMPLAZAR_CARPETA_DRIVE_HUNTING" },
+        "event": "fileCreated",
+        "pollTimes": { "item": [{ "mode": "everyX", "value": 5, "unit": "minutes" }] },
+        "options": { "fileType": "application/vnd.google-apps.document" }
+      },
+      "credentials": {
+        "googleDriveOAuth2Api": { "id": "REEMPLAZAR_CREDENCIAL_DRIVE", "name": "REEMPLAZAR_CREDENCIAL_DRIVE" }
+      }
+    },
+    {
+      "id": "8b318e73-0d31-49a6-b734-922734b940d9",
+      "name": "Drive - Nueva transcripcion Integraciones",
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "typeVersion": 1,
+      "position": [-800, 592],
+      "parameters": {
+        "authentication": "oAuth2",
+        "triggerOn": "specificFolder",
+        "folderToWatch": { "__rl": true, "mode": "id", "value": "REEMPLAZAR_CARPETA_DRIVE_INTEGRACIONES" },
+        "event": "fileCreated",
+        "pollTimes": { "item": [{ "mode": "everyX", "value": 5, "unit": "minutes" }] },
+        "options": { "fileType": "application/vnd.google-apps.document" }
+      },
+      "credentials": {
+        "googleDriveOAuth2Api": { "id": "REEMPLAZAR_CREDENCIAL_DRIVE", "name": "REEMPLAZAR_CREDENCIAL_DRIVE" }
+      }
+    },
+    {
+      "id": "27f97580-6746-41cd-897a-aca3cecc7d18",
+      "name": "Drive - Nueva transcripcion Engagement",
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "typeVersion": 1,
+      "position": [-800, 784],
+      "parameters": {
+        "authentication": "oAuth2",
+        "triggerOn": "specificFolder",
+        "folderToWatch": { "__rl": true, "mode": "id", "value": "REEMPLAZAR_CARPETA_DRIVE_ENGAGEMENT" },
+        "event": "fileCreated",
+        "pollTimes": { "item": [{ "mode": "everyX", "value": 5, "unit": "minutes" }] },
+        "options": { "fileType": "application/vnd.google-apps.document" }
+      },
+      "credentials": {
+        "googleDriveOAuth2Api": { "id": "REEMPLAZAR_CREDENCIAL_DRIVE", "name": "REEMPLAZAR_CREDENCIAL_DRIVE" }
+      }
+    },
+    {
+      "id": "55c7cc9c-4469-41eb-845f-06174aeab24d",
+      "name": "Marcar area Hunting",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [-576, 400],
+      "parameters": {
+        "mode": "manual",
+        "includeOtherFields": true,
+        "assignments": {
+          "assignments": [
+            { "id": "a1", "name": "area", "value": "Hunting", "type": "string" },
+            { "id": "a2", "name": "slackChannel", "value": "C_HUNTING", "type": "string" }
+          ]
+        }
+      }
+    },
+    {
+      "id": "a28238d8-a5f0-492f-82e8-43d902ad8706",
+      "name": "Marcar area Integraciones",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [-576, 592],
+      "parameters": {
+        "mode": "manual",
+        "includeOtherFields": true,
+        "assignments": {
+          "assignments": [
+            { "id": "a1", "name": "area", "value": "Integraciones", "type": "string" },
+            { "id": "a2", "name": "slackChannel", "value": "C_INTEGRACIONES", "type": "string" }
+          ]
+        }
+      }
+    },
+    {
+      "id": "9a46bba9-0f58-41b1-9319-b7035fb3cdf4",
+      "name": "Marcar area Engagement",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [-576, 784],
+      "parameters": {
+        "mode": "manual",
+        "includeOtherFields": true,
+        "assignments": {
+          "assignments": [
+            { "id": "a1", "name": "area", "value": "Engagement", "type": "string" },
+            { "id": "a2", "name": "slackChannel", "value": "C_ENGAGEMENT", "type": "string" }
+          ]
+        }
+      }
+    },
+    {
+      "id": "c0424801-8871-4501-87d3-1eeb7ff2923e",
+      "name": "Descargar documento (Drive)",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [-352, 592],
+      "parameters": {
+        "resource": "file",
+        "operation": "download",
+        "fileId": { "__rl": true, "mode": "id", "value": "={{ $json.id }}" },
+        "options": { "googleFileConversion": { "conversion": { "docsToFormat": "text/plain" } } }
+      },
+      "credentials": {
+        "googleDriveOAuth2Api": { "id": "REEMPLAZAR_CREDENCIAL_DRIVE", "name": "REEMPLAZAR_CREDENCIAL_DRIVE" }
+      }
+    },
+    {
+      "id": "09206031-d550-4638-b3cd-4a7c3c176308",
+      "name": "Extraer texto del documento",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [-128, 592],
+      "parameters": { "operation": "text", "destinationKey": "texto_extraido" }
+    },
+    {
+      "id": "3c5796de-8856-463c-bb35-4a3725ed2f6d",
+      "name": "Normalizar entrada Drive",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [96, 592],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function obtenerEtiqueta() {\n  const candidatos = ['Marcar area Hunting', 'Marcar area Integraciones', 'Marcar area Engagement'];\n  for (const nombre of candidatos) {\n    try {\n      const item = $(nombre).item;\n      if (item) return item.json;\n    } catch (e) {}\n  }\n  return {};\n}\n\nfunction parseTranscripcion(raw) {\n  const lineas = (raw || '').split('\\n').map(l => l.trim()).filter(Boolean);\n  const idxAsistentes = lineas.findIndex(l => /^(asistentes|attendees)$/i.test(l));\n  const idxTranscripcion = lineas.findIndex(l => /^(transcripci[oó]n|transcript)$/i.test(l));\n\n  const participantes = (idxAsistentes >= 0 && idxTranscripcion > idxAsistentes)\n    ? lineas.slice(idxAsistentes + 1, idxTranscripcion).join(', ')\n    : '';\n\n  let cuerpo = idxTranscripcion >= 0 ? lineas.slice(idxTranscripcion + 1) : lineas;\n  const idxFin = cuerpo.findIndex(l => /reuni[oó]n finaliz[oó]|call ended|meeting ended/i.test(l));\n  if (idxFin >= 0) cuerpo = cuerpo.slice(0, idxFin);\n  cuerpo = cuerpo.filter(l => !/se gener[oó] autom[aá]ticamente|automatically generated/i.test(l));\n\n  return { participantes, transcripcion: cuerpo.join('\\n') };\n}\n\nconst etiqueta = obtenerEtiqueta();\nconst actual = $input.first().json;\nconst parsed = parseTranscripcion(actual.texto_extraido || '');\n\nreturn [{ json: {\n  area: etiqueta.area || '',\n  slackChannel: etiqueta.slackChannel || '',\n  evento_id: 'drive-' + (actual.id || etiqueta.id || Date.now()),\n  titulo: actual.name || etiqueta.name || 'Reunion sin titulo',\n  participantes: parsed.participantes,\n  fin: etiqueta.modifiedTime || etiqueta.createdTime || new Date().toISOString(),\n  transcripcion_texto: parsed.transcripcion\n} }];"
+      }
+    },
+    {
+      "id": "b7f4c1a2-9d33-4e56-8a10-5c2e7f0b91d4",
+      "name": "Detectar ejecutivo comercial",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        320,
+        688
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Roster de ejecutivos comerciales de Xtract, tal como figuran en el CRM.\n// Editar ACA si alguien entra o sale del equipo (unico lugar).\nconst EJECUTIVOS = [\n  { nombre: 'Nicolás Gonzalez', cuentas: 394 },\n  { nombre: 'Juan Alvarez', cuentas: 127 },\n  { nombre: 'Tomas Marconi', cuentas: 60 },\n  { nombre: 'Jesús De Gruttola', cuentas: 26 },\n  { nombre: 'Damian Deggeller', cuentas: 16 },\n  { nombre: 'Matías Febré', cuentas: 3 },\n  { nombre: 'Wenceslao Hoepner', cuentas: 1 },\n  { nombre: 'Jesús Soria', cuentas: 0 }\n];\n\n// Particulas que no aportan a la identidad del nombre.\nconst PARTICULAS = ['de', 'del', 'la', 'las', 'los', 'da', 'di', 'van', 'von', 'san'];\n\n// Los notetakers entran como un asistente mas: hay que descartarlos.\nconst BOTS = /notetaker|fathom|otter|fireflies|companion|read ai|grabador|transcriptor|\\bbot\\b/i;\n\n// Normalizacion estandar del repo: NFD, sin acentos, minusculas, espacios colapsados.\nfunction normKey(s) {\n  return (s || '').toString()\n    .normalize('NFD').replace(/[\\u0300-\\u036f]/g, '')\n    .toLowerCase()\n    .replace(/[^a-z0-9\\s]/g, ' ')\n    .replace(/\\s+/g, ' ')\n    .trim();\n}\n\nfunction tokens(s) {\n  return normKey(s).split(' ').filter(t => t && PARTICULAS.indexOf(t) === -1);\n}\n\n// Coincide si TODOS los tokens del ejecutivo estan en el candidato.\n// Asi \"Juan Alvarez\" matchea \"Juan Alvarez (Xtract)\" pero no \"Juan Perez\".\nfunction coincide(ejecutivo, candidato) {\n  const tokensEjecutivo = tokens(ejecutivo);\n  const tokensCandidato = tokens(candidato);\n  if (tokensEjecutivo.length < 2 || !tokensCandidato.length) return false;\n  return tokensEjecutivo.every(t => tokensCandidato.indexOf(t) !== -1);\n}\n\n// Nombres de la seccion \"Asistentes\" (separados por coma).\nfunction listarAsistentes(str) {\n  return (str || '')\n    .split(',')\n    .map(s => s.trim())\n    .filter(s => s && !BOTS.test(s));\n}\n\n// Quien habla en el cuerpo: lineas con formato \"Nombre Apellido: texto\".\nfunction contarIntervenciones(texto) {\n  const conteo = {};\n  (texto || '').split('\\n').forEach((linea) => {\n    const m = linea.match(/^([^:]{2,60}):\\s/);\n    if (!m) return;\n    const nombre = m[1].trim();\n    if (BOTS.test(nombre)) return;\n    conteo[nombre] = (conteo[nombre] || 0) + 1;\n  });\n  return conteo;\n}\n\nconst salida = [];\n\n$input.all().forEach((item) => {\n  const meta = item.json || {};\n  const asistentes = listarAsistentes(meta.participantes);\n  const intervenciones = contarIntervenciones(meta.transcripcion_texto);\n  const hablantes = Object.keys(intervenciones);\n\n  const detectados = [];\n  EJECUTIVOS.forEach((ej) => {\n    const enAsistentes = asistentes.some(a => coincide(ej.nombre, a));\n    const hablante = hablantes.find(h => coincide(ej.nombre, h));\n    if (!enAsistentes && !hablante) return;\n    detectados.push({\n      nombre: ej.nombre,\n      cuentas: ej.cuentas,\n      en_asistentes: enAsistentes,\n      intervenciones: hablante ? intervenciones[hablante] : 0\n    });\n  });\n\n  // El principal es el que mas hablo; si nadie hablo, el de mas cuentas asignadas.\n  detectados.sort((a, b) => (b.intervenciones - a.intervenciones) || (b.cuentas - a.cuentas));\n\n  const nombres = detectados.map(d => d.nombre);\n\n  salida.push({ json: Object.assign({}, meta, {\n    ejecutivo: nombres[0] || 'Sin identificar',\n    ejecutivos: nombres.join(', '),\n    ejecutivos_detalle: detectados,\n    ejecutivo_identificado: detectados.length > 0\n  }) });\n});\n\nreturn salida;"
+      }
+    },
+    {
+      "id": "693279d8-4c61-4091-9dcf-29333f37bf26",
+      "name": "Armar prompt de la minuta",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [544, 688],
+      "parameters": {
+        "jsCode": "const MAX = 40000;\n\n// Base de conocimiento de Xtract. La IA la da por SABIDA: no puede pedirle al\n// cliente nada que ya este resuelto aca.\n// Fuente editable: clientes/xtract/base-conocimiento.md -- si cambia alla,\n// hay que replicar el cambio aca.\nconst BASE_CONOCIMIENTO = [\n  'QUE ES XTRACT',\n  'Plataforma SaaS 100% en la nube, con IA, para automatizar el procesamiento de facturas de COMPRA, flujos de aprobacion y gestion de gastos corporativos. Elimina el tipeo manual, reduce errores de digitacion, evita pagos duplicados y acelera la contabilizacion en el ERP SIN modificar el sistema contable existente.',\n  '',\n  'METRICAS',\n  '- Reduccion de costos administrativos: hasta 40%.',\n  '- Ahorro de tiempo: hasta 110 horas mensuales por empresa.',\n  '- Velocidad: hasta 100 facturas por segundo.',\n  '- Implementacion estandar: 5 dias habiles.',\n  '',\n  'MODULOS',\n  '1. Contabilizacion automatica de facturas: ingesta por redireccion de correo desde las casillas de proveedores (Gmail u Outlook), se configura en menos de 10 minutos. Lee con IA facturas de compra en PDF sin importar diseno, pais, moneda ni idioma. Extrae emisor/receptor, numero de factura, fechas, importes, impuestos, items de detalle, ordenes de compra, cuentas contables, centros de costo y dimensiones. Repositorio digital ilimitado con busqueda avanzada. Exporta en archivos planos (CSV, TXT, XLS) o integra por API REST.',\n  '2. Flujo de aprobacion: 100% digital, web y movil. Ruteo automatico a los responsables segun reglas predefinidas, recordatorios automaticos y trazabilidad completa de estados y motivos.',\n  '3. Gestion de gastos: app iOS y Android, rendicion por foto del comprobante, reportes automaticos e integracion contable con el ERP.',\n  '',\n  'INTEGRACIONES',\n  '- ERPs: conexion nativa con SAP, Microsoft Dynamics 365, Oracle y NetSuite, y con cualquier ERP local o desarrollo a medida.',\n  '- API REST publica con SDKs oficiales (Ruby, NodeJS, Java) y sincronizacion bidireccional en tiempo real.',\n  '- Archivos planos CSV, TXT o XLS adaptados a la estructura exacta de importacion del ERP del cliente.',\n  '- BI: Power BI y Tableau.',\n  '- Estudios contables: funcionalidad multicuenta para gestionar varios clientes.',\n  '',\n  'LO QUE NO ESTA DEFINIDO (no afirmar nada de esto, derivar al equipo comercial)',\n  '- Precios: no hay tarifas publicas, la cotizacion es a medida.',\n  '- Formatos que no sean PDF: la ingesta directa de JPG, PNG o XML no esta confirmada.',\n  '- Limites de API o cuotas de consumo: no estan publicados.'\n].join('\\n');\n\n// Errores concretos observados en corridas reales. Cada regla existe porque la IA\n// ya se equivoco de esa forma.\nconst REGLAS = [\n  'NO le pidas al cliente una factura de ejemplo para verificar si Xtract puede leerla. Xtract lee cualquier factura de compra en PDF sin importar el diseno, el pais, la moneda ni el idioma: no hace falta una muestra para confirmarlo, y pedirla da la impresion de que no sabemos si funciona.',\n  'NO le pidas nada que ya este respondido en la BASE DE CONOCIMIENTO. Si el dato esta ahi, ya lo sabemos.',\n  'NO pidas la version exacta del ERP como si de eso dependiera la compatibilidad. Xtract integra con cualquier ERP por API REST o archivo plano. Preguntar por el ERP sirve solo para definir el METODO de integracion, no para saber si se puede.',\n  'NO menciones precios, planes, descuentos ni plazos de contrato. Si el cliente los pidio en la reunion, el proximo paso es que se los pase el equipo comercial.',\n  'NO prometas soporte de formatos que no sean PDF, ni limites de volumen o de API.',\n  'NO inventes fechas, nombres ni compromisos que no esten dichos en la transcripcion.',\n  'Pedi UNICAMENTE lo que quedo explicitamente pendiente en la llamada o lo que hace falta para avanzar al proximo paso concreto (por ejemplo: a que ERP integran y por que via, volumen mensual de facturas para dimensionar, quien es el referente de Sistemas, o el dato puntual que el cliente quedo en confirmar).'\n].map((r, i) => (i + 1) + '. ' + r).join('\\n');\n\nconst salida = [];\n\n$input.all().forEach((item) => {\n  const meta = item.json || {};\n  const transcripcion = meta.transcripcion_texto || '';\n  if (!transcripcion.trim()) return;\n  const transcripcionRecortada = transcripcion.slice(0, MAX);\n\n  const prompt = 'Sos un asistente que ayuda a preparar el seguimiento de una reunion comercial en espanol neutro.\\n\\n' +\n    'Trabajas para Xtract. Esto es lo que YA SABEMOS de nuestro propio producto:\\n\\n' +\n    '=== BASE DE CONOCIMIENTO ===\\n' + BASE_CONOCIMIENTO + '\\n=== FIN BASE DE CONOCIMIENTO ===\\n\\n' +\n    'Reunion: ' + (meta.titulo || '') + '\\n' +\n    'Area: ' + (meta.area || '') + '\\n' +\n    'Participantes: ' + (meta.participantes || '') + '\\n' +\n    'Ejecutivo comercial de Xtract en la reunion: ' + (meta.ejecutivo || 'sin identificar') + '\\n\\n' +\n    'TRANSCRIPCION:\\n' + transcripcionRecortada + '\\n\\n' +\n    'El objetivo NO es una minuta interna. Es un mensaje LISTO PARA ENVIARLE AL CLIENTE apenas termina la reunion. Completa estos campos:\\n' +\n    '- recap: 2 o 3 oraciones en tono cordial recapitulando lo hablado, escritas como si se las mandaramos directamente al cliente (sin jerga interna, sin nombrar procesos internos nuestros).\\n' +\n    '- informacion_necesaria: bullets con la informacion que necesitamos QUE EL CLIENTE NOS PASE para avanzar. Array vacio si no quedo nada pendiente de pedir; un array vacio es mejor que un pedido inventado o que uno que ya sabemos responder.\\n' +\n    '- proximo_paso: una frase con el proximo paso acordado con el cliente (por ejemplo coordinar una segunda reunion, y la fecha si se menciono).\\n\\n' +\n    'REGLAS OBLIGATORIAS:\\n' + REGLAS + '\\n\\n' +\n    'Se concreto y basate solo en lo que esta en la transcripcion y en la base de conocimiento. No inventes nada.';\n\n  salida.push({ json: {\n    area: meta.area,\n    slackChannel: meta.slackChannel,\n    evento_id: meta.evento_id,\n    titulo: meta.titulo,\n    fin: meta.fin,\n    participantes: meta.participantes,\n    ejecutivo: meta.ejecutivo,\n    ejecutivos: meta.ejecutivos,\n    ejecutivo_identificado: meta.ejecutivo_identificado,\n    prompt: prompt\n  } });\n});\n\nreturn salida;"
+      }
+    },
+    {
+      "id": "cc4825bd-c9b5-4121-82e8-1a12166e8182",
+      "name": "IA - Generar minuta",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [768, 688],
+      "parameters": { "promptType": "define", "text": "={{ $json.prompt }}", "batching": {}, "hasOutputParser": true }
+    },
+    {
+      "id": "715ffe1f-49fa-4f9a-b385-93761467663a",
+      "name": "Google Gemini Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [848, 912],
+      "parameters": { "modelName": "models/gemini-2.5-flash", "options": {} },
+      "credentials": {
+        "googlePalmApi": { "id": "REEMPLAZAR_CREDENCIAL_GEMINI", "name": "REEMPLAZAR_CREDENCIAL_GEMINI" }
+      }
+    },
+    {
+      "id": "14a16c40-79c6-4e9c-aa30-59badcb58455",
+      "name": "Parsear salida de la minuta",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [924, 700],
+      "parameters": {
+        "schemaType": "fromJson",
+        "jsonSchemaExample": "{ \"recap\": \"string\", \"informacion_necesaria\": [\"string\"], \"proximo_paso\": \"string\" }"
+      }
+    },
+    {
+      "id": "99e3a401-9808-49f7-b3f8-7137a732a830",
+      "name": "Armar HTML de la minuta",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [964, 500],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const FOLDER_ID = '1zR3fHtej1NN0NF7TfABp_YtNyGgYOWTS';\n\nfunction escapeHtml(s) {\n  return (s || '').toString()\n    .replace(/&/g, '&amp;')\n    .replace(/</g, '&lt;')\n    .replace(/>/g, '&gt;');\n}\n\nfunction listToHtml(items) {\n  if (!items || !items.length) return '<p>Nada pendiente de pedir.</p>';\n  return '<ul>' + items.map(i => '<li>' + escapeHtml(i) + '</li>').join('') + '</ul>';\n}\n\nfunction listToPlano(items) {\n  if (!items || !items.length) return '(nada pendiente de pedir)';\n  return items.map(i => '- ' + i).join('\\n');\n}\n\nconst meta = $('Armar prompt de la minuta').item.json;\nconst j = ($input.first().json) || {};\nconst minuta = j.output || j;\n\nconst recap = minuta.recap || '';\nconst informacionNecesaria = minuta.informacion_necesaria || [];\nconst proximoPaso = minuta.proximo_paso || 'Sin proximo paso definido';\n\nconst ejecutivo = meta.ejecutivo || 'Sin identificar';\nconst ejecutivosTodos = meta.ejecutivos || '';\n\n// Si hubo mas de un ejecutivo en la llamada, se listan todos entre parentesis.\nconst ejecutivoLinea = (ejecutivosTodos && ejecutivosTodos !== ejecutivo)\n  ? ejecutivo + ' (tambien presentes: ' + ejecutivosTodos.split(', ').filter(n => n !== ejecutivo).join(', ') + ')'\n  : ejecutivo;\n\nconst html = '<html><body>' +\n  '<h2>Seguimiento - ' + escapeHtml(meta.titulo || 'Reunion') + '</h2>' +\n  '<p><b>Ejecutivo comercial:</b> ' + escapeHtml(ejecutivoLinea) + '</p>' +\n  '<p><b>Area:</b> ' + escapeHtml(meta.area || '') + '</p>' +\n  '<h3>Mensaje para el cliente</h3><p>' + escapeHtml(recap) + '</p>' +\n  '<h3>Informacion que necesitamos que nos pasen</h3>' + listToHtml(informacionNecesaria) +\n  '<h3>Proximo paso</h3><p>' + escapeHtml(proximoPaso) + '</p>' +\n  '</body></html>';\n\nconst minutaTexto = 'Ejecutivo comercial: ' + ejecutivoLinea +\n  '\\n\\nMensaje para el cliente: ' + recap +\n  '\\n\\nInformacion que necesitamos que nos pasen:\\n' + listToPlano(informacionNecesaria) +\n  '\\n\\nProximo paso: ' + proximoPaso;\n\nconst nombreArchivo = 'Seguimiento - ' + (meta.titulo || 'Reunion') + ' - ' + new Date().toISOString().slice(0, 10);\n\nconst metadata = {\n  name: nombreArchivo,\n  parents: [FOLDER_ID],\n  mimeType: 'application/vnd.google-apps.document'\n};\n\nconst boundary = 'n8n_minuta_boundary_' + Date.now();\n\nconst multipartBody =\n  '--' + boundary + '\\r\\n' +\n  'Content-Type: application/json; charset=UTF-8\\r\\n\\r\\n' +\n  JSON.stringify(metadata) + '\\r\\n' +\n  '--' + boundary + '\\r\\n' +\n  'Content-Type: text/html; charset=UTF-8\\r\\n\\r\\n' +\n  html + '\\r\\n' +\n  '--' + boundary + '--';\n\nreturn [{ json: {\n  area: meta.area,\n  slackChannel: meta.slackChannel,\n  evento_id: meta.evento_id,\n  titulo: meta.titulo,\n  fin: meta.fin,\n  participantes: meta.participantes,\n  ejecutivo: ejecutivo,\n  ejecutivos: ejecutivosTodos,\n  ejecutivoLinea: ejecutivoLinea,\n  ejecutivo_identificado: meta.ejecutivo_identificado === true,\n  recap: recap,\n  informacionNecesaria: informacionNecesaria,\n  proximoPaso: proximoPaso,\n  minutaTexto: minutaTexto,\n  boundary: boundary,\n  multipartBody: multipartBody\n} }];"
+      }
+    },
+    {
+      "id": "cd738913-8fd5-454b-86b7-ba5af9f0d972",
+      "name": "Crear documento (Drive API)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [1164, 500],
+      "parameters": {
+        "method": "POST",
+        "url": "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "=multipart/related; boundary={{ $json.boundary }}",
+        "body": "={{ $json.multipartBody }}",
+        "options": { "response": { "response": { "neverError": true } } }
+      },
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "googleDriveOAuth2Api": { "id": "REEMPLAZAR_CREDENCIAL_DRIVE", "name": "REEMPLAZAR_CREDENCIAL_DRIVE" }
+      }
+    },
+    {
+      "id": "3642925b-ee87-43e5-bc44-afc24b4c2a6f",
+      "name": "Formatear mensaje",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1384, 500],
+      "parameters": {
+        "jsCode": "const datos = $('Armar HTML de la minuta').item.json;\nconst actual = $input.first().json || {};\nconst docId = actual.id || '';\nconst docLink = docId ? 'https://docs.google.com/document/d/' + docId + '/edit' : '';\n\nfunction bulletsSlack(items) {\n  if (!items || !items.length) return '(nada pendiente de pedir)';\n  return items.map(i => '• ' + i).join('\\n');\n}\n\nconst fecha = datos.fin ? new Date(datos.fin) : new Date();\nconst dd = String(fecha.getDate()).padStart(2, '0');\nconst mm = String(fecha.getMonth() + 1).padStart(2, '0');\n\nconst ejecutivoLinea = datos.ejecutivoLinea || datos.ejecutivo || 'Sin identificar';\nconst iconoEjecutivo = datos.ejecutivo_identificado ? ':bust_in_silhouette:' : ':warning:';\n\nconst texto = ':envelope: *Mensaje listo para el cliente - ' + (datos.titulo || 'Reunion') + '*\\n' +\n  '_' + (datos.area || '') + ' | ' + dd + '/' + mm + '_\\n' +\n  iconoEjecutivo + ' *Ejecutivo:* ' + ejecutivoLinea + '\\n\\n' +\n  datos.recap + '\\n\\n' +\n  '*Necesitamos que nos pasen:*\\n' + bulletsSlack(datos.informacionNecesaria) + '\\n\\n' +\n  '*Proximo paso:* ' + datos.proximoPaso +\n  (docLink ? '\\n\\n:page_facing_up: <' + docLink + '|Ver documento completo>' : '');\n\nreturn [{ json: {\n  area: datos.area,\n  slackChannel: datos.slackChannel,\n  evento_id: datos.evento_id,\n  titulo: datos.titulo,\n  fin: datos.fin,\n  participantes: datos.participantes,\n  ejecutivo: datos.ejecutivo,\n  ejecutivos: datos.ejecutivos,\n  slack_message: texto,\n  minuta: datos.minutaTexto,\n  doc_link: docLink,\n  fecha_procesado: new Date().toISOString()\n} }];"
+      }
+    },
+    {
+      "id": "78e39431-7c6b-4018-9ab9-626258a20a5c",
+      "name": "Enviar minuta a Slack",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.5,
+      "position": [1604, 500],
+      "onError": "continueRegularOutput",
+      "webhookId": "3381d92b-2c3d-45d4-bc4e-a74e93409cd3",
+      "parameters": {
+        "resource": "message",
+        "operation": "post",
+        "select": "channel",
+        "channelId": { "__rl": true, "mode": "id", "value": "={{ $json.slackChannel }}" },
+        "text": "={{ $json.slack_message }}",
+        "otherOptions": {
+          "includeLinkToWorkflow": false,
+          "mrkdwn": true,
+          "unfurl_links": false,
+          "unfurl_media": false
+        }
+      },
+      "credentials": {
+        "slackApi": { "id": "REEMPLAZAR_CREDENCIAL_SLACK", "name": "REEMPLAZAR_CREDENCIAL_SLACK" }
+      }
+    },
+    {
+      "id": "26d1c147-e4b0-46b4-abc9-bf72accffd53",
+      "name": "Registrar minuta procesada",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [1824, 500],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "url",
+          "value": "={{ $env.MINUTAS_SHEET_URL || 'https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/edit' }}"
+        },
+        "sheetName": { "__rl": true, "mode": "name", "value": "Minutas Procesadas" },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "evento_id": "={{ $('Formatear mensaje').item.json.evento_id }}",
+            "area": "={{ $('Formatear mensaje').item.json.area }}",
+            "titulo": "={{ $('Formatear mensaje').item.json.titulo }}",
+            "fin_reunion": "={{ $('Formatear mensaje').item.json.fin }}",
+            "fecha_procesado": "={{ $('Formatear mensaje').item.json.fecha_procesado }}",
+            "participantes": "={{ $('Formatear mensaje').item.json.participantes }}",
+            "ejecutivo": "={{ $('Formatear mensaje').item.json.ejecutivo }}",
+            "minuta": "={{ $('Formatear mensaje').item.json.minuta }}",
+            "link_documento": "={{ $('Formatear mensaje').item.json.doc_link }}"
+          }
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": { "id": "REEMPLAZAR_CREDENCIAL_SHEETS", "name": "REEMPLAZAR_CREDENCIAL_SHEETS" }
+      }
+    },
+    {
+      "id": "853897f4-7c5e-4d11-9eed-b37bf58d0ece",
+      "name": "Ingreso manual de transcripción (prueba)",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.6,
+      "position": [-128, 784],
+      "webhookId": "b73e766c-5731-4de9-a8bd-7c166df70849",
+      "parameters": {
+        "formTitle": "Minuta manual - pegar transcripcion (prueba)",
+        "formDescription": "Solo para pruebas del tramo LLM sin depender de que llegue un archivo nuevo a Drive. Pegar el texto completo exportado de la reunion (Fathom / Meet) y elegir el area.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Area",
+              "fieldType": "dropdown",
+              "fieldName": "area",
+              "fieldOptions": {
+                "values": [{ "option": "Hunting" }, { "option": "Integraciones" }, { "option": "Engagement" }]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Transcripcion completa",
+              "fieldType": "textarea",
+              "fieldName": "transcripcion_completa",
+              "placeholder": "Pegar aca todo el texto exportado (titulo, asistentes, transcripcion)",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": { "buttonLabel": "Generar minuta" }
+      }
+    },
+    {
+      "id": "efc673bc-bc72-4c2a-9799-5e095af1ff6b",
+      "name": "Normalizar entrada manual",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [96, 784],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const AREAS = {\n  Hunting: { slackChannel: 'C_HUNTING' },\n  Integraciones: { slackChannel: 'C_INTEGRACIONES' },\n  Engagement: { slackChannel: 'C_ENGAGEMENT' }\n};\n\nfunction parseTranscripcion(raw) {\n  const lineas = (raw || '').split('\\n').map(l => l.trim()).filter(Boolean);\n  const idxAsistentes = lineas.findIndex(l => /^(asistentes|attendees)$/i.test(l));\n  const idxTranscripcion = lineas.findIndex(l => /^(transcripci[oó]n|transcript)$/i.test(l));\n\n  const titulo = idxAsistentes > 0 ? lineas.slice(0, idxAsistentes).join(' ') : (lineas[0] || 'Reunion sin titulo');\n  const participantes = (idxAsistentes >= 0 && idxTranscripcion > idxAsistentes)\n    ? lineas.slice(idxAsistentes + 1, idxTranscripcion).join(', ')\n    : '';\n\n  let cuerpo = idxTranscripcion >= 0 ? lineas.slice(idxTranscripcion + 1) : lineas;\n  const idxFin = cuerpo.findIndex(l => /reuni[oó]n finaliz[oó]|call ended|meeting ended/i.test(l));\n  if (idxFin >= 0) cuerpo = cuerpo.slice(0, idxFin);\n  cuerpo = cuerpo.filter(l => !/se gener[oó] autom[aá]ticamente|automatically generated/i.test(l));\n\n  return { titulo, participantes, transcripcion: cuerpo.join('\\n') };\n}\n\nconst item = $input.first().json;\nconst area = item.area || '';\nconst conf = AREAS[area] || {};\nconst parsed = parseTranscripcion(item.transcripcion_completa || '');\n\nreturn [{ json: {\n  area,\n  slackChannel: conf.slackChannel || '',\n  evento_id: 'manual-' + Date.now(),\n  titulo: parsed.titulo,\n  participantes: parsed.participantes,\n  fin: new Date().toISOString(),\n  transcripcion_texto: parsed.transcripcion\n} }];"
+      }
+    },
+    {
+      "id": "4c3b4cea-a501-4656-a543-4a7ada936934",
+      "name": "Sticky Note Drive",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-848, -32],
+      "parameters": {
+        "content": "## 1. Deteccion en Drive (unica fuente)\nLa transcripcion de Meet queda como Google Doc en la carpeta \"Google Meet\" del Drive del organizador, subcarpeta por reunion.\n\nGoogle Drive Trigger mira esa carpeta y descarga el Doc como texto plano. Sin Calendar, sin Meet API, sin Domain-Wide Delegation.\n\nUn trigger por area porque el nodo solo mira UNA carpeta a la vez -- hacen falta las 3 carpetas compartidas con la credencial de Drive.\n\nFalta: IDs reales de carpeta (REEMPLAZAR_CARPETA_DRIVE_*) y credencial de Drive con acceso.",
+        "color": 5,
+        "width": 620,
+        "height": 1040
+      }
+    },
+    {
+      "id": "933c49de-40bb-4c27-9084-e734e1e128c1",
+      "name": "Sticky Note f6ed12d0",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [528, 80],
+      "parameters": {
+        "content": "## 2. Generacion del mensaje para el cliente\nGemini Flash (el free tier alcanza de sobra para este volumen).\n\nCambiar modelo en el nodo \"Google Gemini Chat Model\".\n\nNO es una minuta interna: es un mensaje listo para mandarle al cliente (recap + que necesitamos que nos pasen sobre el uso de su ERP + proximo paso). Salida estructurada via Structured Output Parser.\n\nEl nodo \"Armar prompt de la minuta\" le inyecta la BASE DE CONOCIMIENTO de Xtract entera (~2k tokens) mas una lista de REGLAS de lo que NO debe pedirle al cliente. Sin RAG: el corpus entra 100 veces en la ventana de contexto.\n\nEditar esas dos constantes en ese nodo. Fuente en prosa: clientes/xtract/base-conocimiento.md",
+        "height": 264,
+        "width": 740,
+        "color": 6
+      }
+    },
+    {
+      "id": "f3aab79f-3af6-4b22-a635-6ee2944b91ad",
+      "name": "Sticky Note d63ca531",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [1384, 150],
+      "parameters": {
+        "content": "## 3. Documento formateado + Slack\nEl mensaje para el cliente llega estructurado (recap, informacion_necesaria, proximo_paso) via Structured Output Parser -- no es texto libre de la LLM.\n\nCarpeta de destino ya configurada: https://drive.google.com/drive/folders/1zR3fHtej1NN0NF7TfABp_YtNyGgYOWTS\n\nSe sube como HTML directo a la API de Drive. El mensaje de Slack queda marcado como \"Mensaje listo para el cliente\" -- lo recibe el area para revisarlo y mandarlo.",
+        "height": 220,
+        "width": 700,
+        "color": 7
+      }
+    }
+  ],
+  "connections": {
+    "Drive - Nueva transcripcion Hunting": { "main": [[{ "node": "Marcar area Hunting", "type": "main", "index": 0 }]] },
+    "Drive - Nueva transcripcion Integraciones": { "main": [[{ "node": "Marcar area Integraciones", "type": "main", "index": 0 }]] },
+    "Drive - Nueva transcripcion Engagement": { "main": [[{ "node": "Marcar area Engagement", "type": "main", "index": 0 }]] },
+    "Marcar area Hunting": { "main": [[{ "node": "Descargar documento (Drive)", "type": "main", "index": 0 }]] },
+    "Marcar area Integraciones": { "main": [[{ "node": "Descargar documento (Drive)", "type": "main", "index": 0 }]] },
+    "Marcar area Engagement": { "main": [[{ "node": "Descargar documento (Drive)", "type": "main", "index": 0 }]] },
+    "Descargar documento (Drive)": { "main": [[{ "node": "Extraer texto del documento", "type": "main", "index": 0 }]] },
+    "Extraer texto del documento": { "main": [[{ "node": "Normalizar entrada Drive", "type": "main", "index": 0 }]] },
+    "Normalizar entrada Drive": { "main": [[{ "node": "Detectar ejecutivo comercial", "type": "main", "index": 0 }]] },
+    "Ingreso manual de transcripción (prueba)": { "main": [[{ "node": "Normalizar entrada manual", "type": "main", "index": 0 }]] },
+    "Normalizar entrada manual": { "main": [[{ "node": "Detectar ejecutivo comercial", "type": "main", "index": 0 }]] },
+    "Detectar ejecutivo comercial": { "main": [[{ "node": "Armar prompt de la minuta", "type": "main", "index": 0 }]] },
+    "Armar prompt de la minuta": { "main": [[{ "node": "IA - Generar minuta", "type": "main", "index": 0 }]] },
+    "IA - Generar minuta": { "main": [[{ "node": "Armar HTML de la minuta", "type": "main", "index": 0 }]] },
+    "Google Gemini Chat Model": { "ai_languageModel": [[{ "node": "IA - Generar minuta", "type": "ai_languageModel", "index": 0 }]] },
+    "Parsear salida de la minuta": { "ai_outputParser": [[{ "node": "IA - Generar minuta", "type": "ai_outputParser", "index": 0 }]] },
+    "Armar HTML de la minuta": { "main": [[{ "node": "Crear documento (Drive API)", "type": "main", "index": 0 }]] },
+    "Crear documento (Drive API)": { "main": [[{ "node": "Formatear mensaje", "type": "main", "index": 0 }]] },
+    "Formatear mensaje": { "main": [[{ "node": "Enviar minuta a Slack", "type": "main", "index": 0 }]] },
+    "Enviar minuta a Slack": { "main": [[{ "node": "Registrar minuta procesada", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "pinData": {}
+}

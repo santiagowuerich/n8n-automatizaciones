@@ -1,0 +1,1271 @@
+collection
+pagination
+0
+active:true
+admin_managed:false
+booking_method:instant
+color:#8247f5
+created_at:2025-08-06T15:44:56.627423Z
+custom_questions
+0
+answer_choices:[empty array]
+enabled:true
+include_other:false
+name:Cuéntenos algo que nos ayude a prepararnos para la reunión.
+position:0
+required:false
+type:text
+1
+answer_choices:[empty array]
+enabled:true
+include_other:false
+name:Número de teléfono
+position:1
+required:true
+type:phone_number
+deleted_at:null
+description_html:null
+description_plain:null
+duration:45
+duration_options:[empty array]
+internal_note:null
+is_paid:false
+kind:solo
+locale:es
+locations
+0
+kind:google_conference
+name:Agendá una prueba
+pooling_type:null
+position:2
+profile
+name:Nicolás Gonzalez
+owner:https://api.calendly.com/users/b7e6acbe-a796-44e0-b9cf-6d3d7130d590
+type:User
+scheduling_url:https://calendly.com/nicolas-xtract/agenda-una-prueba
+secret:false
+slug:agenda-una-prueba
+type:StandardEventType
+updated_at:2026-04-22T18:59:51.324220Z
+uri:https://api.calendly.com/event_types/1aa8c188-af98-4d9b-809d-67529b221e38
+1
+active:true
+admin_managed:false
+booking_method:instant
+color:#8247f5
+created_at:2026-01-16T18:14:48.359762Z
+custom_questions
+0
+answer_choices:[empty array]
+enabled:true
+include_other:false
+name:Phone number
+position:0
+required:true
+type:phone_number
+1
+answer_choices:[empty array]
+enabled:true
+include_other:false
+name:Please share anything that will help prepare for our meeting.
+position:1
+required:false
+type:text
+deleted_at:null
+description_html:null
+description_plain:null
+duration:45
+duration_options:[empty array]
+internal_note:null
+is_paid:false
+kind:solo
+locale:en
+locations
+0
+kind:google_conference
+name:Agenda una reunión
+pooling_type:collective
+position:9
+profile:null
+scheduling_url:https://calendly.com/d/cvfz-mcm-596/agenda-una-reunion
+secret:false
+slug:null
+type:StandardEventType
+updated_at:2026-07-31T17:26:49.770618Z
+uri:https://api.calendly.com/event_types/0c293b58-3c0b-4eb3-a845-7a4ff4b8fe20
+2
+active:true
+admin_managed:false
+booking_method:instant
+color:#8247f5
+created_at:2026-01-16T18:31:42.481515Z
+custom_questions
+0
+answer_choices:[empty array]
+enabled:true
+include_other:false
+name:Phone number
+position:0
+required:true
+type:phone_number
+1
+answer_choices:[empty array]
+enabled:true
+include_other:false
+name:Please share anything that will help prepare for our meeting.
+position:1
+required:false
+type:text
+deleted_at:null
+description_html:null
+description_plain:null
+duration:45
+duration_options:[empty array]
+internal_note:null
+is_paid:false
+kind:solo
+locale:en
+locations
+0
+kind:google_conference
+name:Agenda una reunión con Juan
+pooling_type:collective
+position:7
+profile:null
+scheduling_url:https://calendly.com/d/cych-sm6-6c6/agenda-una-reunion-con-juan
+secret:false
+slug:null
+type:StandardEventType
+updated_at:2026-07-31T17:26:49.770618Z
+uri:https://api.calendly.com/event_types/4c5884c7-7810-4868-8895-9088f1d2e36d
+3
+active:true
+admin_managed:false
+booking_method:instant
+color:#8247f5
+created_at:2026-01-16T18:30:31.142850Z
+custom_questions
+0
+answer_choices:[empty array]
+enabled:true
+include_other:false
+name:Phone number
+position:0
+required:true
+type:phone_number
+1
+answer_choices:[empty array]
+enabled:true
+include_other:false
+name:Please share anything that will help prepare for our meeting.
+position:1
+required:false
+type:text
+deleted_at:null
+description_html:null
+description_plain:null
+duration:45
+duration_options:[empty array]
+internal_note:null
+is_paid:false
+kind:solo
+locale:en
+locations
+0
+kind:google_conference
+name:Agenda una reunión con Nicolás
+pooling_type:collective
+position:8
+profile:null
+scheduling_url:https://calendly.com/d/ctqx-8gv-9fj/agenda-una-reunion-con-nicolas
+secret:false
+slug:null
+type:StandardEventType
+updated_at:2026-07-31T17:26:49.770618Z
+uri:https://api.calendly.com/event_types/e16e48dc-0bb8-4491-8ac7-bd4fae59adbd
+4
+active:true
+admin_managed:false
+booking_method:instant
+color:#8247f5
+created_at:2025-08-06T15:41:24.638875Z
+custom_questions
+0
+answer_choices:[empty array]
+enabled:true
+include_other:false
+name:Please share anything that will help prepare for our meeting.
+position:0
+required:false
+type:text
+1
+answer_choices:[empty array]
+enabled:true
+include_other:false
+name:Teléfono:
+position:1
+required:true
+type:phone_number
+deleted_at:null
+description_html:null
+description_plain:null
+duration:45
+duration_options:[empty array]
+internal_note:null
+is_paid:false
+kind:solo
+locale:en
+locations
+0
+kind:google_conference
+name:Book a demo
+pooling_type:null
+position:2
+profile
+name:Juan Alvarez
+owner:https://api.calendly.com/users/c7d2f6f5-298d-4bb2-b321-d4b8989084de
+type:User
+scheduling_url:https://calendly.com/juan-alvarez-xtract/book-a-demo
+secret:false
+slug:book-a-demo
+type:StandardEventType
+updated_at:2026-04-15T17:47:46.857029Z
+uri:https://api.calendly.com/event_types/e70dd7fb-5ab2-4b3c-ab9a-40c0b9d7fea8
+5
+active:true
+admin_managed:false
+booking_method:instant
+color:#8247f5
+created_at:2025-08-06T15:47:25.085000Z
+custom_questions
+0
+answer_choices:[empty array]
+enabled:true
+include_other:false
+name:Cuéntenos algo que nos ayude a prepararnos para la reunión.
+position:0
+required:false
+type:text
+1
+answer_choices:[empty array]
+enabled:true
+include_other:false
+name:Número de teléfono
+position:1
+required:true
+type:phone_number
+deleted_at:null
+description_html:null
+description_plain:null
+duration:45
+duration_options:[empty array]
+internal_note:null
+is_paid:false
+kind:solo
+locale:es
+locations
+0
+kind:google_conference
+name:Coordina una demo
+pooling_type:null
+position:1
+profile
+name:Nicolás Gonzalez
+owner:https://api.calendly.com/users/b7e6acbe-a796-44e0-b9cf-6d3d7130d590
+type:User
+scheduling_url:https://calendly.com/nicolas-xtract/coordina-una-demo
+secret:false
+slug:coordina-una-demo
+type:StandardEventType
+updated_at:2026-04-22T19:00:02.573388Z
+uri:https://api.calendly.com/event_types/b5b91cd3-af23-4ac3-aea9-c1c422d6481c
+6
+active:true
+admin_managed:false
+booking_method:instant
+color:#8247f5
+created_at:2025-06-19T15:46:37.542523Z
+custom_questions
+0
+answer_choices:[empty array]
+enabled:true
+include_other:false
+name:Cuéntenos algo que nos ayude a prepararnos para la reunión.
+position:0
+required:false
+type:text
+1
+answer_choices:[empty array]
+enabled:true
+include_other:false
+name:Número de teléfono
+position:1
+required:true
+type:phone_number
+deleted_at:null
+description_html:null
+description_plain:null
+duration:45
+duration_options:[empty array]
+internal_note:null
+is_paid:false
+kind:solo
+locale:es
+locations
+0
+kind:google_conference
+name:Demostración en vivo
+pooling_type:null
+position:3
+profile
+name:Nicolás Gonzalez
+owner:https://api.calendly.com/users/b7e6acbe-a796-44e0-b9cf-6d3d7130d590
+type:User
+scheduling_url:https://calendly.com/nicolas-xtract/landing
+secret:false
+slug:landing
+type:StandardEventType
+updated_at:2026-04-22T18:59:44.002455Z
+uri:https://api.calendly.com/event_types/9529b42e-4107-46c2-a0c4-af80f0e9d738
+7
+active:true
+admin_managed:false
+booking_method:instant
+color:#8247f5
+created_at:2026-07-27T12:41:21.420429Z
+custom_questions
+0
+answer_choices:[empty array]
+enabled:true
+include_other:false
+name:País
+position:0
+required:true
+type:string
+1
+answer_choices:[empty array]
+enabled:true
+include_other:false
+name:Número de teléfono
+position:1
+required:true
+type:phone_number
+2
+answer_choices:[empty array]
+enabled:true
+include_other:false
+name:¿Qué ERP utiliza tu empresa?
+position:2
+required:true
+type:string
+3
+answer_choices
+0:Manualmente por el equipo de contabilidad
+1:Usando un software de OCR/IA
+2:A través de un portal de proveedores
+3:Automáticamente mediante integraciones
+enabled:true
+include_other:true
+name:¿Cómo se ingresan actualmente las facturas de proveedores en su ERP?
+position:3
+required:true
+type:single_select
+4
+answer_choices
+0:No, las aprobaciones se realizan por email o Slack
+1:Sí, pero es parcialmente manual
+2:Sí, está completamente automatizado en nuestro ERP
+3:No estoy seguro
+enabled:true
+include_other:false
+name:¿Actualmente cuentan con un flujo de aprobación de facturas?
+position:4
+required:true
+type:single_select
+5
+answer_choices
+0:Sí, manualmente
+1:Sí, con una herramienta de gestión de gastos
+2:No
+enabled:true
+include_other:false
+name:¿Tu empresa gestiona gastos de empleados (tickets / viáticos)?
+position:5
+required:true
+type:single_select
+6
+answer_choices
+0:Ingreso manual de facturas 
+1:Cuellos de botella en aprobaciones
+2:Rendición y digitalización de gastos
+3:Pagos internacionales
+4:Automatización contable
+enabled:true
+include_other:false
+name:¿Qué problema principal estás buscando resolver?
+position:6
+required:true
+type:multi_select
+7
+answer_choices:[empty array]
+enabled:true
+include_other:false
+name:Cuéntenos algo que nos ayude a prepararnos para la reunión.
+position:7
+required:false
+type:text
+deleted_at:null
+description_html:null
+description_plain:null
+duration:45
+duration_options:[empty array]
+internal_note:null
+is_paid:false
+kind:solo
+locale:es
+locations
+0
+kind:google_conference
+1
+kind:google_conference
+2
+kind:google_conference
+3
+kind:google_conference
+4
+kind:google_conference
+name:Intec Software + Xtract: agendá una reunión
+pooling_type:multi_pool
+position:2
+profile:null
+scheduling_url:https://calendly.com/d/dv4v-hyn-jrb/intec-software-xtract-agenda-una-reunion
+secret:false
+slug:null
+type:StandardEventType
+updated_at:2026-07-31T17:26:49.770618Z
+uri:https://api.calendly.com/event_types/565eadea-d4dd-44eb-87b7-64cc27b5f9cf
+8
+active:true
+admin_managed:false
+booking_method:instant
+color:#8247f5
+created_at:2025-08-06T15:45:55.753754Z
+custom_questions
+0
+answer_choices:[empty array]
+enabled:true
+include_other:false
+name:Cuéntenos algo que nos ayude a prepararnos para la reunión.
+position:0
+required:false
+type:text
+1
+answer_choices:[empty array]
+enabled:true
+include_other:false
+name:Teléfono:
+position:1
+required:true
+type:phone_number
+deleted_at:null
+description_html:null
+description_plain:null
+duration:45
+duration_options:[empty array]
+internal_note:null
+is_paid:false
+kind:solo
+locale:es
+locations
+0
+kind:google_conference
+name:Newsletter Xtract
+pooling_type:null
+position:1
+profile
+name:Juan Alvarez
+owner:https://api.calendly.com/users/c7d2f6f5-298d-4bb2-b321-d4b8989084de
+type:User
+scheduling_url:https://calendly.com/juan-alvarez-xtract/newsletter-xtract
+secret:false
+slug:newsletter-xtract
+type:StandardEventType
+updated_at:2026-04-15T17:47:33.485965Z
+uri:https://api.calendly.com/event_types/333d0421-3d77-4ab2-be6b-8eaad37bde70
+9
+active:true
+admin_managed:false
+booking_method:instant
+color:#8247f5
+created_at:2026-07-27T16:28:40.562085Z
+custom_questions
+0
+answer_choices:[empty array]
+enabled:true
+include_other:false
+name:País
+position:0
+required:true
+type:string
+1
+answer_choices:[empty array]
+enabled:true
+include_other:false
+name:Número de teléfono
+position:1
+required:true
+type:phone_number
+2
+answer_choices:[empty array]
+enabled:true
+include_other:false
+name:¿Qué ERP utiliza tu empresa?
+position:2
+required:true
+type:string
+3
+answer_choices
+0:Manualmente por el equipo de contabilidad
+1:Usando un software de OCR/IA
+2:A través de un portal de proveedores
+3:Automáticamente mediante integraciones
+enabled:true
+include_other:true
+name:¿Cómo se ingresan actualmente las facturas de proveedores en su ERP?
+position:3
+required:true
+type:single_select
+4
+answer_choices
+0:No, las aprobaciones se realizan por email o Slack
+1:Sí, pero es parcialmente manual
+2:Sí, está completamente automatizado en nuestro ERP
+3:No estoy seguro
+enabled:true
+include_other:false
+name:¿Actualmente cuentan con un flujo de aprobación de facturas?
+position:4
+required:true
+type:single_select
+5
+answer_choices
+0:Sí, manualmente
+1:Sí, con una herramienta de gestión de gastos
+2:No
+enabled:true
+include_other:false
+name:¿Tu empresa gestiona gastos de empleados (tickets / viáticos)?
+position:5
+required:true
+type:single_select
+6
+answer_choices
+0:Ingreso manual de facturas 
+1:Cuellos de botella en aprobaciones
+2:Rendición y digitalización de gastos
+3:Pagos internacionales
+4:Automatización contable
+enabled:true
+include_other:false
+name:¿Qué problema principal estás buscando resolver?
+position:6
+required:true
+type:multi_select
+7
+answer_choices:[empty array]
+enabled:true
+include_other:false
+name:Cuéntenos algo que nos ayude a prepararnos para la reunión.
+position:7
+required:false
+type:text
+deleted_at:null
+description_html:null
+description_plain:null
+duration:45
+duration_options:[empty array]
+internal_note:null
+is_paid:false
+kind:solo
+locale:es
+locations
+0
+kind:google_conference
+1
+kind:google_conference
+2
+kind:google_conference
+3
+kind:google_conference
+4
+kind:google_conference
+name:P&A + Xtract: agendá una demostración
+pooling_type:multi_pool
+position:1
+profile:null
+scheduling_url:https://calendly.com/d/d3xt-xqs-bxp/p-a-xtract-agenda-una-demostracion
+secret:false
+slug:null
+type:StandardEventType
+updated_at:2026-07-31T17:26:49.770618Z
+uri:https://api.calendly.com/event_types/caaee971-f7c3-4a78-bf12-35847f8633d5
+10
+active:true
+admin_managed:false
+booking_method:instant
+color:#8247f5
+created_at:2025-08-06T15:48:56.006392Z
+custom_questions
+0
+answer_choices:[empty array]
+enabled:true
+include_other:false
+name:Nombre de la empresa
+position:0
+required:true
+type:string
+1
+answer_choices:[empty array]
+enabled:true
+include_other:false
+name:Cantidad de facturas por mes
+position:1
+required:true
+type:string
+2
+answer_choices:[empty array]
+enabled:true
+include_other:false
+name:Teléfono:
+position:2
+required:true
+type:phone_number
+3
+answer_choices:[empty array]
+enabled:true
+include_other:false
+name:Cuéntenos algo que nos ayude a prepararnos para la reunión.
+position:3
+required:false
+type:text
+deleted_at:null
+description_html:null
+description_plain:null
+duration:45
+duration_options:[empty array]
+internal_note:null
+is_paid:false
+kind:solo
+locale:es
+locations
+0
+kind:google_conference
+name:Regístrate para una demostración
+pooling_type:null
+position:0
+profile
+name:Juan Alvarez
+owner:https://api.calendly.com/users/c7d2f6f5-298d-4bb2-b321-d4b8989084de
+type:User
+scheduling_url:https://calendly.com/juan-alvarez-xtract/registrate-para-una-demostracion
+secret:false
+slug:registrate-para-una-demostracion
+type:StandardEventType
+updated_at:2026-04-15T17:47:22.806003Z
+uri:https://api.calendly.com/event_types/72396c16-1c64-488a-9bb2-bed3fbd3e829
+11
+active:true
+admin_managed:false
+booking_method:instant
+color:#8247f5
+created_at:2025-08-06T17:01:07.541648Z
+custom_questions
+0
+answer_choices:[empty array]
+enabled:true
+include_other:false
+name:Please share anything that will help prepare for our meeting.
+position:0
+required:false
+type:text
+deleted_at:null
+description_html:null
+description_plain:null
+duration:30
+duration_options:[empty array]
+internal_note:null
+is_paid:false
+kind:solo
+locale:en
+locations
+0
+kind:google_conference
+name:Reunión con Xtract
+pooling_type:null
+position:0
+profile
+name:Xtract.app
+owner:https://api.calendly.com/users/2852b8e0-f825-4cf5-9f2c-fccbe41f92b0
+type:User
+scheduling_url:https://calendly.com/xtractapp/reunion-con-xtract
+secret:false
+slug:reunion-con-xtract
+type:StandardEventType
+updated_at:2026-03-19T07:28:28.025178Z
+uri:https://api.calendly.com/event_types/22852ad8-edfd-43ed-af7b-6d6e3845dc02
+12
+active:true
+admin_managed:false
+booking_method:instant
+color:#8247f5
+created_at:2024-12-02T15:59:42.413624Z
+custom_questions
+0
+answer_choices:[empty array]
+enabled:true
+include_other:false
+name:Cuéntenos algo que nos ayude a prepararnos para la reunión.
+position:0
+required:false
+type:text
+deleted_at:null
+description_html:null
+description_plain:null
+duration:30
+duration_options:[empty array]
+internal_note:null
+is_paid:false
+kind:solo
+locale:es
+locations
+0
+kind:google_conference
+name:Reunión de 30 minutos
+pooling_type:null
+position:0
+profile
+name:Micaela Marcos
+owner:https://api.calendly.com/users/f5345d9d-5241-445f-bf6d-5d9b349155a9
+type:User
+scheduling_url:https://calendly.com/micaela-marcos-xtract/30min
+secret:false
+slug:30min
+type:StandardEventType
+updated_at:2026-03-19T07:27:24.506702Z
+uri:https://api.calendly.com/event_types/abe4c5d3-068f-4a91-bb0b-5cd2932ca886
+13
+active:true
+admin_managed:false
+booking_method:instant
+color:#8247f5
+created_at:2025-08-06T15:50:04.734137Z
+custom_questions
+0
+answer_choices:[empty array]
+enabled:true
+include_other:false
+name:Cuéntenos algo que nos ayude a prepararnos para la reunión.
+position:0
+required:false
+type:text
+1
+answer_choices:[empty array]
+enabled:true
+include_other:false
+name:Número de teléfono
+position:1
+required:true
+type:phone_number
+deleted_at:null
+description_html:null
+description_plain:null
+duration:45
+duration_options:[empty array]
+internal_note:null
+is_paid:false
+kind:solo
+locale:es
+locations
+0
+kind:google_conference
+name:Reunión inicial
+pooling_type:null
+position:0
+profile
+name:Nicolás Gonzalez
+owner:https://api.calendly.com/users/b7e6acbe-a796-44e0-b9cf-6d3d7130d590
+type:User
+scheduling_url:https://calendly.com/nicolas-xtract/programa-una-demo
+secret:false
+slug:programa-una-demo
+type:StandardEventType
+updated_at:2026-04-22T18:58:39.242108Z
+uri:https://api.calendly.com/event_types/2346fe71-87d0-4751-8db6-6ef3020744c8
+14
+active:true
+admin_managed:false
+booking_method:instant
+color:#8247f5
+created_at:2026-07-31T17:26:49.360048Z
+custom_questions
+0
+answer_choices:[empty array]
+enabled:true
+include_other:false
+name:País
+position:0
+required:true
+type:string
+1
+answer_choices:[empty array]
+enabled:true
+include_other:false
+name:Número de teléfono
+position:1
+required:true
+type:phone_number
+2
+answer_choices:[empty array]
+enabled:true
+include_other:false
+name:¿Qué ERP utiliza tu empresa?
+position:2
+required:true
+type:string
+3
+answer_choices
+0:Manualmente por el equipo de contabilidad
+1:Usando un software de OCR/IA
+2:A través de un portal de proveedores
+3:Automáticamente mediante integraciones
+enabled:true
+include_other:true
+name:¿Cómo se ingresan actualmente las facturas de proveedores en su ERP?
+position:3
+required:true
+type:single_select
+4
+answer_choices
+0:No, las aprobaciones se realizan por email o Slack
+1:Sí, pero es parcialmente manual
+2:Sí, está completamente automatizado en nuestro ERP
+3:No estoy seguro
+enabled:true
+include_other:false
+name:¿Actualmente cuentan con un flujo de aprobación de facturas?
+position:4
+required:true
+type:single_select
+5
+answer_choices
+0:Sí, manualmente
+1:Sí, con una herramienta de gestión de gastos
+2:No
+enabled:true
+include_other:false
+name:¿Tu empresa gestiona gastos de empleados (tickets / viáticos)?
+position:5
+required:true
+type:single_select
+6
+answer_choices
+0:Ingreso manual de facturas 
+1:Cuellos de botella en aprobaciones
+2:Rendición y digitalización de gastos
+3:Pagos internacionales
+4:Automatización contable
+enabled:true
+include_other:false
+name:¿Qué problema principal estás buscando resolver?
+position:6
+required:true
+type:multi_select
+7
+answer_choices:[empty array]
+enabled:true
+include_other:false
+name:Cuéntenos algo que nos ayude a prepararnos para la reunión.
+position:7
+required:false
+type:text
+deleted_at:null
+description_html:null
+description_plain:null
+duration:45
+duration_options:[empty array]
+internal_note:null
+is_paid:false
+kind:solo
+locale:es
+locations
+0
+kind:google_conference
+1
+kind:google_conference
+2
+kind:google_conference
+3
+kind:google_conference
+4
+kind:google_conference
+name:Xtract [Automatización Contable con IA]
+pooling_type:multi_pool
+position:0
+profile:null
+scheduling_url:https://calendly.com/d/dvn6-rxb-qw3/xtract-automatizacion-contable-con-ia
+secret:false
+slug:null
+type:StandardEventType
+updated_at:2026-07-31T17:27:27.694700Z
+uri:https://api.calendly.com/event_types/adc2b0d1-d213-419c-852c-94f2760a9f11
+15
+active:true
+admin_managed:false
+booking_method:instant
+color:#8247f5
+created_at:2026-07-17T18:58:46.126426Z
+custom_questions
+0
+answer_choices:[empty array]
+enabled:true
+include_other:false
+name:País
+position:0
+required:true
+type:string
+1
+answer_choices:[empty array]
+enabled:true
+include_other:false
+name:Número de teléfono
+position:1
+required:true
+type:phone_number
+2
+answer_choices:[empty array]
+enabled:true
+include_other:false
+name:¿Qué ERP utiliza tu empresa?
+position:2
+required:true
+type:string
+3
+answer_choices
+0:Manualmente por el equipo de contabilidad
+1:Usando un software de OCR/IA
+2:A través de un portal de proveedores
+3:Automáticamente mediante integraciones
+enabled:true
+include_other:true
+name:¿Cómo se ingresan actualmente las facturas de proveedores en su ERP?
+position:3
+required:true
+type:single_select
+4
+answer_choices
+0:No, las aprobaciones se realizan por email o Slack
+1:Sí, pero es parcialmente manual
+2:Sí, está completamente automatizado en nuestro ERP
+3:No estoy seguro
+enabled:true
+include_other:false
+name:¿Actualmente cuentan con un flujo de aprobación de facturas?
+position:4
+required:true
+type:single_select
+5
+answer_choices
+0:Sí, manualmente
+1:Sí, con una herramienta de gestión de gastos
+2:No
+enabled:true
+include_other:false
+name:¿Tu empresa gestiona gastos de empleados (tickets / viáticos)?
+position:5
+required:true
+type:single_select
+6
+answer_choices
+0:Ingreso manual de facturas 
+1:Cuellos de botella en aprobaciones
+2:Rendición y digitalización de gastos
+3:Pagos internacionales
+4:Automatización contable
+enabled:true
+include_other:false
+name:¿Qué problema principal estás buscando resolver?
+position:6
+required:true
+type:multi_select
+7
+answer_choices:[empty array]
+enabled:true
+include_other:false
+name:Cuéntenos algo que nos ayude a prepararnos para la reunión.
+position:7
+required:false
+type:text
+deleted_at:null
+description_html:null
+description_plain:null
+duration:45
+duration_options:[empty array]
+internal_note:null
+is_paid:false
+kind:solo
+locale:es
+locations
+0
+kind:google_conference
+1
+kind:google_conference
+2
+kind:google_conference
+3
+kind:google_conference
+4
+kind:google_conference
+name:Xtract + Galicia: agendá una reunión
+pooling_type:multi_pool
+position:4
+profile:null
+scheduling_url:https://calendly.com/d/ds9z-6zp-bf4/xtract-galicia-agenda-una-reunion
+secret:false
+slug:null
+type:StandardEventType
+updated_at:2026-07-31T17:26:49.770618Z
+uri:https://api.calendly.com/event_types/446f771a-ce40-449f-a1a9-288b0a9e96dc
+16
+active:true
+admin_managed:false
+booking_method:instant
+color:#8247f5
+created_at:2026-07-21T13:20:47.745623Z
+custom_questions
+0
+answer_choices:[empty array]
+enabled:true
+include_other:false
+name:País
+position:0
+required:true
+type:string
+1
+answer_choices:[empty array]
+enabled:true
+include_other:false
+name:Número de teléfono
+position:1
+required:true
+type:phone_number
+2
+answer_choices:[empty array]
+enabled:true
+include_other:false
+name:¿Qué ERP utiliza tu empresa?
+position:2
+required:true
+type:string
+3
+answer_choices
+0:Manualmente por el equipo de contabilidad
+1:Usando un software de OCR/IA
+2:A través de un portal de proveedores
+3:Automáticamente mediante integraciones
+enabled:true
+include_other:true
+name:¿Cómo se ingresan actualmente las facturas de proveedores en su ERP?
+position:3
+required:true
+type:single_select
+4
+answer_choices
+0:No, las aprobaciones se realizan por email o Slack
+1:Sí, pero es parcialmente manual
+2:Sí, está completamente automatizado en nuestro ERP
+3:No estoy seguro
+enabled:true
+include_other:false
+name:¿Actualmente cuentan con un flujo de aprobación de facturas?
+position:4
+required:true
+type:single_select
+5
+answer_choices
+0:Sí, manualmente
+1:Sí, con una herramienta de gestión de gastos
+2:No
+enabled:true
+include_other:false
+name:¿Tu empresa gestiona gastos de empleados (tickets / viáticos)?
+position:5
+required:true
+type:single_select
+6
+answer_choices
+0:Ingreso manual de facturas 
+1:Cuellos de botella en aprobaciones
+2:Rendición y digitalización de gastos
+3:Pagos internacionales
+4:Automatización contable
+enabled:true
+include_other:false
+name:¿Qué problema principal estás buscando resolver?
+position:6
+required:true
+type:multi_select
+7
+answer_choices:[empty array]
+enabled:true
+include_other:false
+name:Cuéntenos algo que nos ayude a prepararnos para la reunión.
+position:7
+required:false
+type:text
+deleted_at:null
+description_html:null
+description_plain:null
+duration:45
+duration_options:[empty array]
+internal_note:null
+is_paid:false
+kind:solo
+locale:es
+locations
+0
+kind:google_conference
+1
+kind:google_conference
+2
+kind:google_conference
+3
+kind:google_conference
+4
+kind:google_conference
+name:Xtract Payouts: agendá una demo
+pooling_type:multi_pool
+position:3
+profile:null
+scheduling_url:https://calendly.com/d/d3xx-w7f-yjb/xtract-payouts-agenda-una-demo
+secret:false
+slug:null
+type:StandardEventType
+updated_at:2026-07-31T17:26:49.770618Z
+uri:https://api.calendly.com/event_types/0b80d3c7-117b-4955-a703-cb00a6e96c02
+17
+active:true
+admin_managed:false
+booking_method:instant
+color:#8247f5
+created_at:2026-03-17T13:54:06.267980Z
+custom_questions
+0
+answer_choices:[empty array]
+enabled:true
+include_other:false
+name:País
+position:0
+required:true
+type:string
+1
+answer_choices:[empty array]
+enabled:true
+include_other:false
+name:Número de teléfono
+position:1
+required:true
+type:phone_number
+2
+answer_choices:[empty array]
+enabled:true
+include_other:false
+name:¿Qué ERP utiliza tu empresa?
+position:2
+required:true
+type:string
+3
+answer_choices
+0:Manualmente por el equipo de contabilidad
+1:Usando un software de OCR/IA
+2:A través de un portal de proveedores
+3:Automáticamente mediante integraciones
+enabled:true
+include_other:true
+name:¿Cómo se ingresan actualmente las facturas de proveedores en su ERP?
+position:3
+required:true
+type:single_select
+4
+answer_choices
+0:No, las aprobaciones se realizan por email o Slack
+1:Sí, pero es parcialmente manual
+2:Sí, está completamente automatizado en nuestro ERP
+3:No estoy seguro
+enabled:true
+include_other:false
+name:¿Actualmente cuentan con un flujo de aprobación de facturas?
+position:4
+required:true
+type:single_select
+5
+answer_choices
+0:Sí, manualmente
+1:Sí, con una herramienta de gestión de gastos
+2:No
+enabled:true
+include_other:false
+name:¿Tu empresa gestiona gastos de empleados (tickets / viáticos)?
+position:5
+required:true
+type:single_select
+6
+answer_choices
+0:Ingreso manual de facturas 
+1:Cuellos de botella en aprobaciones
+2:Rendición y digitalización de gastos
+3:Pagos internacionales
+4:Automatización contable
+enabled:true
+include_other:false
+name:¿Qué problema principal estás buscando resolver?
+position:6
+required:true
+type:multi_select
+7
+answer_choices:[empty array]
+enabled:true
+include_other:false
+name:Cuéntenos algo que nos ayude a prepararnos para la reunión.
+position:7
+required:false
+type:text
+deleted_at:null
+description_html:null
+description_plain:null
+duration:45
+duration_options:[empty array]
+internal_note:null
+is_paid:false
+kind:solo
+locale:es
+locations
+0
+kind:google_conference
+1
+kind:google_conference
+2
+kind:google_conference
+3
+kind:google_conference
+4
+kind:google_conference
+name:XtractWeb
+pooling_type:multi_pool
+position:6
+profile:null
+scheduling_url:https://calendly.com/d/cvfb-wb5-gx6/xtractweb
+secret:false
+slug:null
+type:StandardEventType
+updated_at:2026-07-31T17:26:49.770618Z
+uri:https://api.calendly.com/event_types/3843f6aa-3a27-4964-ab70-b81b27667e3a

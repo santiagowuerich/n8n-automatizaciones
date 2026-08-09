@@ -1,0 +1,898 @@
+{
+  "name": "Closed Lost WhatsApp — 1. Envío vía Chatwoot",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## 1. Notion como fuente, filtros en codigo\nSe leen las paginas RAW (simple: false) y se filtra en Code:\n- Status(*) = Closed Lost\n- Calificacion = Verde (WA_SOLO_VERDES, default true)\n\nNORMALIZACION DE TELEFONOS (critica): los numeros vienen cargados a mano. Se agrega prefijo segun Pais(*) y en Argentina se fuerza el 9 de movil — sin el 9, WhatsApp lo trata como fijo y el mensaje NO SE ENTREGA sin dar error.\n\nDedupe contra 'Enviados WA' + WA_LIMITE_TANDA (default 20).",
+        "height": 528,
+        "width": 520,
+        "color": 4
+      },
+      "id": "5a38cfd8-99b0-4344-98c6-037dcabee089",
+      "name": "Sticky Note ef0a93f9",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        304,
+        608
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 2. Chatwoot exige 3 pasos\nPara mandar una plantilla NO alcanza con /messages: el contacto y la conversacion tienen que existir antes.\n\ncontacto -> conversacion -> mensaje\n\nPor eso se busca primero y solo se crea si no existe. Crear duplicados ensucia la bandeja del equipo.",
+        "height": 320,
+        "width": 1180,
+        "color": 5
+      },
+      "id": "133649ae-d8a1-431f-80d7-df7a1cadb97e",
+      "name": "Sticky Note 83021f0c",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        848,
+        608
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 3. La plantilla tiene que estar aprobada\nMeta no permite texto libre en mensajes iniciados por la empresa.\n\ntemplate_params lleva name, category, language y processed_params (las variables por posicion: \"1\", \"2\").\n\nEl link de Calendly va DENTRO de la plantilla aprobada.\n\nSolo funciona en inboxes de WhatsApp Cloud.",
+        "height": 424,
+        "width": 520,
+        "color": 2
+      },
+      "id": "b2930856-f347-43f0-8fac-c186079db36f",
+      "name": "Sticky Note aaa53886",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2080,
+        624
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 4. Guardar los IDs de Chatwoot\nSe guarda conversation_id y contact_id en la hoja.\n\nEl workflow de recepcion los necesita para cruzar la respuesta con el contexto del CRM.\n\nSe marca enviado recien despues del envio: si falla, queda pendiente para la proxima tanda.",
+        "height": 360,
+        "width": 348,
+        "color": 6
+      },
+      "id": "4004e671-9ba7-4674-90f8-78d353d54a88",
+      "name": "Sticky Note 258db199",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2640,
+        640
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "34068d3a-5185-45ee-948b-54b1fa84bfd4",
+      "name": "Ejecutar tanda",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        1344
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Unico lugar de configuracion del workflow.\n// Esta instancia de n8n corre con N8N_BLOCK_ENV_ACCESS_IN_NODE: $env tira\n// \"access to env vars denied\" y el `|| default` NO salva, porque la excepcion\n// se tira al tocar $env. Por eso la config vive aca.\n// Todo nodo aguas abajo lee con: $('Config').first().json.LO_QUE_SEA\nreturn [{ json: {\n  // --- Chatwoot ---\n  CHATWOOT_URL: 'https://chatwoot.xtract.app',               // sin barra final, ej: https://app.chatwoot.com\n  CHATWOOT_ACCOUNT_ID: '1', // numerico, sale de la URL /app/accounts/<id>/\n  CHATWOOT_INBOX_ID: '1',     // inbox de WhatsApp, NO otro canal\n\n  // --- Hoja de control del piloto (pestanas: Enviados WA, Interacciones) ---\n  // Pestana de la MISMA planilla de donde salen los leads a contactar.\n  // Antes esto venia de Notion; se saco a pedido y el piloto se maneja\n  // 100% con la hoja.\n  WA_LEADS_TAB: 'Leads Piloto',\n\n  // Pausa entre un envio y el siguiente. NO es cosmetico permite a meta no degradar el numero\n  WA_ESPERA_ENTRE_ENVIOS_SEG: 10,\n\n  WA_SHEET_URL: 'https://docs.google.com/spreadsheets/d/1w6wVAuYmHjI8Fk4b3S1VLxAcgSSQkUjHOTrE1enmaP8/edit',\n\n  // --- Plantilla aprobada en Meta ---\n  WA_TEMPLATE_NAME: 'reactivacion_closed_lost',\n  WA_TEMPLATE_LANG: 'es_AR',\n  WA_TEMPLATE_PREVIEW: 'Hola {{1}}, como estas? Te escribo de parte del equipo de Xtract.',\n\n  // --- Barandas del piloto ---\n  WA_LIMITE_TANDA: 1,   // maximo de envios por corrida, para no quemar el numero\n  WA_SOLO_VERDES: 'true' // solo leads calificados Verde\n} }];"
+      },
+      "id": "fc44d1a0-12a2-424a-a124-16391c4dd898",
+      "name": "Config",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        416,
+        1344
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// =====================================================================\n// ARMA LA TANDA DE ENVIO desde la pestana de leads de la planilla.\n// Antes esto leia Notion; se saco a pedido. El normalizador de telefonos\n// se conserva TAL CUAL: la hoja puede traer numeros pegados a mano y es\n// la unica pieza que evita mandarle un WhatsApp a un numero invalido.\n// =====================================================================\nconst LIMITE = parseInt($('Config').first().json.WA_LIMITE_TANDA) || 20;\nconst SOLO_VERDES = String($('Config').first().json.WA_SOLO_VERDES || 'true') === 'true';\n\n// normKey: NFD, sin acentos, minusculas, separadores colapsados.\n// Los encabezados de la hoja los escribe una persona: \"Telefono Normalizado\",\n// \"telefono_normalizado\" y \"Teléfono normalizado\" tienen que ser lo mismo.\nconst normKey = s => (s || '').toString()\n  .normalize('NFD').replace(/[\\u0300-\\u036f]/g, '')\n  .toLowerCase().replace(/[\\s_\\-\\/]+/g, ' ').trim();\n\nconst normalizarFila = r => {\n  const o = {};\n  for (const k of Object.keys(r || {})) o[normKey(k)] = r[k];\n  return o;\n};\n\n// Primer alias que exista y no venga vacio\nfunction campo(fila, ...alias) {\n  for (const a of alias) {\n    const v = fila[normKey(a)];\n    if (v != null && String(v).trim() !== '') return String(v).trim();\n  }\n  return '';\n}\n\nconst PREFIJOS = { argentina: '54', uruguay: '598', chile: '56', mexico: '52', colombia: '57', peru: '51', brasil: '55', 'costa rica': '506', ecuador: '593', panama: '507', paraguay: '595', bolivia: '591' };\n\nfunction normalizarTel(raw, paisStr) {\n  let d = (raw || '').toString().replace(/[^0-9]/g, '');\n  if (!d) return '';\n  if (d.startsWith('00')) d = d.slice(2);\n  const pais = (paisStr || '').toString().toLowerCase();\n  const clave = Object.keys(PREFIJOS).find(k => pais.includes(k)) || '';\n  const pref = PREFIJOS[clave] || '';\n\n  // Si el numero YA trae prefijo de CUALQUIER pais conocido y largo pleno,\n  // se respeta lo cargado: el campo Pais puede estar mal (datos a mano).\n  const yaInternacional = d.length >= 11 && Object.values(PREFIJOS).some(pf => d.startsWith(pf));\n\n  if (!yaInternacional && pref) {\n    if (d.startsWith('0')) d = d.slice(1);\n    d = pref + d;\n  }\n  // Argentina: moviles llevan 9 tras el 54. Sin el 9, WhatsApp lo trata\n  // como fijo y el mensaje NO SE ENTREGA (sin error).\n  if (d.startsWith('54') && !d.startsWith('549')) {\n    d = '549' + d.slice(2);\n  }\n  if (d.length < 10 || d.length > 15) return '';\n  return d;\n}\n\n// Dedupe contra lo ya enviado. Solo bloquea los que salieron DE VERDAD:\n// una fila con estado 'error' vuelve a entrar en la proxima tanda.\n// Si la hoja no existe o no se pudo leer, la lista queda vacia y no se\n// bloquea a nadie: es preferible a cortar la tanda entera.\nconst yaEnviados = new Set();\ntry {\n  for (const it of $('Leer enviados').all()) {\n    const r = it.json || {};\n    if (!String(r.estado || '').toLowerCase().startsWith('enviado')) continue;\n    const t = String(r.telefono || '').replace(/[^0-9]/g, '');\n    if (t) yaEnviados.add(t.slice(-8));\n  }\n} catch (e) {}\n\nconst elegibles = [];\nconst vistos = new Set();   // la hoja puede traer el mismo numero dos veces\n\nfor (const item of $('Leer leads del piloto').all()) {\n  const f = normalizarFila(item.json);\n\n  const empresa = campo(f, 'Empresa', 'Nombre Oportunidad');\n  const nombre  = campo(f, 'Contacto', 'Nombre', 'Nombre KDM (SDR)');\n  const pais    = campo(f, 'Pais', 'Pais(*)');\n  const calif   = campo(f, 'Calificacion');\n\n  // Si la hoja NO trae la columna de calificacion, NO se filtra: la lista\n  // del piloto ya viene filtrada a Verdes. Filtrar por una columna ausente\n  // dejaria la tanda vacia sin ningun error visible.\n  if (SOLO_VERDES && calif && !calif.toLowerCase().startsWith('verde')) continue;\n\n  const tel = normalizarTel(\n    campo(f, 'Telefono Normalizado', 'Telefono', 'Whatsapp KDM'), pais);\n  if (!tel) continue;\n\n  const cola = tel.slice(-8);\n  if (yaEnviados.has(cola) || vistos.has(cola)) continue;\n  vistos.add(cola);\n\n  // Si 'empresa' es un email cargado por error, no puede ir en la plantilla\n  const empresaDisplay = (!empresa || empresa.includes('@')) ? (nombre || 'tu empresa') : empresa;\n  const primerNombre = campo(f, 'Primer Nombre')\n    || (nombre.split(' ')[0] || '').trim()\n    || empresaDisplay;\n\n  // El motivo suele traer el mensaje de despedida pegado entero. Es el\n  // contexto mas valioso que hay, pero normalizado para no romper el prompt.\n  let motivo = campo(f, 'Motivo Perdida', 'Motivo Lost').replace(/\\s+/g, ' ').trim();\n  if (motivo.length > 600) motivo = motivo.slice(0, 600) + '…';\n\n  elegibles.push({ json: {\n    notion_page_id: campo(f, 'notion id', 'notion page id'),\n    nombre: nombre || primerNombre,\n    primer_nombre: primerNombre,\n    empresa: empresaDisplay,\n    telefono: tel,\n    telefono_e164: '+' + tel,\n    motivo_perdida: motivo,\n    sistema: campo(f, 'Sistema Actual', 'Sistema', 'Que sistema usan?(*)'),\n    pais: pais,\n    email: campo(f, 'Email'),\n    owner: campo(f, 'Comercial', 'Owner', 'Owner(*)'),\n    origen: campo(f, 'Origen'),\n    cantidad_facturas: campo(f, 'Facturas Mes', 'Cantidad de facturas', 'Cantidad de facturas(*)'),\n    company_size: campo(f, 'Company Size'),\n    fecha_discovery: campo(f, 'Fecha Discovery').slice(0, 10),\n    fecha_reunion: campo(f, 'Fecha Reunion', 'Fecha Primera Reunion').slice(0, 10),\n    fecha_propuesta: campo(f, 'Fecha Propuesta', 'Fecha Envio Propuesta').slice(0, 10),\n    dias_desde_perdida: campo(f, 'Dias desde Perdida'),\n    hubo_reunion: campo(f, 'Hubo Reunion'),\n    link_discovery: campo(f, 'Link Discovery', 'Link a Discovery(*)'),\n    calificacion: calif\n  } });\n}\n\nreturn elegibles.slice(0, LIMITE);"
+      },
+      "id": "0c3ead92-8bde-4bfd-b09c-895744511f2b",
+      "name": "Filtrar elegibles y armar tanda",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1072,
+        1344
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Config').first().json.CHATWOOT_URL }}/api/v1/accounts/{{ $('Config').first().json.CHATWOOT_ACCOUNT_ID }}/contacts/search",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "={{ $json.telefono_e164 }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "00480c09-a124-4e31-9659-747352030528",
+      "name": "Chatwoot - Buscar contacto",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1536,
+        1360
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "BjYt68eHeT61ihqb",
+          "name": "Chatwoot API"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.payload }}",
+              "operator": {
+                "type": "array",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "255abd02-f814-4417-a191-d066075ba6b5",
+      "name": "Existe el contacto?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1776,
+        1360
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Config').first().json.CHATWOOT_URL }}/api/v1/accounts/{{ $('Config').first().json.CHATWOOT_ACCOUNT_ID }}/contacts",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ inbox_id: $('Config').first().json.CHATWOOT_INBOX_ID, name: $('Loop de envio').item.json.nombre, phone_number: $('Loop de envio').item.json.telefono_e164, custom_attributes: { empresa: $('Loop de envio').item.json.empresa, motivo_perdida: $('Loop de envio').item.json.motivo_perdida } }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "5ba3420e-9755-4966-b609-7f1c432cc17d",
+      "name": "Chatwoot - Crear contacto",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2048,
+        1472
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "BjYt68eHeT61ihqb",
+          "name": "Chatwoot API"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// =====================================================================\n// Saca el contact_id de Chatwoot y lo pega a los datos del lead.\n//\n// OJO CON EL CRUCE: antes esto cruzaba por indice (metas[idx]) sobre la\n// salida de un nodo Merge. El Merge de n8n concatena rama-verdadera y\n// rama-falsa, asi que el orden NO es el original: el contact_id de un lead\n// terminaba pegado a los datos de otro y se mandaba la plantilla con el\n// nombre equivocado.\n// Ahora usa el paired item ($('Nodo').item), que n8n mantiene aunque el\n// item haya pasado por un IF. Por eso el nodo corre \"Once for Each Item\":\n// .item no existe en modo \"All Items\".\n// =====================================================================\nconst meta = $('Loop de envio').item.json;\nconst j = $input.item.json || {};\n\nlet contactId = null;\nif (Array.isArray(j.payload) && j.payload.length > 0) {\n  contactId = j.payload[0].id;                       // busqueda con resultado\n} else if (j.payload && j.payload.contact && j.payload.contact.id) {\n  contactId = j.payload.contact.id;                  // contacto recien creado\n} else if (j.payload && j.payload.id) {\n  contactId = j.payload.id;\n}\n\n// Sin contact_id no se puede seguir: se descarta el item y este lead queda\n// SIN marcar como enviado, asi que entra en la proxima tanda.\nif (!contactId) return null;\n\nreturn { json: Object.assign({}, meta, { contact_id: contactId }) };"
+      },
+      "id": "d7eda39f-4d6a-4636-b757-1831e63d1ded",
+      "name": "Resolver contact_id",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2352,
+        1344
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Config').first().json.CHATWOOT_URL }}/api/v1/accounts/{{ $('Config').first().json.CHATWOOT_ACCOUNT_ID }}/conversations",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ source_id: $json.telefono, inbox_id: $('Config').first().json.CHATWOOT_INBOX_ID, contact_id: $json.contact_id, status: \"open\" }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "788557df-892e-492d-9d05-704f7b4c2027",
+      "name": "Chatwoot - Crear conversacion",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2576,
+        1344
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "BjYt68eHeT61ihqb",
+          "name": "Chatwoot API"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Config').first().json.CHATWOOT_URL }}/api/v1/accounts/{{ $('Config').first().json.CHATWOOT_ACCOUNT_ID }}/conversations/{{ $json.id }}/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ content: $('Config').first().json.WA_TEMPLATE_PREVIEW, message_type: \"outgoing\", template_params: { name: $('Config').first().json.WA_TEMPLATE_NAME || \"reactivacion_closed_lost\", category: \"marketing\", language: $('Config').first().json.WA_TEMPLATE_LANG || \"es_AR\", processed_params: { \"1\": $('Resolver contact_id').item.json.primer_nombre } } }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "1510f959-ecb2-44d3-af11-0d56bb0dc64e",
+      "name": "Chatwoot - Enviar plantilla WA",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2800,
+        1344
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "BjYt68eHeT61ihqb",
+          "name": "Chatwoot API"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "mode": "url",
+          "value": "={{ $('Config').first().json.WA_SHEET_URL }}"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Enviados WA"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "telefono": "={{ $('Resolver contact_id').item.json.telefono }}",
+            "nombre": "={{ $('Resolver contact_id').item.json.nombre }}",
+            "empresa": "={{ $('Resolver contact_id').item.json.empresa }}",
+            "motivo_perdida": "={{ $('Resolver contact_id').item.json.motivo_perdida }}",
+            "sistema": "={{ $('Resolver contact_id').item.json.sistema }}",
+            "notion_page_id": "={{ $('Resolver contact_id').item.json.notion_page_id }}",
+            "chatwoot_contact_id": "={{ $('Resolver contact_id').item.json.contact_id }}",
+            "chatwoot_conversation_id": "={{ $('Chatwoot - Crear conversacion').item.json.id }}",
+            "fecha_envio": "={{ $now.toISO() }}",
+            "estado": "={{ $json.id ? 'enviado' : ('error: ' + ($json.message || $json.error || 'sin detalle')).toString().slice(0, 120) }}",
+            "pais": "={{ $('Resolver contact_id').item.json.pais }}",
+            "email": "={{ $('Resolver contact_id').item.json.email }}",
+            "fecha_propuesta": "={{ $('Resolver contact_id').item.json.fecha_propuesta }}",
+            "calificacion": "={{ $('Resolver contact_id').item.json.calificacion }}",
+            "owner": "={{ $('Resolver contact_id').item.json.owner }}",
+            "cantidad_facturas": "={{ $('Resolver contact_id').item.json.cantidad_facturas }}",
+            "fecha_discovery": "={{ $('Resolver contact_id').item.json.fecha_discovery }}",
+            "fecha_reunion": "={{ $('Resolver contact_id').item.json.fecha_reunion }}",
+            "dias_desde_perdida": "={{ $('Resolver contact_id').item.json.dias_desde_perdida }}",
+            "hubo_reunion": "={{ $('Resolver contact_id').item.json.hubo_reunion }}"
+          },
+          "matchingColumns": [
+            "telefono"
+          ],
+          "schema": [
+            {
+              "id": "telefono",
+              "displayName": "telefono",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "nombre",
+              "displayName": "nombre",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "empresa",
+              "displayName": "empresa",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "motivo_perdida",
+              "displayName": "motivo_perdida",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "sistema",
+              "displayName": "sistema",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "pais",
+              "displayName": "pais",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "owner",
+              "displayName": "owner",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "cantidad_facturas",
+              "displayName": "cantidad_facturas",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "fecha_discovery",
+              "displayName": "fecha_discovery",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "fecha_reunion",
+              "displayName": "fecha_reunion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "fecha_propuesta",
+              "displayName": "fecha_propuesta",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "dias_desde_perdida",
+              "displayName": "dias_desde_perdida",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "hubo_reunion",
+              "displayName": "hubo_reunion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "calificacion",
+              "displayName": "calificacion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "notion_page_id",
+              "displayName": "notion_page_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "chatwoot_contact_id",
+              "displayName": "chatwoot_contact_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "chatwoot_conversation_id",
+              "displayName": "chatwoot_conversation_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "fecha_envio",
+              "displayName": "fecha_envio",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "estado",
+              "displayName": "estado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "75e1d1a5-0f7c-4f60-97f6-aec7b5d4c5ba",
+      "name": "Marcar como enviado",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        3024,
+        1344
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "sgEH8OTRXcjJiTTc",
+          "name": "SheetCuentaSantiago"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "mode": "url",
+          "value": "={{ $('Config').first().json.WA_SHEET_URL }}"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Enviados WA"
+        },
+        "options": {}
+      },
+      "id": "1ec8f607-b308-4f5c-8b70-e8cea8a5418a",
+      "name": "Leer enviados",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        848,
+        1344
+      ],
+      "alwaysOutputData": true,
+      "executeOnce": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "sgEH8OTRXcjJiTTc",
+          "name": "SheetCuentaSantiago"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Config').first().json.CHATWOOT_URL }}/api/v1/accounts/{{ $('Config').first().json.CHATWOOT_ACCOUNT_ID }}/conversations/{{ $('Chatwoot - Crear conversacion').item.json.id }}/labels",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ labels: [\"reactivacion\"] }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "451a1d21-b8c7-4320-9a04-4cecfaab8cec",
+      "name": "Chatwoot - Etiquetar piloto",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        3248,
+        1344
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "BjYt68eHeT61ihqb",
+          "name": "Chatwoot API"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ $('Config').first().json.CHATWOOT_URL }}/api/v1/accounts/{{ $('Config').first().json.CHATWOOT_ACCOUNT_ID }}/contacts/{{ $('Resolver contact_id').item.json.contact_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ (R => JSON.stringify({ custom_attributes: { nombre: R.nombre, empresa: R.empresa, motivo_perdida: R.motivo_perdida, sistema: R.sistema, pais: R.pais, email: R.email, owner: R.owner, cantidad_facturas: R.cantidad_facturas, fecha_discovery: R.fecha_discovery, fecha_reunion: R.fecha_reunion, fecha_propuesta: R.fecha_propuesta, dias_desde_perdida: R.dias_desde_perdida, hubo_reunion: R.hubo_reunion, calificacion: R.calificacion } }))($('Resolver contact_id').item.json) }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        3472,
+        1344
+      ],
+      "id": "c2d2cf57-e4ad-4825-8836-2262fd631b54",
+      "name": "Chatwoot - Guardar contexto CRM",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "BjYt68eHeT61ihqb",
+          "name": "Chatwoot API"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "a78d726c-7d3a-4dff-aa53-70963dc4043f",
+      "name": "Loop de envio",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1280,
+        1344
+      ]
+    },
+    {
+      "parameters": {
+        "amount": "={{ $('Config').first().json.WA_ESPERA_ENTRE_ENVIOS_SEG || 8 }}"
+      },
+      "id": "5701b85c-aa7d-4ab2-b906-c29e7c6f5265",
+      "name": "Esperar entre envios",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        3664,
+        1504
+      ],
+      "webhookId": "c0ffee12-0012-4000-8000-00000000c012"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1w6wVAuYmHjI8Fk4b3S1VLxAcgSSQkUjHOTrE1enmaP8",
+          "mode": "list",
+          "cachedResultName": "Planilla_Piloto_WhatsApp_Final",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1w6wVAuYmHjI8Fk4b3S1VLxAcgSSQkUjHOTrE1enmaP8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1753358619,
+          "mode": "list",
+          "cachedResultName": "Leads Piloto",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1w6wVAuYmHjI8Fk4b3S1VLxAcgSSQkUjHOTrE1enmaP8/edit#gid=1753358619"
+        },
+        "options": {}
+      },
+      "id": "3401497b-f873-4546-9b4d-0b7ce984f425",
+      "name": "Leer leads del piloto",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        624,
+        1344
+      ],
+      "executeOnce": false,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "sgEH8OTRXcjJiTTc",
+          "name": "SheetCuentaSantiago"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Ejecutar tanda": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Leer leads del piloto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filtrar elegibles y armar tanda": {
+      "main": [
+        [
+          {
+            "node": "Loop de envio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chatwoot - Buscar contacto": {
+      "main": [
+        [
+          {
+            "node": "Existe el contacto?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Existe el contacto?": {
+      "main": [
+        [
+          {
+            "node": "Resolver contact_id",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Chatwoot - Crear contacto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chatwoot - Crear contacto": {
+      "main": [
+        [
+          {
+            "node": "Resolver contact_id",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resolver contact_id": {
+      "main": [
+        [
+          {
+            "node": "Chatwoot - Crear conversacion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chatwoot - Crear conversacion": {
+      "main": [
+        [
+          {
+            "node": "Chatwoot - Enviar plantilla WA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chatwoot - Enviar plantilla WA": {
+      "main": [
+        [
+          {
+            "node": "Marcar como enviado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Marcar como enviado": {
+      "main": [
+        [
+          {
+            "node": "Chatwoot - Etiquetar piloto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leer enviados": {
+      "main": [
+        [
+          {
+            "node": "Filtrar elegibles y armar tanda",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chatwoot - Etiquetar piloto": {
+      "main": [
+        [
+          {
+            "node": "Chatwoot - Guardar contexto CRM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chatwoot - Guardar contexto CRM": {
+      "main": [
+        [
+          {
+            "node": "Esperar entre envios",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop de envio": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Chatwoot - Buscar contacto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Esperar entre envios": {
+      "main": [
+        [
+          {
+            "node": "Loop de envio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leer leads del piloto": {
+      "main": [
+        [
+          {
+            "node": "Leer enviados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "2277daf9-2302-4a43-9994-dc100bfbc998",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "d729adb04299e5fdffaac16c28e03747e08c9a30aca5ba4f79d1664c88201e08"
+  },
+  "nodeGroups": [],
+  "id": "YMyp0HVPQygTa5Qn",
+  "tags": []
+}

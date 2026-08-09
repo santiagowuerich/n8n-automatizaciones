@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SalesTracker - Notion Sync & Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+      --accent-color: #6366f1;
+      --accent-glow: rgba(99, 102, 241, 0.4);
+      --text-primary: #f8fafc;
+      --text-secondary: #94a3b8;
+      --glass-bg: rgba(30, 41, 59, 0.45);
+      --glass-border: rgba(255, 255, 255, 0.08);
+      --card-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+      --input-bg: rgba(15, 23, 42, 0.6);
+      --input-focus-border: rgba(99, 102, 241, 0.8);
+      --success-color: #10b981;
+      --warning-color: #fbbf24;
+      --info-color: #38bdf8;
+      --font-main: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-main);
+      background: var(--bg-gradient);
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    .background-decorations {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .circle {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(120px);
+      opacity: 0.25;
+    }
+
+    .circle-1 {
+      top: 10%;
+      right: 15%;
+      width: 400px;
+      height: 400px;
+      background: #6366f1;
+    }
+
+    .circle-2 {
+      bottom: 10%;
+      left: 10%;
+      width: 500px;
+      height: 500px;
+      background: #a855f7;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 1000px;
+      padding: 2rem;
+      z-index: 1;
+      position: relative;
+    }
+
+    .app-header {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .logo .icon {
+      font-size: 2.25rem;
+    }
+
+    .logo h1 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      background: linear-gradient(to right, #ffffff, #a5b4fc);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.5px;
+    }
+
+    .subtitle {
+      color: var(--text-secondary);
+      font-size: 1.1rem;
+    }
+
+    /* Tabs Navigation */
+    .tabs-nav {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      border-bottom: 1px solid var(--glass-border);
+      padding-bottom: 1rem;
+    }
+
+    .tab-btn {
+      background: transparent;
+      border: 1px solid var(--glass-border);
+      color: var(--text-secondary);
+      padding: 0.75rem 1.5rem;
+      border-radius: 50px;
+      font-family: var(--font-main);
+      font-size: 1rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.25s ease;
+    }
+
+    .tab-btn:hover {
+      color: var(--text-primary);
+      background: rgba(255, 255, 255, 0.05);
+      border-color: var(--text-secondary);
+    }
+
+    .tab-btn.active {
+      background: var(--accent-color);
+      color: white;
+      border-color: var(--accent-color);
+      box-shadow: 0 0 15px var(--accent-glow);
+    }
+
+    .tab-content {
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 2rem;
+    }
+
+    @media (max-width: 768px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .glass-card {
+      background: var(--glass-bg);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--glass-border);
+      border-radius: 1.25rem;
+      padding: 2rem;
+      box-shadow: var(--card-shadow);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .glass-card:hover {
+      box-shadow: 0 12px 40px 0 rgba(99, 102, 241, 0.15);
+    }
+
+    .card-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+      border-bottom: 1px solid var(--glass-border);
+      padding-bottom: 0.75rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .form-group {
+      margin-bottom: 1.25rem;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+    }
+
+    label {
+      display: block;
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+    }
+
+    input, textarea {
+      width: 100%;
+      background: var(--input-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 0.75rem;
+      padding: 0.85rem 1rem;
+      color: var(--text-primary);
+      font-family: var(--font-main);
+      font-size: 1rem;
+      outline: none;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    input:focus, textarea:focus {
+      border-color: var(--input-focus-border);
+      box-shadow: 0 0 12px var(--accent-glow);
+    }
+
+    textarea {
+      resize: vertical;
+    }
+
+    .btn-primary {
+      width: 100%;
+      background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+      color: white;
+      border: none;
+      border-radius: 0.75rem;
+      padding: 1rem;
+      font-size: 1.1rem;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+      gap: 0.5rem;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(99, 102, 241, 0.45);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--glass-border);
+      color: var(--text-primary);
+      padding: 0.75rem 1.25rem;
+      border-radius: 0.75rem;
+      font-family: var(--font-main);
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.25s ease;
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: var(--text-secondary);
+    }
+
+    .badge {
+      background: var(--accent-color);
+      color: white;
+      padding: 0.25rem 0.75rem;
+      border-radius: 50px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      box-shadow: 0 0 10px rgba(99, 102, 241, 0.3);
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      border-bottom: 1px solid var(--glass-border);
+      padding-bottom: 0.75rem;
+    }
+
+    .sales-list-container {
+      flex-grow: 1;
+      min-height: 200px;
+      max-height: 320px;
+      overflow-y: auto;
+    }
+
+    .empty-state {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100%;
+      color: var(--text-secondary);
+      text-align: center;
+      font-size: 0.95rem;
+      flex-direction: column;
+      gap: 0.5rem;
+      padding: 2rem 0;
+    }
+
+    .sales-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .sale-item {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--glass-border);
+      padding: 0.85rem;
+      border-radius: 0.75rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      animation: slideIn 0.3s ease;
+    }
+
+    .sale-info {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+    }
+
+    .sale-item-title {
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    .sale-item-desc {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+    }
+
+    .sale-price {
+      font-weight: 700;
+      color: var(--success-color);
+      font-size: 1.1rem;
+    }
+
+    .spinner {
+      width: 20px;
+      height: 20px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: white;
+      animation: spin 0.8s linear infinite;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      padding: 1rem 1.5rem;
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid var(--accent-color);
+      box-shadow: var(--card-shadow);
+      border-radius: 0.75rem;
+      color: white;
+      z-index: 100;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    /* Dashboard Specific Styles */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1.25rem;
+      margin-bottom: 2rem;
+    }
+
+    @media (max-width: 768px) {
+      .kpi-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    .kpi-card {
+      background: rgba(30, 41, 59, 0.5);
+      border: 1px solid var(--glass-border);
+      border-radius: 1rem;
+      padding: 1.25rem;
+      text-align: center;
+      transition: all 0.25s ease;
+    }
+
+    .kpi-card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(99, 102, 241, 0.3);
+    }
+
+    .kpi-label {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 0.5rem;
+    }
+
+    .kpi-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
+
+    .dashboard-layout {
+      display: grid;
+      grid-template-columns: 1fr 1.2fr;
+      gap: 2rem;
+      margin-bottom: 2rem;
+    }
+
+    @media (max-width: 768px) {
+      .dashboard-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .metrics-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .metrics-table th {
+      text-align: left;
+      padding: 0.75rem;
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      border-bottom: 2px solid var(--glass-border);
+    }
+
+    .metrics-table td {
+      padding: 0.75rem;
+      border-bottom: 1px solid var(--glass-border);
+      font-size: 0.95rem;
+    }
+
+    .metrics-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .table-container {
+      max-height: 250px;
+      overflow-y: auto;
+    }
+
+    .dashboard-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px solid var(--glass-border);
+      padding-top: 1.5rem;
+    }
+
+    .loading-overlay {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 300px;
+      flex-direction: column;
+      gap: 1rem;
+      color: var(--text-secondary);
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="background-decorations">
+    <div class="circle circle-1"></div>
+    <div class="circle circle-2"></div>
+  </div>
+
+  <main class="container">
+    <header class="app-header">
+      <div class="logo">
+        <span class="icon">💼</span>
+        <h1>SalesTracker</h1>
+      </div>
+      <p class="subtitle">Registra tus ventas y sincronízalas automáticamente con Notion vía n8n</p>
+    </header>
+
+    <nav class="tabs-nav">
+      <button class="tab-btn active" data-tab="tab-register">📝 Registrar Venta</button>
+      <button class="tab-btn" data-tab="tab-dashboard" id="btn-tab-dashboard">📊 Dashboard de Métricas</button>
+    </nav>
+
+    <!-- TAB 1: REGISTRO DE VENTAS -->
+    <div id="tab-register" class="tab-content active">
+      <div class="grid">
+        <section class="card glass-card">
+          <h2 class="card-title">Nueva Venta</h2>
+          <form id="sales-form">
+            <div class="form-group">
+              <label for="client">Cliente</label>
+              <input type="text" id="client" name="client" placeholder="Ej. Juan Pérez" required>
+            </div>
+
+            <div class="form-group">
+              <label for="item">Producto / Servicio</label>
+              <input type="text" id="item" name="item" placeholder="Ej. Escritorio Nórdico" required>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="amount">Monto ($)</label>
+                <input type="number" id="amount" name="amount" placeholder="0.00" min="0" step="0.01" required>
+              </div>
+              
+              <div class="form-group">
+                <label for="date">Fecha</label>
+                <input type="date" id="date" name="date" required>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="notes">Notas adicionales</label>
+              <textarea id="notes" name="notes" rows="3" placeholder="Detalles de entrega, método de pago, etc."></textarea>
+            </div>
+
+            <button type="submit" id="submit-btn" class="btn-primary">
+              <span class="btn-text">Registrar Venta</span>
+              <div class="spinner hidden"></div>
+            </button>
+          </form>
+        </section>
+
+        <section class="card glass-card side-panel">
+          <div class="panel-header">
+            <h2 class="card-title">Registro de Sesión</h2>
+            <span class="badge" id="sales-count">0 Ventas</span>
+          </div>
+
+          <div class="sales-list-container">
+            <div id="empty-state" class="empty-state">
+              <p>Aún no has registrado ventas en esta sesión.</p>
+            </div>
+            <ul id="sales-list" class="sales-list"></ul>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <!-- TAB 2: DASHBOARD -->
+    <div id="tab-dashboard" class="tab-content">
+      <div id="dashboard-loading" class="card glass-card loading-overlay">
+        <div class="spinner" style="width:40px; height:40px; border-width:3px; border-top-color:var(--accent-color)"></div>
+        <p>Cargando métricas de Notion...</p>
+      </div>
+
+      <div id="dashboard-error" class="card glass-card loading-overlay hidden">
+        <span style="font-size: 3rem;">⚠️</span>
+        <p id="dashboard-error-msg">Error al cargar los datos del dashboard.</p>
+        <button class="btn-secondary" id="btn-retry-dashboard">🔄 Reintentar</button>
+      </div>
+
+      <div id="dashboard-view" class="hidden">
+        <!-- KPIs Row -->
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-label">Facturación Total</div>
+            <div class="kpi-value" id="kpi-revenue" style="color: var(--success-color);">$0,00</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Total Transacciones</div>
+            <div class="kpi-value" id="kpi-qty" style="color: var(--info-color);">0</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Ticket Promedio</div>
+            <div class="kpi-value" id="kpi-ticket" style="color: var(--warning-color);">$0,00</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Producto Estrella</div>
+            <div class="kpi-value" id="kpi-product" style="font-size: 1.15rem; color: #a78bfa; padding-top: 0.25rem;">Ninguno</div>
+          </div>
+        </div>
+
+        <!-- Metrics Tables Grid -->
+        <div class="dashboard-layout">
+          <!-- Left Column: Trend & Top Customers -->
+          <div style="display: flex; flex-direction: column; gap: 2rem;">
+            <!-- Critical Alerts Card -->
+            <div class="card glass-card" id="alert-card-container" style="padding: 1.5rem; border: 1px solid rgba(239, 68, 68, 0.15); background: rgba(239, 68, 68, 0.02); display: none;">
+              <h3 class="card-title" style="font-size: 1.2rem; margin-bottom: 1rem; color: #ef4444; display: flex; align-items: center; gap: 0.5rem;">⚠️ Alertas de Umbral Crítico</h3>
+              <div class="table-container">
+                <table class="metrics-table">
+                  <thead>
+                    <tr>
+                      <th>Sucursal</th>
+                      <th>Mes</th>
+                      <th style="text-align: center;">Ventas</th>
+                      <th style="text-align: right;">Ingresos</th>
+                    </tr>
+                  </thead>
+                  <tbody id="table-alerts"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="card glass-card" style="padding: 1.5rem;">
+              <h3 class="card-title" style="font-size: 1.2rem; margin-bottom: 1rem;">📅 Tendencia Mensual</h3>
+              <div class="table-container">
+                <table class="metrics-table">
+                  <thead>
+                    <tr>
+                      <th>Mes</th>
+                      <th style="text-align: right;">Ingresos</th>
+                    </tr>
+                  </thead>
+                  <tbody id="table-trend"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="card glass-card" style="padding: 1.5rem;">
+              <h3 class="card-title" style="font-size: 1.2rem; margin-bottom: 1rem;">👑 Clientes Top (Fidelidad)</h3>
+              <div class="table-container">
+                <table class="metrics-table">
+                  <thead>
+                    <tr>
+                      <th>Cliente</th>
+                      <th style="text-align: center;">Compras</th>
+                      <th style="text-align: right;">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody id="table-customers"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Column: Product Breakdown -->
+          <div class="card glass-card" style="padding: 1.5rem;">
+            <h3 class="card-title" style="font-size: 1.2rem; margin-bottom: 1rem;">📦 Desglose por Producto</h3>
+            <div class="table-container" style="max-height: 520px;">
+              <table class="metrics-table">
+                <thead>
+                  <tr>
+                    <th>Producto</th>
+                    <th style="text-align: center;">Cant.</th>
+                    <th style="text-align: right;">Total</th>
+                  </tr>
+                </thead>
+                <tbody id="table-products"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Bar -->
+        <div class="card glass-card dashboard-footer">
+          <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+            <h4 style="font-weight: 600; font-size: 1.05rem;">¿Deseas compartir este consolidado?</h4>
+            <p style="color: var(--text-secondary); font-size: 0.85rem;">Se enviará un reporte con estos 4 estilos por email al destinatario configurado.</p>
+          </div>
+          <button class="btn-primary" id="btn-send-email" style="width: auto; padding: 0.75rem 1.5rem;">
+            <span class="email-btn-text">📧 Enviar Reporte por Email</span>
+            <div class="spinner hidden" id="email-spinner"></div>
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Elements
+      const salesForm = document.getElementById('sales-form');
+      const dateInput = document.getElementById('date');
+      const submitBtn = document.getElementById('submit-btn');
+      const btnText = submitBtn.querySelector('.btn-text');
+      const spinner = submitBtn.querySelector('.spinner');
+      
+      const salesCount = document.getElementById('sales-count');
+      const salesList = document.getElementById('sales-list');
+      const emptyState = document.getElementById('empty-state');
+      const toast = document.getElementById('toast');
+
+      // Tab Switch Logic
+      const tabButtons = document.querySelectorAll('.tab-btn');
+      const tabContents = document.querySelectorAll('.tab-content');
+      const btnTabDashboard = document.getElementById('btn-tab-dashboard');
+      
+      const dbLoading = document.getElementById('dashboard-loading');
+      const dbError = document.getElementById('dashboard-error');
+      const dbErrorMsg = document.getElementById('dashboard-error-msg');
+      const dbView = document.getElementById('dashboard-view');
+      const btnRetryDashboard = document.getElementById('btn-retry-dashboard');
+      
+      // Dashboard Elements
+      const kpiRevenue = document.getElementById('kpi-revenue');
+      const kpiQty = document.getElementById('kpi-qty');
+      const kpiTicket = document.getElementById('kpi-ticket');
+      const kpiProduct = document.getElementById('kpi-product');
+      const tableTrend = document.getElementById('table-trend');
+      const tableCustomers = document.getElementById('table-customers');
+      const tableProducts = document.getElementById('table-products');
+      const tableAlerts = document.getElementById('table-alerts');
+      const alertCardContainer = document.getElementById('alert-card-container');
+      const btnSendEmail = document.getElementById('btn-send-email');
+      const emailSpinner = document.getElementById('email-spinner');
+      const emailBtnText = btnSendEmail.querySelector('.email-btn-text');
+
+      let sales = [];
+      try {
+        sales = JSON.parse(localStorage.getItem('session_sales') || '[]');
+      } catch (e) {
+        console.warn('localStorage is sandboxed or unavailable, using in-memory storage.', e);
+      }
+      
+      const today = new Date().toISOString().split('T')[0];
+      dateInput.value = today;
+
+      // Tab toggling
+      tabButtons.forEach(button => {
+        button.addEventListener('click', () => {
+          const targetTab = button.getAttribute('data-tab');
+          
+          tabButtons.forEach(btn => btn.classList.remove('active'));
+          tabContents.forEach(content => content.classList.remove('active'));
+          
+          button.classList.add('active');
+          document.getElementById(targetTab).classList.add('active');
+          
+          if (targetTab === 'tab-dashboard') {
+            loadDashboardData();
+          }
+        });
+      });
+
+      function renderSales() {
+        salesList.innerHTML = '';
+        salesCount.textContent = `${sales.length} Venta${sales.length === 1 ? '' : 's'}`;
+
+        if (sales.length === 0) {
+          emptyState.classList.remove('hidden');
+        } else {
+          emptyState.classList.add('hidden');
+          sales.slice().reverse().forEach(sale => {
+            const li = document.createElement('li');
+            li.className = 'sale-item';
+            li.innerHTML = `
+              <div class="sale-info">
+                <span class="sale-item-title">${sale.item}</span>
+                <span class="sale-item-desc">Clie: ${sale.client} | ${sale.date}</span>
+              </div>
+              <span class="sale-price">$${parseFloat(sale.amount).toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
+            `;
+            salesList.appendChild(li);
+          });
+        }
+      }
+
+      function showToast(message, isError = false) {
+        toast.textContent = message;
+        toast.style.borderColor = isError ? '#ef4444' : '#6366f1';
+        toast.classList.remove('hidden');
+        
+        setTimeout(() => {
+          toast.classList.add('hidden');
+        }, 4000);
+      }
+
+      // Format currency
+      const fmt = (val) => '$' + val.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+      // Fetch Dashboard Data from n8n API
+      async function loadDashboardData() {
+        dbLoading.classList.remove('hidden');
+        dbError.classList.add('hidden');
+        dbView.classList.add('hidden');
+
+        try {
+          const response = await fetch('/webhook/api/sales-data', {
+            headers: {
+              'X-API-Key': 'st_sec_token_9051226d'
+            }
+          });
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          const data = await response.json();
+          
+          // Render KPIs
+          kpiRevenue.textContent = fmt(data.totalRevenue);
+          kpiQty.textContent = `${data.totalSales} ventas`;
+          kpiTicket.textContent = fmt(data.avgTicket);
+          kpiProduct.textContent = data.topProduct || 'Ninguno';
+
+          // Render Warnings / Critical Threshold
+          tableAlerts.innerHTML = '';
+          if (data.warnings && data.warnings.length > 0) {
+            alertCardContainer.style.display = 'block';
+            data.warnings.forEach(w => {
+              const row = `<tr>
+                <td style="font-weight:bold; color:#ef4444;">${w.store}</td>
+                <td>${w.month.toUpperCase()}</td>
+                <td style="text-align:center; font-weight:bold; color:#ef4444;">${w.count}</td>
+                <td style="text-align:right; font-weight:700; color:#f87171;">${fmt(w.revenue)}</td>
+              </tr>`;
+              tableAlerts.insertAdjacentHTML('beforeend', row);
+            });
+          } else {
+            alertCardContainer.style.display = 'none';
+          }
+
+          // Render Trends
+          tableTrend.innerHTML = '';
+          if (data.trends && data.trends.length > 0) {
+            data.trends.forEach(t => {
+              const row = `<tr>
+                <td style="font-weight:500;">${t.month.toUpperCase()}</td>
+                <td style="text-align:right; font-weight:700; color:var(--success-color);">${fmt(t.amount)}</td>
+              </tr>`;
+              tableTrend.insertAdjacentHTML('beforeend', row);
+            });
+          } else {
+            tableTrend.innerHTML = '<tr><td colspan="2" style="text-align:center;color:var(--text-secondary);">Sin datos</td></tr>';
+          }
+
+          // Render Top Customers
+          tableCustomers.innerHTML = '';
+          if (data.customers && data.customers.length > 0) {
+            data.customers.forEach((c, idx) => {
+              const row = `<tr>
+                <td>
+                  <span style="display:inline-block; width:18px; height:18px; border-radius:50%; background:rgba(255,255,255,0.08); text-align:center; font-size:10px; line-height:18px; margin-right:6px;">${idx+1}</span>
+                  ${c.name}
+                </td>
+                <td style="text-align:center; color:var(--text-secondary);">${c.qty}</td>
+                <td style="text-align:right; font-weight:700; color:var(--warning-color);">${fmt(c.amount)}</td>
+              </tr>`;
+              tableCustomers.insertAdjacentHTML('beforeend', row);
+            });
+          } else {
+            tableCustomers.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--text-secondary);">Sin datos</td></tr>';
+          }
+
+          // Render Products
+          tableProducts.innerHTML = '';
+          if (data.products && data.products.length > 0) {
+            data.products.forEach(p => {
+              const row = `<tr>
+                <td style="font-weight:500;">${p.name}</td>
+                <td style="text-align:center; color:var(--text-secondary);">${p.qty}</td>
+                <td style="text-align:right; font-weight:700; color:var(--info-color);">${fmt(p.amount)}</td>
+              </tr>`;
+              tableProducts.insertAdjacentHTML('beforeend', row);
+            });
+          } else {
+            tableProducts.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--text-secondary);">Sin datos</td></tr>';
+          }
+
+          dbLoading.classList.add('hidden');
+          dbView.classList.remove('hidden');
+
+        } catch (err) {
+          console.error('Error fetching dashboard data:', err);
+          dbErrorMsg.textContent = `No se pudieron cargar los datos de Notion: ${err.message}`;
+          dbLoading.classList.add('hidden');
+          dbError.classList.remove('hidden');
+        }
+      }
+
+      btnRetryDashboard.addEventListener('click', loadDashboardData);
+
+      // Trigger Email Dispatch
+      btnSendEmail.addEventListener('click', async () => {
+        btnSendEmail.disabled = true;
+        emailBtnText.textContent = 'Enviando reporte...';
+        emailSpinner.classList.remove('hidden');
+
+        try {
+          const response = await fetch('/webhook/generar-reporte-completo', {
+            headers: {
+              'X-API-Key': 'st_sec_token_9051226d'
+            }
+          });
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          
+          showToast('✉️ ¡Reporte enviado con éxito a santiagow142001@gmail.com!');
+        } catch (err) {
+          console.error(err);
+          showToast(`Error al enviar el reporte: ${err.message}`, true);
+        } finally {
+          btnSendEmail.disabled = false;
+          emailBtnText.textContent = '📧 Enviar Reporte por Email';
+          emailSpinner.classList.add('hidden');
+        }
+      });
+
+      // Submit Form
+      salesForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const webhookUrl = '/webhook/registrar-venta';
+
+        const client = document.getElementById('client').value.trim();
+        const item = document.getElementById('item').value.trim();
+        const amount = document.getElementById('amount').value;
+        const date = document.getElementById('date').value;
+        const notes = document.getElementById('notes').value.trim();
+
+        const saleData = { client, item, amount, date, notes };
+
+        submitBtn.disabled = true;
+        btnText.textContent = 'Enviando a n8n...';
+        spinner.classList.remove('hidden');
+
+        try {
+          const response = await fetch(webhookUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-API-Key': 'st_sec_token_9051226d'
+            },
+            body: JSON.stringify(saleData)
+          });
+
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          sales.push(saleData);
+          try {
+            localStorage.setItem('session_sales', JSON.stringify(sales));
+          } catch (storageError) {
+            // Silently ignore storage error if sandboxed
+          }
+          renderSales();
+          
+          salesForm.reset();
+          dateInput.value = today;
+          
+          showToast('¡Venta registrada y enviada con éxito!');
+        } catch (err) {
+          console.error(err);
+          showToast(`Error al enviar a n8n: ${err.message}`, true);
+        } finally {
+          submitBtn.disabled = false;
+          btnText.textContent = 'Registrar Venta';
+          spinner.classList.add('hidden');
+        }
+      });
+
+      renderSales();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guía — Workflow "Enviar leads" (n8n)</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --panel: #171a23;
+    --panel2: #1d212e;
+    --border: #2a2f3d;
+    --text: #e6e9f0;
+    --muted: #9aa3b5;
+    --accent: #4f8cff;
+    --green: #3fb950;
+    --yellow: #d29922;
+    --red: #f85149;
+    --code-bg: #0b0d12;
+    --mono: "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.55;
+    padding: 2rem 1rem 4rem;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; }
+
+  /* ---------- Header ---------- */
+  header { border-bottom: 1px solid var(--border); padding-bottom: 1.5rem; margin-bottom: 2rem; }
+  .kicker { color: var(--accent); font-size: .8rem; letter-spacing: .12em; text-transform: uppercase; font-weight: 600; }
+  h1 { font-size: 1.9rem; margin: .35rem 0 .6rem; }
+  header p.lead { color: var(--muted); max-width: 75ch; }
+  .meta { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 1rem; }
+  .badge {
+    display: inline-flex; align-items: center; gap: .4rem;
+    background: var(--panel); border: 1px solid var(--border); border-radius: 999px;
+    padding: .25rem .7rem; font-size: .78rem; color: var(--muted);
+  }
+  .badge .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .dot.green { background: var(--green); }
+  .dot.gray { background: var(--muted); }
+  .dot.red { background: var(--red); }
+
+  /* ---------- Sections ---------- */
+  section { margin-bottom: 2.5rem; }
+  h2 { font-size: 1.25rem; margin-bottom: .9rem; padding-bottom: .4rem; border-bottom: 1px solid var(--border); }
+  h3 { font-size: 1.05rem; margin: 1.2rem 0 .5rem; }
+  p { margin-bottom: .7rem; }
+  .muted { color: var(--muted); }
+
+  /* ---------- Callouts ---------- */
+  .callout { border: 1px solid var(--border); border-left-width: 4px; border-radius: 8px; padding: .8rem 1rem; margin: 1rem 0; background: var(--panel); }
+  .callout.info { border-left-color: var(--accent); }
+  .callout.warn { border-left-color: var(--yellow); }
+  .callout.crit { border-left-color: var(--red); }
+  .callout .tag { font-weight: 700; font-size: .75rem; letter-spacing: .08em; text-transform: uppercase; margin-bottom: .3rem; display: block; }
+  .callout.info .tag { color: var(--accent); }
+  .callout.warn .tag { color: var(--yellow); }
+  .callout.crit .tag { color: var(--red); }
+
+  /* ---------- Flow diagram ---------- */
+  .flow { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 1.2rem; overflow-x: auto; }
+  .flow-col { display: flex; flex-direction: column; align-items: stretch; gap: 0; min-width: 640px; }
+  .fnode {
+    background: var(--panel2); border: 1px solid var(--border); border-radius: 8px;
+    padding: .5rem .8rem; font-size: .82rem; display: flex; align-items: center; gap: .6rem;
+  }
+  .fnode .ic { width: 26px; height: 26px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: .85rem; flex-shrink: 0; }
+  .fnode .t { font-weight: 600; }
+  .fnode .s { color: var(--muted); font-size: .72rem; }
+  .farrow { display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: .9rem; padding: .15rem 0; }
+  .farrow.alt::after { content: "⇄"; }
+  .fnode.trigger { border-color: var(--accent); }
+  .fnode.trigger .ic { background: rgba(79,140,255,.15); }
+  .fnode.code .ic { background: rgba(210,153,34,.15); }
+  .fnode.sheet .ic { background: rgba(63,185,80,.15); }
+  .fnode.http .ic { background: rgba(248,81,73,.15); }
+  .fnode.logic .ic { background: rgba(170,120,255,.15); }
+  .fnode.wait .ic { background: rgba(90,200,250,.15); }
+  .branch { display: flex; gap: 1rem; margin: .2rem 0 .2rem 1.8rem; }
+  .branch .bcol { flex: 1; display: flex; flex-direction: column; gap: .35rem; }
+  .branch .blabel { font-size: .7rem; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+  .fnode.true { border-color: var(--green); }
+  .fnode.false { border-color: var(--red); }
+
+  /* ---------- Node cards ---------- */
+  .ncard { border: 1px solid var(--border); border-radius: 10px; background: var(--panel); margin-bottom: 1rem; overflow: hidden; }
+  .ncard .head { display: flex; align-items: center; gap: .8rem; padding: .8rem 1rem; background: var(--panel2); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+  .ncard .head .nm { font-weight: 700; font-size: 1rem; }
+  .ncard .head .nt { color: var(--muted); font-size: .8rem; font-family: var(--mono); }
+  .ncard .body { padding: .8rem 1rem 1rem; }
+  .ncard .body p:last-child { margin-bottom: 0; }
+
+  /* ---------- Tables ---------- */
+  table { width: 100%; border-collapse: collapse; margin: .8rem 0; font-size: .85rem; }
+  th, td { text-align: left; padding: .5rem .7rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; font-size: .75rem; text-transform: uppercase; letter-spacing: .05em; background: var(--panel2); }
+  tr:last-child td { border-bottom: none; }
+  code {
+    background: var(--code-bg); border: 1px solid var(--border); border-radius: 4px;
+    padding: .1rem .35rem; font-family: var(--mono); font-size: .8em;
+  }
+  pre {
+    background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px;
+    padding: .8rem 1rem; overflow-x: auto; font-family: var(--mono); font-size: .78rem; margin: .6rem 0;
+  }
+  pre code { background: none; border: none; padding: 0; }
+  .k { color: var(--accent); }
+  .v { color: var(--green); }
+  .c { color: var(--muted); }
+
+  /* ---------- Checklist ---------- */
+  .checks { list-style: none; }
+  .checks li { padding: .45rem 0; border-bottom: 1px solid var(--border); display: flex; gap: .6rem; align-items: baseline; }
+  .checks li:last-child { border-bottom: none; }
+  .checks input { transform: translateY(2px); accent-color: var(--green); }
+
+  footer { margin-top: 3rem; color: var(--muted); font-size: .8rem; border-top: 1px solid var(--border); padding-top: 1rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="kicker">Guía de referencia · n8n</div>
+  <h1>Workflow "Enviar leads" — cómo funciona cada nodo y cómo se conectan</h1>
+  <p class="lead">Este workflow toma una tanda de leads de la planilla "Planilla_Piloto_WhatsApp_Final", los filtra contra lo ya enviado, y por cada uno busca o crea el contacto en Chatwoot, abre una conversación, envía una plantilla de WhatsApp aprobada por Meta, y registra el resultado en la hoja "Enviados WA". Todo con una pausa entre envíos para proteger el número.</p>
+  <div class="meta">
+    <span class="badge"><span class="dot gray"></span> Workflow ID: <code>NHqj4S20g59bT9Ul</code></span>
+    <span class="badge"><span class="dot gray"></span> 16 nodos</span>
+    <span class="badge"><span class="dot gray"></span> Estado: inactivo</span>
+    <span class="badge"><span class="dot red"></span> Credenciales: sin asignar</span>
+  </div>
+</header>
+
+<section>
+  <h2>Qué hace en una línea</h2>
+  <p><strong>Disparo manual → lee leads → filtra y deduplica → loop de a uno → busca/crea contacto en Chatwoot → envía plantilla WhatsApp → registra en la hoja → espera → siguiente.</strong></p>
+  <p>El flujo completo es una sola cadena. El único punto de ramificación es "Existe el contacto?"; el único bucle es el <code>Loop de envio</code> (SplitInBatches), que itera la tanda de a un lead.</p>
+</section>
+
+<section>
+  <h2>Mapa del flujo</h2>
+  <div class="flow">
+    <div class="flow-col">
+
+      <div class="fnode trigger"><div class="ic">▶</div><div><div class="t">Ejecutar tanda</div><div class="s">Manual Trigger · inicia la corrida</div></div></div>
+      <div class="farrow">↓</div>
+      <div class="fnode code"><div class="ic">⚙</div><div><div class="t">Config</div><div class="s">Code · única fuente de configuración (Chatwoot, planilla, plantilla WA, límites)</div></div></div>
+      <div class="farrow">↓</div>
+      <div class="fnode sheet"><div class="ic">📊</div><div><div class="t">Leer leads del piloto</div><div class="s">Google Sheets · tab "Leads Piloto"</div></div></div>
+      <div class="farrow">↓</div>
+      <div class="fnode sheet"><div class="ic">📊</div><div><div class="t">Leer enviados</div><div class="s">Google Sheets · tab "Enviados WA"</div></div></div>
+      <div class="farrow">↓</div>
+      <div class="fnode code"><div class="ic">🧮</div><div><div class="t">Filtrar elegibles y armar tanda</div><div class="s">Code · normaliza teléfonos, dedupe, límite de tanda</div></div></div>
+      <div class="farrow">↓</div>
+      <div class="fnode logic"><div class="ic">🔁</div><div><div class="t">Loop de envio</div><div class="s">SplitInBatches · de a 1 lead por iteración</div></div></div>
+      <div class="farrow">↓ (por cada ítem)</div>
+      <div class="fnode http"><div class="ic">🔍</div><div><div class="t">Chatwoot - Buscar contacto</div><div class="s">HTTP GET · search por teléfono</div></div></div>
+      <div class="farrow">↓</div>
+      <div class="fnode logic"><div class="ic">❓</div><div><div class="t">Existe el contacto?</div><div class="s">IF · ¿payload no vacío?</div></div></div>
+      <div class="branch">
+        <div class="bcol">
+          <div class="blabel">✓ Sí</div>
+          <div class="fnode true"><div class="ic">✔</div><div><div class="t">Resolver contact_id</div><div class="s">Code · extrae el id del contacto</div></div></div>
+        </div>
+        <div class="bcol">
+          <div class="blabel">✗ No</div>
+          <div class="fnode false"><div class="ic">＋</div><div><div class="t">Chatwoot - Crear contacto</div><div class="s">HTTP POST · lo crea</div></div></div>
+          <div class="farrow">↓</div>
+          <div class="fnode true"><div class="ic">✔</div><div><div class="t">Resolver contact_id</div><div class="s">Code · mismo nodo convergente</div></div></div>
+        </div>
+      </div>
+      <div class="farrow">↓</div>
+      <div class="fnode http"><div class="ic">💬</div><div><div class="t">Chatwoot - Crear conversacion</div><div class="s">HTTP POST · conversación abierta</div></div></div>
+      <div class="farrow">↓</div>
+      <div class="fnode http"><div class="ic">📨</div><div><div class="t">Chatwoot - Enviar plantilla WA</div><div class="s">HTTP POST · plantilla Meta con parámetros</div></div></div>
+      <div class="farrow">↓</div>
+      <div class="fnode sheet"><div class="ic">📊</div><div><div class="t">Marcar como enviado</div><div class="s">Google Sheets · append en "Enviados WA"</div></div></div>
+      <div class="farrow">↓</div>
+      <div class="fnode http"><div class="ic">🏷</div><div><div class="t">Chatwoot - Etiquetar piloto</div><div class="s">HTTP POST · label "reactivacion"</div></div></div>
+      <div class="farrow">↓</div>
+      <div class="fnode http"><div class="ic">📇</div><div><div class="t">Chatwoot - Guardar contexto CRM</div><div class="s">HTTP PUT · custom attributes del lead</div></div></div>
+      <div class="farrow">↓</div>
+      <div class="fnode wait"><div class="ic">⏳</div><div><div class="t">Esperar entre envios</div><div class="s">Wait · pausa configurada</div></div></div>
+      <div class="farrow alt">↑ vuelve a "Loop de envio" hasta agotar la tanda</div>
+
+    </div>
+  </div>
+  <p class="muted" style="margin-top:.6rem;">Nota: la salida "done" del SplitInBatches (output 0) no está conectada a ningún nodo — el flujo termina naturalmente cuando se agota la tanda.</p>
+</section>
+
+<section>
+  <h2>Configuración central (nodo "Config")</h2>
+  <p>Es un nodo <strong>Code</strong> que devuelve un único objeto JSON. Todos los nodos aguas abajo leen de acá con <code>$('Config').first().json.CLAVE</code>. La instancia bloquea <code>$env</code> (<code>N8N_BLOCK_ENV_ACCESS_IN_NODE</code>), por eso la configuración vive en el nodo.</p>
+  <table>
+    <tr><th>Clave</th><th>Valor</th><th>Para qué sirve</th></tr>
+    <tr><td><code>CHATWOOT_URL</code></td><td><code>https://chatwoot.xtract.app</code></td><td>Base de la API de Chatwoot</td></tr>
+    <tr><td><code>CHATWOOT_ACCOUNT_ID</code></td><td><code>1</code></td><td>Cuenta de Chatwoot</td></tr>
+    <tr><td><code>CHATWOOT_INBOX_ID</code></td><td><code>1</code></td><td>Inbox de WhatsApp (no otro canal)</td></tr>
+    <tr><td><code>WA_LEADS_TAB</code></td><td><code>Leads Piloto</code></td><td>Tab de donde salen los leads</td></tr>
+    <tr><td><code>WA_ESPERA_ENTRE_ENVIOS_SEG</code></td><td><code>10</code></td><td>Pausa entre envíos (protege el número ante Meta)</td></tr>
+    <tr><td><code>WA_SHEET_URL</code></td><td>URL de la planilla real</td><td>Planilla "Planilla_Piloto_WhatsApp_Final" — fuente de verdad unificada</td></tr>
+    <tr><td><code>WA_TEMPLATE_NAME</code></td><td><code>reactivacion_closed_lost</code></td><td>Plantilla aprobada en Meta</td></tr>
+    <tr><td><code>WA_TEMPLATE_LANG</code></td><td><code>es_AR</code></td><td>Idioma/región de la plantilla</td></tr>
+    <tr><td><code>WA_TEMPLATE_PREVIEW</code></td><td><code>Hola {{1}}, como estas?…</code></td><td>Texto con placeholder {{1}} para el nombre</td></tr>
+    <tr><td><code>WA_LIMITE_TANDA</code></td><td><code>1</code></td><td>Máximo de envíos por corrida (baranda del piloto)</td></tr>
+    <tr><td><code>WA_SOLO_VERDES</code></td><td><code>true</code></td><td>Solo leads calificados "Verde"</td></tr>
+  </table>
+</section>
+
+<section>
+  <h2>Nodo por nodo</h2>
+
+  <div class="ncard">
+    <div class="head"><span class="nm">1 · Ejecutar tanda</span><span class="nt">manualTrigger · v1</span></div>
+    <div class="body">
+      <p>Disparador <strong>manual</strong>. El workflow solo corre cuando alguien aprieta "Execute Workflow" en la UI. No hay schedule ni webhook.</p>
+      <p><strong>Salida:</strong> un solo item vacío que no aporta datos.</p>
+    </div>
+  </div>
+
+  <div class="ncard">
+    <div class="head"><span class="nm">2 · Config</span><span class="nt">code · v1</span></div>
+    <div class="body">
+      <p>Devuelve el objeto de configuración central (ver tabla arriba). No hace llamadas externas.</p>
+      <p><strong>Salida:</strong> un item con todas las claves de configuración.</p>
+      <p><strong>Cómo lo usan los demás:</strong> cada nodo que lo necesita hace <code>$('Config').first().json.&lt;CLAVE&gt;</code> dentro de una expresión <code>=&nbsp;{{ ... }}</code>.</p>
+    </div>
+  </div>
+
+  <div class="ncard">
+    <div class="head"><span class="nm">3 · Leer leads del piloto</span><span class="nt">googleSheets · v4.7</span></div>
+    <div class="body">
+      <p>Lee todas las filas de la tab <code>Leads Piloto</code> de la planilla definida en <code>Config.WA_SHEET_URL</code>.</p>
+      <p><strong>Entrada:</strong> un item cualquiera (usa solo Config).</p>
+      <p><strong>Salida:</strong> un item por fila, con los encabezados de la hoja como claves.</p>
+    </div>
+  </div>
+
+  <div class="ncard">
+    <div class="head"><span class="nm">4 · Leer enviados</span><span class="nt">googleSheets · v4.7</span></div>
+    <div class="body">
+      <p>Lee la tab <code>Enviados WA</code> de la <strong>misma planilla</strong>. Alimenta el dedupe del nodo 5.</p>
+      <p><strong>Salida:</strong> un item por fila ya registrada (teléfono + estado + contexto).</p>
+      <div class="callout info"><span class="tag">Por qué importa</span>Si esta hoja apuntara a otra planilla, el dedupe no vería los envíos y podrían mandarse WhatsApp duplicados. Hoy los tres nodos de Sheets leen la misma URL desde Config.</div>
+    </div>
+  </div>
+
+  <div class="ncard">
+    <div class="head"><span class="nm">5 · Filtrar elegibles y armar tanda</span><span class="nt">code · v1</span></div>
+    <div class="body">
+      <p>El cerebro de la selección. Por cada lead de la hoja:</p>
+      <ul>
+        <li>Normaliza los nombres de columnas (sin acentos, minúsculas, separadores colapsados).</li>
+        <li>Normaliza el teléfono: quita todo lo que no sea dígito, maneja <code>00</code>, aplica prefijo de país, y fuerza el <code>9</code> argentino (<code>54</code> → <code>549</code>) — sin ese 9 WhatsApp trata el número como fijo y el mensaje <strong>no se entrega sin error</strong>.</li>
+        <li>Filtra por calificación si la columna existe (solo "Verde…" cuando <code>WA_SOLO_VERDES=true</code>).</li>
+        <li>Dedupe contra la hoja de enviados por los últimos 8 dígitos; solo bloquea filas con estado que empiece con <code>enviado</code> — los errores se reintentan.</li>
+        <li>Arma el objeto del lead: <code>telefono</code>, <code>telefono_e164</code> (con <code>+</code>), <code>primer_nombre</code>, <code>empresa</code> (sin emails por error), <code>motivo_perdida</code> (truncado a 600 chars), fechas recortadas a <code>YYYY-MM-DD</code>, y más.</li>
+      </ul>
+      <p><strong>Salida:</strong> hasta <code>WA_LIMITE_TANDA</code> items, en orden.</p>
+    </div>
+  </div>
+
+  <div class="ncard">
+    <div class="head"><span class="nm">6 · Loop de envio</span><span class="nt">splitInBatches · v3</span></div>
+    <div class="body">
+      <p>Toma la tanda y la procesa <strong>de a un item por iteración</strong> (batch size por defecto = 1).</p>
+      <p><strong>Output 0 (done):</strong> sin conexión — el flujo termina al agotar la tanda.</p>
+      <p><strong>Output 1:</strong> cada item del batch → entra al envío. Cuando termina la cadena interna, <code>Esperar entre envios</code> devuelve el item al input del loop para la siguiente iteración.</p>
+    </div>
+  </div>
+
+  <div class="ncard">
+    <div class="head"><span class="nm">7 · Chatwoot - Buscar contacto</span><span class="nt">httpRequest · v4.2</span></div>
+    <div class="body">
+      <p><code>GET {CHATWOOT_URL}/api/v1/accounts/{CHATWOOT_ACCOUNT_ID}/contacts/search?q={telefono_e164}</code></p>
+      <p>Busca el contacto por el número en formato E.164. Usa la credencial HTTP Header Auth con el token de Chatwoot. Timeout 30 s y <code>neverError</code> activo: una respuesta de error no corta el flujo, llega como item.</p>
+      <p><strong>Salida:</strong> <code>payload</code> (array de contactos encontrados) u objeto de error.</p>
+      <div class="callout warn"><span class="tag">Ojo</span><code>neverError</code> en este nodo significa que un 401/500/red también pasa como item sin <code>payload</code> → el IF lo trataría como "no existe" y crearía un contacto duplicado. Idealmente habría que chequear el statusCode antes de crear.</div>
+    </div>
+  </div>
+
+  <div class="ncard">
+    <div class="head"><span class="nm">8 · Existe el contacto?</span><span class="nt">if · v2.2</span></div>
+    <div class="body">
+      <p>Condición: <code>{{ $json.payload }}</code> es un array <strong>no vacío</strong> (validación loose).</p>
+      <ul>
+        <li><strong>Sí (true):</strong> el contacto existe → va directo a <code>Resolver contact_id</code>.</li>
+        <li><strong>No (false):</strong> hay que crearlo → va a <code>Chatwoot - Crear contacto</code>.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="ncard">
+    <div class="head"><span class="nm">9 · Chatwoot - Crear contacto</span><span class="nt">httpRequest · v4.2</span></div>
+    <div class="body">
+      <p><code>POST {CHATWOOT_URL}/api/v1/accounts/{CHATWOOT_ACCOUNT_ID}/contacts</code></p>
+      <p>Body: <code>{ inbox_id, name, phone_number, custom_attributes: { empresa, motivo_perdida } }</code>.</p>
+      <p><strong>Salida:</strong> el contacto creado dentro de <code>payload</code>.</p>
+    </div>
+  </div>
+
+  <div class="ncard">
+    <div class="head"><span class="nm">10 · Resolver contact_id</span><span class="nt">code · v1 (modo "Once for Each Item")</span></div>
+    <div class="body">
+      <p>Nodo <strong>convergente</strong>: lo alimentan dos ramas (búsqueda exitosa o contacto recién creado). Extrae el <code>contact_id</code> según el shape de la respuesta y lo pega a los datos del lead.</p>
+      <p><strong>Clave anti-bug:</strong> usa <code>$('Loop de envio').item.json</code> (paired item) en vez de indexar la salida de un Merge — el Merge concatena las ramas y el orden se pierde, lo que mezclaba contact_id entre leads y mandaba la plantilla con el nombre equivocado.</p>
+      <p>Si no hay contact_id, devuelve <code>null</code>: el item se descarta sin marcar como enviado y el lead entra en la próxima tanda.</p>
+    </div>
+  </div>
+
+  <div class="ncard">
+    <div class="head"><span class="nm">11 · Chatwoot - Crear conversacion</span><span class="nt">httpRequest · v4.2</span></div>
+    <div class="body">
+      <p><code>POST {CHATWOOT_URL}/api/v1/accounts/{CHATWOOT_ACCOUNT_ID}/conversations</code></p>
+      <p>Body: <code>{ source_id: telefono_e164, inbox_id, contact_id, status: "open" }</code>.</p>
+      <p><strong>Salida:</strong> la conversación creada; su <code>id</code> se usa para el mensaje y el registro.</p>
+    </div>
+  </div>
+
+  <div class="ncard">
+    <div class="head"><span class="nm">12 · Chatwoot - Enviar plantilla WA</span><span class="nt">httpRequest · v4.2</span></div>
+    <div class="body">
+      <p><code>POST {CHATWOOT_URL}/api/v1/accounts/{CHATWOOT_ACCOUNT_ID}/conversations/{id}/messages</code></p>
+      <p>Body con <code>template_params</code>: nombre de plantilla, categoría <code>marketing</code>, idioma <code>es_AR</code> y <code>processed_params: { "1": primer_nombre }</code> que reemplaza el <code>{{1}}</code> del texto.</p>
+      <p><strong>Salida:</strong> el mensaje creado. Su <code>id</code> define el estado en el registro (ver nodo 13).</p>
+    </div>
+  </div>
+
+  <div class="ncard">
+    <div class="head"><span class="nm">13 · Marcar como enviado</span><span class="nt">googleSheets · v4.7 (append)</span></div>
+    <div class="body">
+      <p>Agrega una fila a la tab <code>Enviados WA</code> de la planilla de Config con ~20 columnas: teléfono, nombre, empresa, motivo, sistema, IDs de Chatwoot (contacto y conversación), fechas, <code>fecha_envio</code> (ISO actual) y <code>estado</code>.</p>
+      <p><strong>Estado:</strong> <code>{{ $json.id ? 'enviado' : 'error: …' }}</code> — si el mensaje respondió con id, quedó enviado; si no, graba el motivo (truncado a 120 chars).</p>
+      <div class="callout warn"><span class="tag">Ojo</span>Si este append falla después de enviado el WhatsApp, la fila no queda registrada y el lead puede reenviarse en la próxima tanda (doble envío). Es un trade-off aceptado del diseño.</div>
+    </div>
+  </div>
+
+  <div class="ncard">
+    <div class="head"><span class="nm">14 · Chatwoot - Etiquetar piloto</span><span class="nt">httpRequest · v4.4</span></div>
+    <div class="body">
+      <p><code>POST {CHATWOOT_URL}/api/v1/accounts/{CHATWOOT_ACCOUNT_ID}/conversations/{conversation_id}/labels</code></p>
+      <p>Aplica la etiqueta <code>reactivacion</code> a la conversación (usa el id de la conversación creada, no <code>$json</code>, para no depender de datos frágiles).</p>
+    </div>
+  </div>
+
+  <div class="ncard">
+    <div class="head"><span class="nm">15 · Chatwoot - Guardar contexto CRM</span><span class="nt">httpRequest · v4.4</span></div>
+    <div class="body">
+      <p><code>PUT {CHATWOOT_URL}/api/v1/accounts/{CHATWOOT_ACCOUNT_ID}/contacts/{contact_id}</code></p>
+      <p>Escribe los <code>custom_attributes</code> del lead en el contacto de Chatwoot: nombre, empresa, motivo, sistema, país, email, owner, cant. facturas, fechas, días desde pérdida, hubo reunión, calificación.</p>
+    </div>
+  </div>
+
+  <div class="ncard">
+    <div class="head"><span class="nm">16 · Esperar entre envios</span><span class="nt">wait · v1.1</span></div>
+    <div class="body">
+      <p>Pausa de <code>{{ Config.WA_ESPERA_ENTRE_ENVIOS_SEG || 8 }}</code> segundos (hoy: 10). No es cosmético: Meta degrada el número si se manda seguido. Después devuelve el item al input de <code>Loop de envio</code>.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>Flujo de datos entre nodos (referencias clave)</h2>
+  <table>
+    <tr><th>Nodo</th><th>Lee de</th><th>Qué usa</th></tr>
+    <tr><td>Casi todos</td><td><code>Config</code></td><td><code>$('Config').first().json.*</code> (URLs, IDs, plantilla, límites)</td></tr>
+    <tr><td>Filtrar elegibles</td><td>Leer leads + Leer enviados</td><td>Filas de la hoja; estados para dedupe</td></tr>
+    <tr><td>Buscar contacto</td><td>Loop de envio (item actual)</td><td><code>$json.telefono_e164</code> como query <code>q</code></td></tr>
+    <tr><td>Crear contacto</td><td>Config + Loop de envio</td><td><code>inbox_id</code>, <code>name</code>, <code>phone_number</code>, custom attrs</td></tr>
+    <tr><td>Resolver contact_id</td><td>Loop de envio + input de la rama</td><td><code>$('Loop de envio').item.json</code> (paired item) + <code>$input.item.json</code></td></tr>
+    <tr><td>Crear conversacion</td><td>Resolver contact_id</td><td><code>$json.contact_id</code>, <code>$json.telefono_e164</code></td></tr>
+    <tr><td>Enviar plantilla WA</td><td>Config + Resolver contact_id</td><td><code>$json.id</code> de la conversación; <code>primer_nombre</code> del lead</td></tr>
+    <tr><td>Marcar como enviado</td><td>Resolver + Crear conversacion + $json</td><td>Datos del lead, <code>conversation_id</code>, estado según <code>$json.id</code> del mensaje</td></tr>
+    <tr><td>Etiquetar</td><td>Chatwoot - Crear conversacion</td><td><code>$('Chatwoot - Crear conversacion').item.json.id</code></td></tr>
+    <tr><td>Guardar contexto</td><td>Resolver contact_id</td><td><code>$('Resolver contact_id').item.json.*</code></td></tr>
+  </table>
+</section>
+
+<section>
+  <h2>Pendientes para activar (checklist)</h2>
+  <ul class="checks">
+    <li><input type="checkbox"> Crear credencial <strong>Chatwoot</strong> (HTTP Header Auth con el token de la instancia) y asignarla a los 6 nodos HTTP.</li>
+    <li><input type="checkbox"> Crear credencial <strong>Google Sheets</strong> (OAuth2 con acceso a la planilla) y asignarla a los 3 nodos de Sheets.</li>
+    <li><input type="checkbox"> Verificar que <code>Config.WA_SHEET_URL</code> sea la planilla correcta y que existan las tabs <code>Leads Piloto</code> y <code>Enviados WA</code>.</li>
+    <li><input type="checkbox"> Revisar que la plantilla <code>reactivacion_closed_lost</code> exista y esté aprobada en el inbox de WhatsApp (id 1).</li>
+    <li><input type="checkbox"> Prueba con <code>WA_LIMITE_TANDA = 1</code> y un lead de prueba antes de subir el límite.</li>
+    <li><input type="checkbox"> (Recomendado) Evaluar chequear <code>statusCode</code> en "Buscar contacto" para no crear duplicados ante errores de red/auth.</li>
+  </ul>
+</section>
+
+<section>
+  <h2>Riesgos conocidos</h2>
+  <div class="callout crit"><span class="tag">Crítico · credenciales</span>Hoy ningún nodo tiene credencial asignada. El workflow no puede ejecutarse hasta crearlas y asignarlas.</div>
+  <div class="callout warn"><span class="tag">Medio · duplicado por error de búsqueda</span><code>neverError</code> en "Buscar contacto" hace que un error de red/auth pase como "no existe" → se crearía un contacto duplicado.</div>
+  <div class="callout warn"><span class="tag">Medio · doble envío</span>Si "Marcar como enviado" falla tras el envío, el lead no queda registrado y se reintenta en la próxima tanda.</div>
+  <div class="callout info"><span class="tag">Bajo · dedupe por 8 dígitos</span>Dos números distintos del mismo país que compartan los últimos 8 dígitos: uno bloquea al otro (falso positivo). Aceptable en un piloto.</div>
+</section>
+
+<footer>
+  Generado el 2026-08-06 · Documentación técnica del workflow "Enviar leads" · ID <code>NHqj4S20g59bT9Ul</code>
+</footer>
+
+</div>
+</body>
+</html>

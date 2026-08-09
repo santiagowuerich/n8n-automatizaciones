@@ -1,0 +1,59 @@
+
+
+[
+  {
+    "parameters": {
+      "method": "GET",
+      "url": "https://api.calendly.com/users/me",
+      "authentication": "predefinedCredentialType",
+      "nodeCredentialType": "calendlyOAuth2Api",
+      "options": {}
+    },
+    "id": "calendly-get-user",
+    "name": "1. Obtener Usuario Calendly",
+    "type": "n8n-nodes-base.httpRequest",
+    "typeVersion": 4.4,
+    "position": [
+      0,
+      0
+    ],
+    "credentials": {
+      "calendlyOAuth2Api": {
+        "id": "VJnAlINTOaMmBHc6",
+        "name": "Calendly micaela.marcos"
+      }
+    }
+  },
+  {
+    "parameters": {
+      "method": "GET",
+      "url": "https://api.calendly.com/event_types",
+      "authentication": "predefinedCredentialType",
+      "nodeCredentialType": "calendlyOAuth2Api",
+      "sendQuery": true,
+      "queryParameters": {
+        "parameters": [
+          {
+            "name": "user",
+            "value": "={{ $json.resource.uri }}"
+          }
+        ]
+      },
+      "options": {}
+    },
+    "id": "calendly-get-event-types",
+    "name": "2. Extraer Event Types",
+    "type": "n8n-nodes-base.httpRequest",
+    "typeVersion": 4.4,
+    "position": [
+      220,
+      0
+    ],
+    "credentials": {
+      "calendlyOAuth2Api": {
+        "id": "VJnAlINTOaMmBHc6",
+        "name": "Calendly micaela.marcos"
+      }
+    }
+  }
+]

@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simulador de Reactivación WhatsApp - Xtract AI Bot</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #0b141a;
+      --panel-bg: #111b21;
+      --header-bg: #202c33;
+      --incoming-msg: #202c33;
+      --outgoing-msg: #005c4b;
+      --accent-green: #00a884;
+      --accent-blue: #0075ff;
+      --text-primary: #e9edef;
+      --text-secondary: #8696a0;
+      --border-color: #222d34;
+      --card-bg: #182229;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg-dark);
+      color: var(--text-primary);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    header {
+      background: var(--header-bg);
+      border-bottom: 1px solid var(--border-color);
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 64px;
+    }
+
+    .brand-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #fff;
+    }
+
+    .brand-title span {
+      background: linear-gradient(135deg, #0075ff, #00a884);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .badge-pilot {
+      background: rgba(0, 168, 132, 0.15);
+      color: var(--accent-green);
+      border: 1px solid rgba(0, 168, 132, 0.3);
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .app-container {
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      height: calc(100vh - 64px);
+      width: 100%;
+      /* Los items de grid arrancan con min-height:auto, o sea que se niegan a
+         achicarse por debajo de su contenido. Sin estos min-height:0 las dos
+         columnas crecen con los mensajes en vez de scrollear, y la barra de
+         input termina empujada fuera de la pantalla. */
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .sidebar {
+      background: var(--panel-bg);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      min-height: 0;
+    }
+
+    .sidebar-section {
+      padding: 20px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .sidebar-section h3 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+    }
+
+    .lead-select, .config-input {
+      width: 100%;
+      background: var(--header-bg);
+      border: 1px solid var(--border-color);
+      color: var(--text-primary);
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      outline: none;
+      font-family: inherit;
+    }
+
+    .lead-select:focus, .config-input:focus {
+      border-color: var(--accent-green);
+    }
+
+    .crm-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 16px;
+      margin-top: 12px;
+    }
+
+    .crm-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      font-size: 0.85rem;
+    }
+
+    .crm-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .crm-label {
+      color: var(--text-secondary);
+    }
+
+    .crm-value {
+      font-weight: 600;
+      color: var(--text-primary);
+      text-align: right;
+      max-width: 60%;
+    }
+
+    .reason-box {
+      background: rgba(255, 255, 255, 0.04);
+      border-left: 3px solid #ffb703;
+      padding: 10px 12px;
+      border-radius: 4px;
+      margin-top: 12px;
+      font-size: 0.82rem;
+      color: #e0e0e0;
+      line-height: 1.4;
+    }
+
+    .chat-area {
+      display: flex;
+      flex-direction: column;
+      background-image: radial-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 0);
+      background-size: 24px 24px;
+      background-color: var(--bg-dark);
+      position: relative;
+      /* Item de grid: sin esto crece con el contenido en lugar de contenerlo. */
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .chat-header {
+      background: var(--header-bg);
+      border-bottom: 1px solid var(--border-color);
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .chat-user-info {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .avatar {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #0075ff, #9747ff);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      color: #fff;
+      font-size: 1.1rem;
+    }
+
+    .chat-user-name {
+      font-weight: 600;
+      font-size: 1rem;
+    }
+
+    .chat-user-sub {
+      font-size: 0.8rem;
+      color: var(--accent-green);
+    }
+
+    .messages-container {
+      flex: 1;
+      padding: 24px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      /* Es LO UNICO que scrollea. El flex:1 le da el alto disponible y el
+         min-height:0 lo autoriza a achicarse: sin eso 'overflow-y:auto' no
+         llega a activarse nunca porque el elemento siempre mide lo que su
+         contenido, y el chat empuja la pantalla hacia abajo. */
+      min-height: 0;
+      scroll-behavior: smooth;
+      overscroll-behavior: contain;
+    }
+
+    .date-divider {
+      align-self: center;
+      background: var(--header-bg);
+      color: var(--text-secondary);
+      padding: 6px 16px;
+      border-radius: 8px;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin: 8px 0;
+    }
+
+    .message {
+      max-width: 65%;
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-size: 0.93rem;
+      line-height: 1.5;
+      position: relative;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .message.outgoing {
+      align-self: flex-end;
+      background: var(--outgoing-msg);
+      border-top-right-radius: 2px;
+      color: #fff;
+    }
+
+    .message.incoming {
+      align-self: flex-start;
+      background: var(--incoming-msg);
+      border-top-left-radius: 2px;
+      color: var(--text-primary);
+    }
+
+    .message-time {
+      font-size: 0.68rem;
+      color: rgba(255, 255, 255, 0.6);
+      text-align: right;
+      margin-top: 4px;
+    }
+
+    .template-badge {
+      display: inline-block;
+      background: rgba(255, 255, 255, 0.15);
+      font-size: 0.68rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+
+    .calendly-card {
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 10px;
+      padding: 12px;
+      margin-top: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .calendly-title {
+      font-weight: 700;
+      color: #fff;
+      font-size: 0.9rem;
+    }
+
+    .calendly-desc {
+      font-size: 0.8rem;
+      color: rgba(255, 255, 255, 0.8);
+    }
+
+    .calendly-btn {
+      background: var(--accent-green);
+      color: #000;
+      font-weight: 700;
+      text-decoration: none;
+      padding: 8px 14px;
+      border-radius: 6px;
+      text-align: center;
+      font-size: 0.85rem;
+      display: block;
+      margin-top: 4px;
+    }
+
+    .typing-indicator {
+      align-self: flex-start;
+      background: var(--incoming-msg);
+      padding: 12px 18px;
+      border-radius: 12px;
+      border-top-left-radius: 2px;
+      display: flex;
+      gap: 4px;
+      align-items: center;
+    }
+
+    .typing-dot {
+      width: 6px;
+      height: 6px;
+      background: var(--text-secondary);
+      border-radius: 50%;
+      animation: bounce 1.4s infinite ease-in-out both;
+    }
+
+    .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+    .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+
+    @keyframes bounce {
+      0%, 80%, 100% { transform: scale(0); }
+      40% { transform: scale(1.0); }
+    }
+
+    .chat-input-bar {
+      background: var(--header-bg);
+      border-top: 1px solid var(--border-color);
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .chat-input {
+      flex: 1;
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      color: var(--text-primary);
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      outline: none;
+      font-family: inherit;
+    }
+
+    .chat-input:focus {
+      border-color: var(--accent-green);
+    }
+
+    .send-btn {
+      background: var(--accent-green);
+      color: #000;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .quick-replies {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+      margin-bottom: 4px;
+    }
+
+    .reply-chip {
+      background: var(--header-bg);
+      border: 1px solid var(--border-color);
+      color: var(--text-primary);
+      font-size: 0.8rem;
+      padding: 6px 12px;
+      border-radius: 16px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .reply-chip:hover {
+      border-color: var(--accent-green);
+      color: var(--accent-green);
+    }
+
+    .mode-tag {
+      font-size: 0.75rem;
+      padding: 4px 8px;
+      border-radius: 4px;
+      margin-top: 6px;
+      display: inline-block;
+      font-weight: 600;
+    }
+
+    .mode-sin-url { background: rgba(255, 183, 3, 0.2); color: #ffb703; }
+    .mode-n8n { background: rgba(0, 168, 132, 0.2); color: var(--accent-green); }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand-title">
+      🤖 <span>Xtract AI</span> — Simulador de Reactivación WhatsApp
+    </div>
+    <div class="badge-pilot">
+      🟢 Piloto Live Demo
+    </div>
+  </header>
+
+  <div class="app-container">
+    <div class="sidebar">
+      <div class="sidebar-section">
+        <h3>1. Seleccionar Prospecto (Notion CRM)</h3>
+        <select id="leadSelect" class="lead-select" onchange="changeLead()">
+          <option value="srk">SRK (Gabriela Carrizo - SOFTLAND)</option>
+          <option value="ingenia">IngeniaSA (TANGO)</option>
+          <option value="ohana">Grupo Ohana (Guillermo Martínez - Flexxus)</option>
+          <option value="marcel">Marcel Beitler (Uruguay - Sin ERP)</option>
+        </select>
+
+        <div class="crm-card">
+          <div class="crm-row"><span class="crm-label">Empresa:</span><span class="crm-value" id="crmEmpresa">SRK</span></div>
+          <div class="crm-row"><span class="crm-label">Contacto:</span><span class="crm-value" id="crmContacto">Gabriela Carrizo</span></div>
+          <div class="crm-row"><span class="crm-label">Teléfono:</span><span class="crm-value" id="crmTelefono">+5493624009270</span></div>
+          <div class="crm-row"><span class="crm-label">Sistema ERP:</span><span class="crm-value" id="crmSistema">SOFTLAND</span></div>
+          <div class="crm-row"><span class="crm-label">Facturas/Mes:</span><span class="crm-value" id="crmFacturas">400</span></div>
+          <div class="crm-row"><span class="crm-label">Comercial:</span><span class="crm-value" id="crmOwner">Juan Alvarez</span></div>
+          <div class="reason-box">
+            <strong>Motivo registrado en CRM:</strong><br>
+            <span id="crmMotivo">"Están en cambio de sistema SOFTLAND"</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="sidebar-section" style="flex:1;">
+        <h3>2. Conexión con n8n (Requerida)</h3>
+        <label style="font-size: 0.8rem; color: var(--text-secondary); display: block; margin-bottom: 6px;">
+          Webhook URL de n8n (el agente corre acá — sin esto no hay demo):
+        </label>
+        <input type="text" id="n8nWebhook" class="config-input" value="https://n8n.xtract.app/webhook/demo-simulador" placeholder="Activá el workflow y usá /webhook/ (el /webhook-test/ atiende un solo mensaje)" oninput="updateModeTag()" onchange="updateModeTag()">
+        
+        <div id="modeStatus" class="mode-tag mode-sin-url">
+          ⚠️ Falta la URL del webhook — el chat no va a responder
+        </div>
+
+        <button onclick="restartDemo()" style="margin-top: 16px; width: 100%; padding: 10px; background: var(--border-color); border: 1px solid var(--border-color); color: #fff; border-radius: 6px; cursor: pointer; font-weight: 600;">
+          🔄 Reiniciar Simulación
+        </button>
+      </div>
+    </div>
+
+    <div class="chat-area">
+      <div class="chat-header">
+        <div class="chat-user-info">
+          <div class="avatar" id="avatarIcon">GC</div>
+          <div>
+            <div class="chat-user-name" id="chatName">Gabriela Carrizo (SRK)</div>
+            <div class="chat-user-sub">WhatsApp Business • En línea</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="messages-container" id="messagesContainer">
+        <div class="date-divider">Hoy - Inicio de Reactivación</div>
+        <div class="message outgoing" id="initialTemplateMsg">
+          <span class="template-badge">Plantilla Meta Aprobada</span><br>
+          Hola Gabriela, ¿cómo estás? Te escribo de parte del equipo de Xtract.
+          <div class="message-time">17:30 • Enviado por n8n</div>
+        </div>
+      </div>
+
+      <div style="padding: 0 20px;">
+        <div class="quick-replies" id="quickReplies"></div>
+        <div class="chat-input-bar">
+          <input type="text" id="userInput" class="chat-input" placeholder="Simulá la respuesta del prospecto..." onkeydown="handleKeyDown(event)">
+          <button class="send-btn" onclick="sendUserMessage()">Enviar a IA</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const LEADS_DATA = {
+      srk: {
+        empresa: "SRK",
+        contacto: "Gabriela Carrizo",
+        primerNombre: "Gabriela",
+        telefono: "+5493624009270",
+        sistema: "SOFTLAND",
+        facturas: "400",
+        owner: "Juan Alvarez",
+        motivo: "Están en cambio de sistema SOFTLAND",
+        initialMsg: "Hola Gabriela, ¿cómo estás? Te escribo de Xtract. ¿Pudieron resolver la automatización contable?",
+        quickReplies: [
+          "Seguimos con el cambio de sistema todavía...",
+          "¿De qué se trataba Xtract?",
+          "No gracias, ya contratamos otra herramienta."
+        ]
+      },
+      ingenia: {
+        empresa: "IngeniaSA",
+        contacto: "IngeniaSA",
+        primerNombre: "IngeniaSA",
+        telefono: "+5493624009270",
+        sistema: "TANGO",
+        facturas: "500",
+        owner: "Tomas Marconi",
+        motivo: "Estamos haciendo muchos cambios a nivel sistema TANGO y por el momento no estamos preparados",
+        initialMsg: "Hola, ¿cómo estás? Te escribo de Xtract. ¿Pudieron resolver la automatización contable para Tango?",
+        quickReplies: [
+          "Hola! Seguimos con cambios en Tango, ¿tienen novedades?",
+          "¿Cuánto sale el plan mensual?",
+          "No estamos interesados por el momento."
+        ]
+      },
+      ohana: {
+        empresa: "Grupo Ohana",
+        contacto: "Guillermo Martínez",
+        primerNombre: "Guillermo",
+        telefono: "+5493624009270",
+        sistema: "Flexxus",
+        facturas: "1000",
+        owner: "Juan Alvarez",
+        motivo: "Precio elevado del fee mensual se le indicó alternativas de pago pero no fueron suficientes",
+        initialMsg: "Hola Guillermo, ¿cómo estás? Te escribo de Xtract. ¿Pudieron resolver la automatización contable?",
+        quickReplies: [
+          "Hola! En su momento nos pareció caro el fee mensual...",
+          "¿Qué opciones de pago o planes nuevos tienen?",
+          "Por ahora no es prioridad."
+        ]
+      },
+      marcel: {
+        empresa: "Marcel Beitler",
+        contacto: "Marcel Beitler",
+        primerNombre: "Marcel",
+        telefono: "+5493624009270",
+        sistema: "Sin ERP",
+        facturas: "200",
+        owner: "Nicolás Gonzalez",
+        motivo: "No es el momento va para mas adelante",
+        initialMsg: "Hola Marcel, ¿cómo estás? Te escribo de Xtract. ¿Pudieron resolver la automatización contable?",
+        quickReplies: [
+          "Hola! En ese momento no era la época, ¿cómo funciona?",
+          "¿Me podrías mandar un Calendly para coordinar?",
+          "Ya no trabajo en la empresa."
+        ]
+      }
+    };
+
+    let currentLeadKey = "srk";
+    let conversationStep = 1; // 1 = esperando aceptacion de reunion, 2 = agendar en Calendly
+
+    // La memoria de n8n se guarda por sessionId y NO se borra al reiniciar el chat
+    // en pantalla. Sin un id nuevo por corrida, la segunda pasada de la demo arranca
+    // con el bot recordando una charla que el espectador nunca vio.
+    let runId = Date.now().toString(36);
+
+    // Turnos del cliente. A partir del tope, el bot deja de responder y
+    // deriva a un humano (el objetivo es agendar, no sostener un chat).
+    let turnoCliente = 0;
+
+    // La baja es PEGAJOSA: una vez pedida, no se le escribe mas en toda la
+    // conversacion. Sin esto el cliente pedia la baja, el bot la confirmaba,
+    // escribia "hola" y el bot le respondia como si nada.
+    let bajaSolicitada = false;
+
+    // Estado terminal de la conversacion: '' | 'optout' | 'escalado' | 'despedida'.
+    // Una vez cerrada el bot no vuelve a hablar. Si se derivo a un humano, el
+    // bot contestando por encima es peor que no haber derivado.
+    let cierreConversacion = '';
+
+    // BUFFER DE RAFAGAS. En WhatsApp nadie escribe un parrafo: manda
+    // "hola" / "che" / "una consulta" en 5 segundos. Sin esto se disparan
+    // 3 ejecuciones, el bot contesta 3 veces pisandose, y encima avanza
+    // 3 etapas de una. Se espera el silencio y se manda todo junto.
+    const ESPERA_RAFAGA_MS = 1200;
+    let bufferMensajes = [];
+    let temporizadorRafaga = null;
+
+    function changeLead() {
+      currentLeadKey = document.getElementById("leadSelect").value;
+      const data = LEADS_DATA[currentLeadKey];
+      document.getElementById("crmEmpresa").innerText = data.empresa;
+      document.getElementById("crmContacto").innerText = data.contacto;
+      if (document.getElementById("crmTelefono")) document.getElementById("crmTelefono").innerText = data.telefono || "+5493624009270";
+      document.getElementById("crmSistema").innerText = data.sistema;
+      document.getElementById("crmFacturas").innerText = data.facturas;
+      document.getElementById("crmOwner").innerText = data.owner;
+      document.getElementById("crmMotivo").innerText = `"${data.motivo}"`;
+      document.getElementById("chatName").innerText = `${data.contacto} (${data.empresa})`;
+      document.getElementById("avatarIcon").innerText = data.primerNombre.slice(0, 2).toUpperCase();
+      restartDemo();
+    }
+
+    function updateModeTag() {
+      const url = document.getElementById("n8nWebhook").value.trim();
+      const statusDiv = document.getElementById("modeStatus");
+      if (url) {
+        statusDiv.className = "mode-tag mode-n8n";
+        statusDiv.innerText = "🌐 Conectado a n8n — las respuestas las genera el agente";
+      } else {
+        // Ya no hay modo offline: sin URL la demo no funciona, no es un "modo".
+        statusDiv.className = "mode-tag mode-sin-url";
+        statusDiv.innerText = "⚠️ Falta la URL del webhook — el chat no va a responder";
+      }
+    }
+
+    function restartDemo() {
+      conversationStep = 1; // Siempre resetear al paso 1
+      runId = Date.now().toString(36); // sesion nueva en n8n: memoria limpia
+      turnoCliente = 0;
+      bajaSolicitada = false;
+      cierreConversacion = '';
+      bufferMensajes = [];
+      if (temporizadorRafaga) { clearTimeout(temporizadorRafaga); temporizadorRafaga = null; }
+      const container = document.getElementById("messagesContainer");
+      const data = LEADS_DATA[currentLeadKey];
+      container.innerHTML = `
+        <div class="date-divider">Hoy - Inicio de Reactivación</div>
+        <div class="message outgoing">
+          <span class="template-badge">Plantilla Meta Aprobada</span><br>
+          Hola ${data.primerNombre}, ¿cómo estás? Te escribo de parte del equipo de Xtract.
+          <div class="message-time">17:30 • Enviado por n8n</div>
+        </div>
+      `;
+      renderQuickReplies();
+    }
+
+    function renderQuickReplies() {
+      const repliesDiv = document.getElementById("quickReplies");
+      const data = LEADS_DATA[currentLeadKey];
+      repliesDiv.innerHTML = "";
+      data.quickReplies.forEach(text => {
+        const chip = document.createElement("div");
+        chip.className = "reply-chip";
+        chip.innerText = text;
+        chip.onclick = () => {
+          document.getElementById("userInput").value = text;
+          sendUserMessage();
+        };
+        repliesDiv.appendChild(chip);
+      });
+    }
+
+    function handleKeyDown(e) {
+      if (e.key === "Enter") sendUserMessage();
+    }
+
+    function sendUserMessage() {
+      const input = document.getElementById("userInput");
+      const text = input.value.trim();
+      if (!text) return;
+
+      const container = document.getElementById("messagesContainer");
+      const now = new Date();
+      const timeStr = now.getHours() + ":" + (now.getMinutes()<10?'0':'') + now.getMinutes();
+
+      const userMsg = document.createElement("div");
+      userMsg.className = "message incoming";
+      userMsg.innerHTML = `${text}<div class="message-time">${timeStr} • Prospecto</div>`;
+      container.appendChild(userMsg);
+
+      input.value = "";
+      container.scrollTop = container.scrollHeight;
+
+      // Se acumula y se reinicia la espera con cada mensaje nuevo.
+      bufferMensajes.push(text);
+      if (temporizadorRafaga) clearTimeout(temporizadorRafaga);
+      temporizadorRafaga = setTimeout(despacharRafaga, ESPERA_RAFAGA_MS);
+    }
+
+    function despacharRafaga() {
+      temporizadorRafaga = null;
+      if (!bufferMensajes.length) return;
+
+      // Los mensajes de la rafaga cuentan como UN turno, no como N.
+      const text = bufferMensajes.join(". ");
+      bufferMensajes = [];
+      turnoCliente++;
+
+      showTypingIndicator();
+      const webhookUrl = document.getElementById("n8nWebhook").value.trim();
+
+      if (webhookUrl) {
+        fetch(webhookUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            event: "message_created",
+            message_type: "incoming",
+            content: text,
+            sessionId: `${currentLeadKey}-${runId}`,
+            conversation_id: "demo-123",
+            conversationStep: conversationStep,
+            turnoCliente: turnoCliente,
+            optOutPrevio: bajaSolicitada,
+            conversacionCerrada: cierreConversacion !== '',
+            lead: LEADS_DATA[currentLeadKey]
+          })
+        })
+        .then(res => res.json())
+        .then(data => {
+          removeTypingIndicator();
+          const respText = data.response || data.text || "";
+          if (data.bloqueado === 'optout') bajaSolicitada = true;
+          if (data.cierre) cierreConversacion = data.cierre;
+          // Sin texto = silencio deliberado (baja ya confirmada). No se pinta nada.
+          if (!respText) return;
+          const lower = respText.toLowerCase();
+          const escalarChatwoot = lower.includes("chatwoot") || lower.includes("especialista") || lower.includes("derivar") || lower.includes("integrante del equipo");
+          const showCalendly = lower.includes("calendly");
+          // La etapa avanza CONTANDO turnos del bot, no adivinando frases.
+          // Antes se detectaba la propuesta buscando "10 minuto" en el texto:
+          // si el modelo la redactaba distinto la etapa no avanzaba y el bot
+          // volvia a proponer una reunion que el cliente ya habia aceptado.
+          // 1 = reconectar (sin reunion) | 2 = proponer reunion | 3 = Calendly
+          conversationStep = showCalendly ? 3 : Math.min(conversationStep + 1, 3);
+          renderBotMsg(respText, showCalendly, escalarChatwoot);
+        })
+        .catch(err => {
+          removeTypingIndicator();
+          renderBotMsg("⚠️ Error al conectar con el Webhook de n8n. Verificá la URL.", false, false);
+        });
+      } else {
+        // Sin webhook no hay demo: el agente vive entero en n8n.
+        // Antes habia un modo offline que simulaba las respuestas con reglas
+        // escritas a mano. Se saco: era una segunda implementacion del agente
+        // que divergia del backend sin que se notara en pantalla (el fix de
+        // las preguntas fuera de tema, por ejemplo, nunca llego a esa rama).
+        removeTypingIndicator();
+        turnoCliente--;   // no hubo turno real: no se consume el tope
+        renderBotMsg("⚠️ Falta la URL del webhook de n8n. Cargala en el panel de la izquierda.", false, false);
+      }
+    }
+
+    function showTypingIndicator() {
+      const container = document.getElementById("messagesContainer");
+      const typing = document.createElement("div");
+      typing.id = "typingIndicator";
+      typing.className = "typing-indicator";
+      typing.innerHTML = `<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>`;
+      container.appendChild(typing);
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function removeTypingIndicator() {
+      const el = document.getElementById("typingIndicator");
+      if (el) el.remove();
+    }
+
+    function renderBotMsg(text, includeCalendly, escalarChatwoot) {
+      const container = document.getElementById("messagesContainer");
+      const now = new Date();
+      const timeStr = now.getHours() + ":" + (now.getMinutes()<10?'0':'') + now.getMinutes();
+
+      const botMsg = document.createElement("div");
+      botMsg.className = "message outgoing";
+
+      let extraHTML = "";
+      if (includeCalendly) {
+        extraHTML = `
+          <div class="calendly-card">
+            <div class="calendly-title">📅 Reunión de Reactivación (10 min)</div>
+            <div class="calendly-desc">Seleccioná el día y hora que mejor te quede en la agenda de Xtract:</div>
+            <a href="https://calendly.com/xtract-demo" target="_blank" class="calendly-btn">Agendar Llamada en Calendly ➔</a>
+          </div>
+        `;
+      } else if (escalarChatwoot) {
+        extraHTML = `
+          <div class="calendly-card" style="border-color: rgba(255,183,3,0.4);">
+            <div class="calendly-title" style="color:#ffb703;">🔔 Escalación a Especialista</div>
+            <div class="calendly-desc">Esta consulta fue derivada al equipo técnico de Xtract en Chatwoot. Un ingeniero se comunicará a la brevedad.</div>
+          </div>
+        `;
+      }
+
+      botMsg.innerHTML = `${text} ${extraHTML} <div class="message-time">${timeStr} • Agente IA</div>`;
+      container.appendChild(botMsg);
+      container.scrollTop = container.scrollHeight;
+    }
+
+    renderQuickReplies();
+
+    // El cartel arranca hardcodeado en el HTML y solo se actualizaba al editar
+    // la URL a mano. Con la URL ya cargada por defecto nadie la tocaba, asi que
+    // hay que sincronizarlo al cargar la pagina.
+    updateModeTag();
+  </script>
+</body>
+</html>

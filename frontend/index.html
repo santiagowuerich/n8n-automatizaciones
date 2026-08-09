@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Registrar Ventas - Notion Sync</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="background-decorations">
+    <div class="circle circle-1"></div>
+    <div class="circle circle-2"></div>
+  </div>
+
+  <main class="container">
+    <header class="app-header">
+      <div class="logo">
+        <span class="icon">💼</span>
+        <h1>SalesTracker</h1>
+      </div>
+      <p class="subtitle">Registra tus ventas y sincronízalas automáticamente con Notion vía n8n</p>
+    </header>
+
+    <div class="grid">
+      <!-- Formulario de Registro -->
+      <section class="card glass-card">
+        <h2 class="card-title">Nueva Venta</h2>
+        <form id="sales-form">
+          <div class="form-group">
+            <label for="client">Cliente</label>
+            <input type="text" id="client" name="client" placeholder="Ej. Juan Pérez" required>
+          </div>
+
+          <div class="form-group">
+            <label for="item">Producto / Servicio</label>
+            <input type="text" id="item" name="item" placeholder="Ej. Escritorio Nórdico" required>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="amount">Monto ($)</label>
+              <input type="number" id="amount" name="amount" placeholder="0.00" min="0" step="0.01" required>
+            </div>
+            
+            <div class="form-group">
+              <label for="date">Fecha</label>
+              <input type="date" id="date" name="date" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="notes">Notas adicionales</label>
+            <textarea id="notes" name="notes" rows="3" placeholder="Detalles de entrega, método de pago, etc."></textarea>
+          </div>
+
+          <button type="submit" id="submit-btn" class="btn-primary">
+            <span class="btn-text">Registrar Venta</span>
+            <div class="spinner hidden"></div>
+          </button>
+        </form>
+      </section>
+
+      <!-- Panel de Estado / Historial Reciente -->
+      <section class="card glass-card side-panel">
+        <div class="panel-header">
+          <h2 class="card-title">Registro de Sesión</h2>
+          <span class="badge" id="sales-count">0 Ventas</span>
+        </div>
+
+        <div class="sales-list-container">
+          <div id="empty-state" class="empty-state">
+            <p>Aún no has registrado ventas en esta sesión.</p>
+          </div>
+          <ul id="sales-list" class="sales-list"></ul>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="connection-status">
+          <h3>Webhook URL (n8n)</h3>
+          <div class="webhook-input-group">
+            <input type="text" id="webhook-url" placeholder="http://localhost:5678/webhook/..." value="http://localhost:5678/webhook/registrar-venta">
+            <button id="save-webhook-btn" class="btn-secondary">Guardar</button>
+          </div>
+          <p class="help-text">Ingresa tu URL de Webhook de producción o test de tu flujo en n8n.</p>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

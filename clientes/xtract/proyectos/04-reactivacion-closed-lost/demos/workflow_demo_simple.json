@@ -1,0 +1,90 @@
+{
+  "name": "Xtract Demo — Simulador WhatsApp (Simple)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "demo-simulador",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-demo",
+      "name": "Webhook — Recibir de HTML",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// =====================================================================\n// PROCESADOR SIMPLIFICADO PARA EL DEMO HTML\n// Toma el mensaje enviado por el prospecto y los datos del lead\n// y genera la respuesta personalizada con IA + Calendly.\n// =====================================================================\nconst body = $input.first().json.body || $input.first().json;\nconst content = (body.content || body.texto || '').toString().trim();\nconst lead = body.lead || {};\n\nconst nombre = lead.primerNombre || lead.contacto || 'hola';\nconst empresa = lead.empresa || 'tu empresa';\nconst sistema = lead.sistema || 'tu sistema ERP';\nconst facturas = lead.facturas || '500';\nconst motivo = lead.motivo || 'cambio de sistema';\n\nconst lower = content.toLowerCase();\nlet respuesta = '';\nlet esInteresado = true;\n\nif (lower.includes('no gracias') || lower.includes('no estamos interesados') || lower.includes('ya no trabajo')) {\n  respuesta = `Muchas gracias por responder, ${nombre}. Dejamos asentado en el sistema para no enviarte más mensajes. ¡Que tengas un excelente día!`;\n  esInteresado = false;\n} else if (lower.includes('caro') || lower.includes('precio') || lower.includes('cuánto sale') || lower.includes('plan')) {\n  respuesta = `Te entiendo perfectamente, ${nombre}. Recientemente sacamos esquemas de planes mucho más flexibles que se adaptan al volumen real de facturación de ${empresa} (~${facturas} facturas/mes). ¿Te sirve que lo revisemos 10 minutos en una llamada rápida sin compromiso?`;\n} else if (lower.includes('tango') || lower.includes('softland') || lower.includes('sistema') || lower.includes('cambio')) {\n  respuesta = `Justamente por eso te escribía, ${nombre}. Mejoramos la integración nativa con ${sistema} para que la contabilización de facturas sea 100% automática sin alterar su configuración actual. ¿Tiene sentido que lo miremos 10 min en una llamada corta esta semana?`;\n} else {\n  respuesta = `Hola ${nombre}! En Xtract automatizamos la lectura y carga contable de facturas directo a ${sistema}. Lanzamos varias actualizaciones este mes que ahorran más del 70% del tiempo operativo. ¿Te sirve que te lo muestre brevemente en una llamada de 10 min?`;\n}\n\nreturn {\n  json: {\n    response: respuesta,\n    interesado: esInteresado,\n    lead_procesado: empresa,\n    sistema_erp: sistema\n  }\n};"
+      },
+      "id": "procesar-demo",
+      "name": "Procesar y Generar Respuesta",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ response: $json.response, status: 'ok' }) }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "POST, GET, OPTIONS"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "responder-webhook",
+      "name": "Responder al HTML",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        440,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook — Recibir de HTML": {
+      "main": [
+        [
+          {
+            "node": "Procesar y Generar Respuesta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Procesar y Generar Respuesta": {
+      "main": [
+        [
+          {
+            "node": "Responder al HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

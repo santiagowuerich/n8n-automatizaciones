@@ -1,0 +1,21 @@
+# Credentials & secrets
+credentials.json
+*.env
+.env*
+
+# SQLite databases
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+
+# FreeBuff local DB (contains tokens)
+.freebuff/
+
+# OS files
+.DS_Store
+
+# Node
+node_modules/
+
+# Logs
+*.log

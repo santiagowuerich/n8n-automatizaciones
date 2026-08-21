@@ -1,0 +1,1913 @@
+{
+  "name": "Xtract - 05 Generador de slides desde Discovery call",
+  "nodes": [
+    {
+      "parameters": {
+        "model": "deepseek-v4-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatDeepSeek",
+      "typeVersion": 1,
+      "position": [
+        616,
+        440
+      ],
+      "id": "7be22c57-34a5-41c3-86e8-b8b336a9697d",
+      "name": "DeepSeek Chat Model",
+      "credentials": {
+        "deepSeekApi": {
+          "id": "H5fC2aZoNphCCole",
+          "name": "SantiagoApikey"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "replaceText",
+        "presentationId": "={{ $json.id }}",
+        "textUi": {
+          "textValues": [
+            {
+              "text": "{{EMPRESA}}",
+              "replaceText": "={{ $('Armar placeholders del slide').item.json.empresa }}"
+            },
+            {
+              "text": "{{ERP}}",
+              "replaceText": "={{ $('Armar placeholders del slide').item.json.erp }}"
+            },
+            {
+              "text": "{{PUNTO_1_TITULO}}",
+              "replaceText": "={{ $('Armar placeholders del slide').item.json.punto1Titulo }}"
+            },
+            {
+              "text": "{{PUNTO_1_TEXTO}}",
+              "replaceText": "={{ $('Armar placeholders del slide').item.json.punto1Texto }}"
+            },
+            {
+              "text": "{{PUNTO_2_TITULO}}",
+              "replaceText": "={{ $('Armar placeholders del slide').item.json.punto2Titulo }}"
+            },
+            {
+              "text": "{{PUNTO_2_TEXTO}}",
+              "replaceText": "={{ $('Armar placeholders del slide').item.json.punto2Texto }}"
+            },
+            {
+              "text": "{{PUNTO_3_TITULO}}",
+              "replaceText": "={{ $('Armar placeholders del slide').item.json.punto3Titulo }}"
+            },
+            {
+              "text": "{{PUNTO_3_TEXTO}}",
+              "replaceText": "={{ $('Armar placeholders del slide').item.json.punto3Texto }}"
+            },
+            {
+              "text": "{{PUNTO_4_TITULO}}",
+              "replaceText": "={{ $('Armar placeholders del slide').item.json.punto4Titulo }}"
+            },
+            {
+              "text": "{{PUNTO_4_TEXTO}}",
+              "replaceText": "={{ $('Armar placeholders del slide').item.json.punto4Texto }}"
+            },
+            {
+              "text": "{{BEN_1_NOMBRE}}",
+              "replaceText": "={{ $('Armar placeholders del slide').item.json.ben1Nombre }}"
+            },
+            {
+              "text": "{{BEN_1_ACTUAL}}",
+              "replaceText": "={{ $('Armar placeholders del slide').item.json.ben1Actual }}"
+            },
+            {
+              "text": "{{BEN_1_XTRACT}}",
+              "replaceText": "={{ $('Armar placeholders del slide').item.json.ben1Xtract }}"
+            },
+            {
+              "text": "{{BEN_1_MEJORA}}",
+              "replaceText": "={{ $('Armar placeholders del slide').item.json.ben1Mejora }}"
+            },
+            {
+              "text": "{{BEN_2_NOMBRE}}",
+              "replaceText": "={{ $('Armar placeholders del slide').item.json.ben2Nombre }}"
+            },
+            {
+              "text": "{{BEN_2_ACTUAL}}",
+              "replaceText": "={{ $('Armar placeholders del slide').item.json.ben2Actual }}"
+            },
+            {
+              "text": "{{BEN_2_XTRACT}}",
+              "replaceText": "={{ $('Armar placeholders del slide').item.json.ben2Xtract }}"
+            },
+            {
+              "text": "{{BEN_2_MEJORA}}",
+              "replaceText": "={{ $('Armar placeholders del slide').item.json.ben2Mejora }}"
+            },
+            {
+              "text": "{{BEN_3_NOMBRE}}",
+              "replaceText": "={{ $('Armar placeholders del slide').item.json.ben3Nombre }}"
+            },
+            {
+              "text": "{{BEN_3_ACTUAL}}",
+              "replaceText": "={{ $('Armar placeholders del slide').item.json.ben3Actual }}"
+            },
+            {
+              "text": "{{BEN_3_XTRACT}}",
+              "replaceText": "={{ $('Armar placeholders del slide').item.json.ben3Xtract }}"
+            },
+            {
+              "text": "{{BEN_3_MEJORA}}",
+              "replaceText": "={{ $('Armar placeholders del slide').item.json.ben3Mejora }}"
+            },
+            {
+              "text": "{{BEN_4_NOMBRE}}",
+              "replaceText": "={{ $('Armar placeholders del slide').item.json.ben4Nombre }}"
+            },
+            {
+              "text": "{{BEN_4_ACTUAL}}",
+              "replaceText": "={{ $('Armar placeholders del slide').item.json.ben4Actual }}"
+            },
+            {
+              "text": "{{BEN_4_XTRACT}}",
+              "replaceText": "={{ $('Armar placeholders del slide').item.json.ben4Xtract }}"
+            },
+            {
+              "text": "{{BEN_4_MEJORA}}",
+              "replaceText": "={{ $('Armar placeholders del slide').item.json.ben4Mejora }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "1ea92395-e3bb-484f-8565-1612c5e086b0",
+      "name": "Reemplazar textos en el slide",
+      "type": "n8n-nodes-base.googleSlides",
+      "typeVersion": 2,
+      "position": [
+        1344,
+        208
+      ],
+      "credentials": {
+        "googleSlidesOAuth2Api": {
+          "id": "2zf62ANt1cqLYK9N",
+          "name": "Xtract cred-santiagow"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "copy",
+        "fileId": {
+          "__rl": true,
+          "value": "1jNY4NtpT_9oCSOffYozXC8c_XypeBxIXVlVXnVZzWXE",
+          "mode": "id",
+          "cachedResultName": "Propuesta Xtract (plantilla) [Google Slides]"
+        },
+        "name": "=Propuesta - {{ $json.empresa }} - {{ $json.fecha }} (EDITAR ACA)",
+        "sameFolder": false,
+        "driveId": {
+          "__rl": true,
+          "value": "My Drive",
+          "mode": "list",
+          "cachedResultName": "My Drive",
+          "cachedResultUrl": "https://drive.google.com/drive/my-drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "1h7u-J9L0Sq4WMXYTaxN1S2SeS7jc7dIA",
+          "mode": "list",
+          "cachedResultName": "Slides Generados",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1h7u-J9L0Sq4WMXYTaxN1S2SeS7jc7dIA"
+        },
+        "options": {}
+      },
+      "id": "c04f58cc-c71a-4720-9d54-9c22e139ff3d",
+      "name": "Copiar plantilla de propuesta",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1120,
+        208
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "2nHeE2yjp5ghofd4",
+          "name": "Xtract cred-santiagow"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.first().json;\nconst d = raw.output || raw;\nconst notion = $('Code - Extraer Datos').first().json;\nconst empresa = d.empresa || 'Cliente';\nconst fecha = new Date().toLocaleDateString('es-AR');\n\n// ---------------------------------------------------------------------\n// ERP -- primero el CRM, despues la transcripcion.\n//\n// El orden importa: 'property_que_sistema_usan' lo carga una persona a\n// mano; 'erp_actual' lo interpreta el modelo desde el audio, y Fathom\n// transcribe pesimo los nombres de ERP. En una discovery real \"Finnegans\"\n// aparecio como Finance, Finex, Fan, Finegan y Fin -- cinco variantes en\n// la misma llamada. Escribir cualquiera de esas en una propuesta es que\n// el cliente lea su propio sistema mal escrito.\n//\n// Si no se sabe cual usa, el placeholder queda en la palabra generica\n// 'ERP': la frase del slide sigue leyendose bien (\"...con su ERP\"),\n// mientras que \"No informado\" ahi adentro queda roto. En la ficha de\n// datos de mas abajo si se escribe 'No mencionado', porque es una lista\n// de campos y no una oracion.\n// ---------------------------------------------------------------------\nconst erpNotion = (notion.property_que_sistema_usan || '').toString().trim();\nconst erpIa = (d.erp_actual || '').toString().trim();\nconst erpReal = erpNotion || erpIa;\nconst erp = erpReal || 'ERP';\n\nconst puntos = Array.isArray(d.puntos_mejora) ? d.puntos_mejora.slice(0, 4) : [];\nconst beneficios = Array.isArray(d.beneficios) ? d.beneficios.slice(0, 4) : [];\nconst out = { empresa, fecha, erp };\nfor (let i = 0; i < 4; i++) {\n  const p = puntos[i];\n  out['punto' + (i + 1) + 'Titulo'] = p ? p.titulo : '';\n  out['punto' + (i + 1) + 'Texto'] = p ? p.texto : '';\n  const b = beneficios[i];\n  out['ben' + (i + 1) + 'Nombre'] = b ? b.beneficio : '';\n  out['ben' + (i + 1) + 'Actual'] = b ? b.situacion_actual : '';\n  out['ben' + (i + 1) + 'Xtract'] = b ? b.con_xtract : '';\n  out['ben' + (i + 1) + 'Mejora'] = b ? b.mejora : '';\n}\nout.fichaTexto = [\n  'Empresa: ' + (d.empresa || 'No mencionado'),\n  'Industria: ' + (d.industria || 'No mencionado'),\n  'Tamano: ' + (d.tamano || 'No mencionado'),\n  'Pais: ' + (d.pais || 'No mencionado'),\n  'ERP actual: ' + (erpReal || 'No mencionado'),\n  'Volumen de facturas mensual: ' + (d.volumen_facturas_mensual || 'No mencionado'),\n  'Gasto anual en compras: ' + (d.gasto_anual_compras || 'No mencionado'),\n  'Personas dedicadas a carga de facturas: ' + (d.personas_carga_facturas || 'No mencionado'),\n  'Como gestionan hoy las facturas: ' + (d.gestion_actual_facturas || 'No mencionado'),\n  'Problemas identificados: ' + (d.problemas_identificados || 'No mencionado'),\n  'Fit con Xtract: ' + (d.fit_xtract || 'No mencionado'),\n  'Nivel de interes: ' + (d.nivel_interes || 'No mencionado'),\n  'Proximos pasos: ' + (d.proximos_pasos || 'No mencionado'),\n  'Notas adicionales: ' + (d.notas_adicionales || 'No mencionado')\n].join('\\n');\nout.puntosTexto = puntos.length ? puntos.map((p, i) => (i + 1) + '. ' + p.titulo + '\\n' + p.texto).join('\\n\\n') : 'Sin puntos detectados';\nout.beneficiosTexto = beneficios.length ? beneficios.map((b) => b.beneficio + ' | Antes: ' + b.situacion_actual + ' | Con Xtract: ' + b.con_xtract + ' | Mejora: ' + b.mejora).join('\\n') : 'Sin beneficios detectados';\nreturn [{ json: out }];"
+      },
+      "id": "38e29c30-a4f1-4e3c-ac54-2bde8977db59",
+      "name": "Armar placeholders del slide",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        896,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "text": "={{ $json.transcripcion }}",
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"empresa\": { \"type\": \"string\" },\n    \"industria\": { \"type\": \"string\" },\n    \"tamano\": { \"type\": \"string\" },\n    \"pais\": { \"type\": \"string\" },\n    \"erp_actual\": { \"type\": \"string\" },\n    \"volumen_facturas_mensual\": { \"type\": \"string\" },\n    \"gasto_anual_compras\": { \"type\": \"string\" },\n    \"personas_carga_facturas\": { \"type\": \"string\" },\n    \"dedicacion_personas\": {\n      \"type\": \"string\",\n      \"enum\": [\"full-time\", \"part-time\", \"no mencionado\"],\n      \"description\": \"Si las personas que cargan facturas se dedican a eso a tiempo completo (full-time) o solo una parte de su jornada (part-time). Usar 'no mencionado' si la llamada no lo aclara: no adivinar.\"\n    },\n    \"gestion_actual_facturas\": { \"type\": \"string\" },\n    \"problemas_identificados\": { \"type\": \"string\" },\n    \"fit_xtract\": { \"type\": \"string\" },\n    \"nivel_interes\": { \"type\": \"string\" },\n    \"proximos_pasos\": { \"type\": \"string\" },\n    \"notas_adicionales\": { \"type\": \"string\" },\n    \"puntos_mejora\": {\n      \"type\": \"array\",\n      \"minItems\": 4,\n      \"maxItems\": 4,\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"titulo\": { \"type\": \"string\" },\n          \"texto\": { \"type\": \"string\" }\n        },\n        \"required\": [\"titulo\", \"texto\"]\n      }\n    },\n    \"beneficios\": {\n      \"type\": \"array\",\n      \"minItems\": 4,\n      \"maxItems\": 4,\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"beneficio\": { \"type\": \"string\" },\n          \"situacion_actual\": { \"type\": \"string\" },\n          \"con_xtract\": { \"type\": \"string\" },\n          \"mejora\": { \"type\": \"string\" }\n        },\n        \"required\": [\"beneficio\", \"situacion_actual\", \"con_xtract\", \"mejora\"]\n      }\n    }\n  },\n  \"required\": [\"empresa\", \"puntos_mejora\", \"beneficios\"]\n}",
+        "options": {
+          "systemPromptTemplate": "Sos un analista de preventas de Xtract especializado en procesar transcripciones de Discovery calls.\n\nExtraé de la transcripción los datos para armar una propuesta comercial. Devolvé SOLO el JSON pedido, sin preguntar nada.\n\nFICHA: completá cada campo con lo que se dijo en la call. Si un dato no fue mencionado, poné \"No mencionado\" — nunca inventes.\n\nPUNTOS DE MEJORA — SIEMPRE EXACTAMENTE 4, la plantilla del slide tiene 4 posiciones fijas y una vacía se ve mal:\n- Releé la transcripción completa a fondo antes de cerrar la lista en 3. Las discovery calls casi siempre tocan más de 3 problemas aunque sea de pasada — un proceso secundario, una excepción, una herramienta puntual, una tarea manual que se menciona una sola vez. Buscalo activamente.\n- Priorizá los 4 más relevantes para el negocio del cliente.\n- Si después de revisar a fondo la call genuinamente no da para un cuarto punto tan concreto como los otros tres, usá el más débil o más genérico de los que sí se mencionaron (por ejemplo, un proceso que se nombró sin mucho detalle) en vez de dejar el slot vacío. Nunca inventes un problema que no tenga ningún respaldo en la transcripción.\n- titulo: máximo 5 palabras, describe el problema.\n- texto: 2 a 3 oraciones, situación actual con datos concretos de la call + consecuencia operativa. Es un diagnóstico para mostrarle al cliente, no una nota interna.\n- Solo hechos de la call: volúmenes, personas, procesos, sistemas, consecuencias. Sin opiniones ni anécdotas de personas específicas.\n\nBENEFICIOS — siempre 4, una fila por cada punto de mejora, mismo orden:\n- situacion_actual: estado actual en 3 a 5 palabras.\n- con_xtract: la solución en 3 a 5 palabras.\n- mejora: el resultado concreto en 2 a 4 palabras.\n- Sin métricas inventadas. Si hay una estimación, marcala como \"(estimado)\" — solo si hay un número real de la call de base.\n\nTono directo y profesional, orientado al impacto de negocio. Nunca inventes precios, plazos ni funcionalidades que no se mencionaron."
+        }
+      },
+      "id": "cc31da0d-1c75-47ff-92fe-82e3cd9d0b9d",
+      "name": "IA - Extraer datos de la llamada",
+      "type": "@n8n/n8n-nodes-langchain.informationExtractor",
+      "typeVersion": 1.2,
+      "position": [
+        544,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const MAX = 120000;\n\n// Entra el texto plano que devuelve \"Drive - export texto\" (HTTP Request con\n// responseFormat text -> outputPropertyName 'data' por defecto).\nconst texto = String($input.first().json.data || '').trim().slice(0, MAX);\n\n// SIN ESTA GUARDA EL FALLO ES SILENCIOSO, que es lo peor que puede pasar aca.\n// Con la transcripcion vacia el extractor no encuentra nada, 'empresa' cae en\n// el default 'Cliente', y el flujo IGUAL copia la plantilla y genera un Slide\n// completo con los 25 placeholders en blanco, titulado\n// \"Propuesta - Cliente - <fecha>\". No falla nada: queda una propuesta vacia\n// esperando en Drive, y nadie se entera hasta que un comercial la abre\n// delante del cliente.\n//\n// Causa mas probable: el endpoint /export de Drive solo exporta documentos\n// NATIVOS de Google. Si el link de Notion apunta a un PDF o a un .docx\n// subido, Drive contesta 403 fileNotExportable y aca llega vacio.\nif (!texto) {\n  throw new Error(\n    'La transcripcion llego vacia, se corta antes de generar una propuesta en blanco. ' +\n    'Revisa que el link de Notion apunte a un Google Doc nativo: ' +\n    '/export no exporta PDFs ni archivos subidos.'\n  );\n}\n\nreturn [{ json: { transcripcion: texto } }];"
+      },
+      "id": "26a0b563-f3ef-4410-98cb-2e4a37238d03",
+      "name": "Preparar transcripcion",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        320,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "useJson": true,
+        "claimsJson": "={\n  \"iss\": \"transcript-docs-reader@transcripts-reader.iam.gserviceaccount.com\",\n  \"sub\": \"{{ $json.ownerEmail }}\",\n  \"scope\": \"https://www.googleapis.com/auth/drive.readonly\",\n  \"aud\": \"https://oauth2.googleapis.com/token\",\n  \"exp\": {{ Math.floor(Date.now() / 1000) + 3600 }},\n  \"iat\": {{ Math.floor(Date.now() / 1000) }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.jwt",
+      "typeVersion": 1,
+      "position": [
+        -352,
+        208
+      ],
+      "id": "d1709e97-368e-4de6-bf9a-ba247fa9c483",
+      "name": "JWT1",
+      "credentials": {
+        "jwtAuth": {
+          "id": "B3KwxGmlrCCTgAHk",
+          "name": "Service Account Xtract transcripts-reader"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://www.googleapis.com/drive/v3/files/{{ $('Code - Extraer Datos').first().json.fileId }}/export",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "mimeType",
+              "value": "text/plain"
+            },
+            {
+              "name": "supportsAllDrives",
+              "value": "true"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.SLACK_BOT_TOKEN || \"xoxb-...\" }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        96,
+        208
+      ],
+      "id": "fb5c0cdb-a9a4-4dd0-ad2f-38550b6c7f1f",
+      "name": "Drive - export texto"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://oauth2.googleapis.com/token",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "grant_type",
+              "value": "urn:ietf:params:oauth:grant-type:jwt-bearer"
+            },
+            {
+              "name": "assertion",
+              "value": "={{ $json.token }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -128,
+        208
+      ],
+      "id": "8c5b1f64-215b-4eec-bf69-2beb0ba6d43f",
+      "name": "HTTP - Generar Access Token"
+    },
+    {
+      "parameters": {
+        "jsCode": "// El webhook suele envolver los datos en \"body\", por las dudas atajamos ambos casos\nconst data = $input.first().json.body || $input.first().json;\n\n// Extraer link y owner del JSON de Notion\nconst link = data.property_link_a_discovery || \"\";\nconst owners = data.property_owner || [];\nconst ownerEmail = owners.length > 0 ? owners[0] : \"\";\n\n// Extraer ID del documento usando Regex\nlet fileId = \"\";\nconst match = link.match(/\\/d\\/([a-zA-Z0-9-_]+)/);\nif (match) {\n  fileId = match[1];\n}\n\n// Extraer variables comerciales si ya vienen cargadas en Notion\nconst oneshot = parseFloat(data.property_one_shot) || 0;\nconst fee = parseFloat(data.property_mrr) || 0;\nconst facturasNotion = parseFloat(data.property_cantidad_de_facturas) || 0;\n\nreturn [{\n  json: {\n    ...data,\n    fileId: fileId,\n    ownerEmail: ownerEmail,\n    oneshot: oneshot,\n    fee: fee,\n    facturas_notion: facturasNotion\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -576,
+        208
+      ],
+      "id": "baed557e-2552-42b8-b444-b9c9d15e8815",
+      "name": "Code - Extraer Datos"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "10edc1bb-7277-4df9-ad25-edabec0cb3fa",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -800,
+        208
+      ],
+      "id": "cfb12565-efa9-460b-8355-d8e397dd2f4a",
+      "name": "Link a discovery cargado",
+      "webhookId": "10edc1bb-7277-4df9-ad25-edabec0cb3fa"
+    },
+    {
+      "parameters": {
+        "jsCode": "// =====================================================================\n// CALCULO AUTOMATICO DE IMPACTO ECONOMICO Y ROI (PAGINA 4 Y GOOGLE DOC)\n// =====================================================================\nconst RATES = { \"Argentina\": 10.10, \"Uruguay\": 9.30, \"Ecuador\": 5.45, \"Costa Rica\": 8.10, \"Honduras\": 5.80, \"Panamá\": 5.40, \"México\": 5.25, \"Bolivia\": 5.13, \"Guatemala\": 5.25, \"Chile\": 5.00, \"Perú\": 4.35, \"Paraguay\": 4.40, \"Rep. Dominicana\": 3.90, \"Colombia\": 3.60, \"Brasil\": 4.05, \"El Salvador\": 3.65, \"Venezuela\": 2.70 };\nconst PREFIJOS = [ [\"549\", \"Argentina\"], [\"54\", \"Argentina\"], [\"598\", \"Uruguay\"], [\"56\", \"Chile\"], [\"57\", \"Colombia\"], [\"52\", \"México\"], [\"51\", \"Perú\"], [\"593\", \"Ecuador\"], [\"506\", \"Costa Rica\"], [\"507\", \"Panamá\"], [\"502\", \"Guatemala\"], [\"504\", \"Honduras\"], [\"503\", \"El Salvador\"], [\"591\", \"Bolivia\"], [\"595\", \"Paraguay\"], [\"1809\", \"Rep. Dominicana\"], [\"1829\", \"Rep. Dominicana\"], [\"1849\", \"Rep. Dominicana\"], [\"55\", \"Brasil\"], [\"58\", \"Venezuela\"] ];\n\nconst FACTURAS_POR_PERSONA_MES = 300;\nconst USD_POR_FACTURA = 400;\nconst HS_ANIO_FULLTIME = 1200;\nconst HS_ANIO_PARTTIME = 600;\nconst PCT = { A: 1.0, B: 0.3, C: 1.0, D: 1.0, E: 1.5 };\n\nconst norm = (s) => (s || \"\").toString().normalize(\"NFD\").replace(/[̀-ͯ]/g, \"\").toLowerCase().trim();\nconst fmtUSD = (n) => Math.round(n).toLocaleString(\"es-AR\");\nconst fmtPct1 = (n) => n.toLocaleString(\"es-AR\", { minimumFractionDigits: 1, maximumFractionDigits: 1 });\nconst fmt = (n) => \"USD \" + fmtUSD(n);\n\nconst notion = $(\"Code - Extraer Datos\").first().json;\nconst iaRaw = $(\"IA - Extraer datos de la llamada\").first().json;\nconst ia = iaRaw.output || iaRaw;\nconst presentationId = $(\"Copiar plantilla de propuesta\").first().json.id;\nconst slideUrl = \"https://docs.google.com/presentation/d/\" + presentationId + \"/edit\";\nconst empresa = ia.empresa || notion.property_nombre_oportunidad || \"Cliente\";\n\n// PAIS\nconst PAISES = Object.keys(RATES);\nconst matchPais = (v) => {\n  const n = norm(v);\n  if (!n) return \"\";\n  return PAISES.find((p) => norm(p) === n) || PAISES.find((p) => n.indexOf(norm(p)) !== -1) || \"\";\n};\n\nconst paisNotion = matchPais(Array.isArray(notion.property_pais) ? notion.property_pais[0] : notion.property_pais);\nconst paisIa = matchPais(ia.pais);\nlet paisTel = \"\";\nlet prefTel = \"\";\nconst telDigitos = String(notion.property_whatsapp_kdm || \"\").replace(/\\D/g, \"\");\nfor (const [pref, p] of PREFIJOS) {\n  if (telDigitos.indexOf(pref) === 0) { paisTel = p; prefTel = pref; break; }\n}\nconst pais = paisNotion || paisIa || paisTel || \"\";\nconst paisOrigen = paisNotion ? \"card de Notion\" : (paisIa ? \"la transcripcion\" : (paisTel ? \"el prefijo del telefono (+\" + prefTel + \")\" : \"\"));\n\n// DEDICACION\nconst dedicRaw = norm(ia.dedicacion_personas);\nconst esPartTime = dedicRaw.indexOf(\"part\") !== -1;\nconst dedicacionConocida = esPartTime || dedicRaw.indexOf(\"full\") !== -1;\nconst dedicacion = esPartTime ? \"part-time\" : \"full-time\";\nconst hsPorPersona = esPartTime ? HS_ANIO_PARTTIME : HS_ANIO_FULLTIME;\n\n// FACTURAS\nconst aFacturasMes = (v) => {\n  if (v == null || v === \"\") return null;\n  if (typeof v === \"number\") return v > 0 ? v : null;\n  const s = String(v);\n  const nums = (s.replace(/[.,](?=\\d{3}\\b)/g, \"\").match(/\\d+/g) || []).map(Number).filter((n) => n > 0);\n  if (!nums.length) return null;\n  let n = Math.max.apply(null, nums);\n  if (/anual|al año|por año|\\/año|anuales/i.test(s)) n = n / 12;\n  return n > 0 ? n : null;\n};\n\nconst factNotion = aFacturasMes(notion.property_cantidad_de_facturas || notion.facturas_notion);\nconst factIa = aFacturasMes(ia.volumen_facturas_mensual);\nconst facturasMes = factNotion || factIa;\nconst facturasOrigen = factNotion ? \"card de Notion\" : (factIa ? \"la transcripcion\" : \"\");\n\nconst personas = facturasMes ? Math.max(1, Math.ceil(facturasMes / FACTURAS_POR_PERSONA_MES)) : null;\nconst gasto = facturasMes ? facturasMes * 12 * USD_POR_FACTURA : null;\n\nconst faltan = [];\nif (!facturasMes) faltan.push(\"la cantidad de facturas\");\nif (!pais) faltan.push(\"el pais\");\n\nif (faltan.length) {\n  return [{ json: {\n    calculable: false,\n    tiene_precio: false,\n    presentationId: presentationId,\n    slideUrl: slideUrl,\n    empresa: empresa,\n    pais: pais,\n    paisOrigen: paisOrigen,\n    gastoPrefill: gasto ? String(Math.round(gasto)) : \"\",\n    personasPrefill: personas ? String(personas) : \"\",\n    dedicacion: dedicacion,\n    dedicacionConocida: dedicacionConocida,\n    facturasMes: facturasMes ? Math.round(facturasMes) : null,\n    facturasOrigen: facturasOrigen,\n    motivo: \"Falta \" + faltan.join(\" y \") + \".\"\n  } }];\n}\n\n// PERDIDAS Y CALCULOS\nconst hora = RATES[pais] || 8.74;\nconst valA = gasto * PCT.A / 100;\nconst valB = gasto * PCT.B / 100;\nconst valC = gasto * PCT.C / 100;\nconst valD = gasto * PCT.D / 100;\nconst valE = gasto * PCT.E / 100;\nconst subtotal = valA + valB + valC + valD + valE;\nconst hsAnio = personas * hsPorPersona;\nconst rrhh = Math.round(hsAnio * hora);\nconst total = subtotal + rrhh;\nconst mensual = total / 12;\n\nconst oneshot = parseFloat(notion.oneshot || notion.property_one_shot) || 0;\nconst fee = parseFloat(notion.fee || notion.property_mrr) || 0;\nconst tienePrecio = (oneshot > 0 || fee > 0);\n\nconst s = personas !== 1 ? \"s\" : \"\";\nconst feeAnual = fee * 12;\nconst costo1 = oneshot + feeAnual;\nconst costo2 = feeAnual;\nconst roi1 = costo1 > 0 ? ((total - costo1) / costo1 * 100) : 0;\nconst roi2 = costo2 > 0 ? ((total - costo2) / costo2 * 100) : 0;\n\nreturn [{ json: {\n  calculable: true,\n  tiene_precio: tienePrecio,\n  presentationId: presentationId,\n  slideUrl: slideUrl,\n  empresa: empresa,\n  docName: \"ROI Xtract - \" + empresa,\n  owner_slack: String(notion.ownerEmail || notion.owner_slack || \"\").trim(),\n  facturasMes: Math.round(facturasMes),\n  facturasOrigen: facturasOrigen,\n  paisOrigen: paisOrigen,\n  dedicacion: dedicacion,\n  dedicacionConocida: dedicacionConocida,\n  hsPorPersona: hsPorPersona,\n\n  // Pagina 4 Slides\n  gastoFmt: Math.round(gasto).toLocaleString(\"es-AR\"),\n  pais: pais,\n  personas: String(personas),\n  perdErrores: fmt(valA),\n  perdFiscal: fmt(valB),\n  perdDesc: fmt(valC),\n  perdSobre: fmt(valD),\n  perdDupes: fmt(valE),\n  perdRrhh: fmt(rrhh),\n  perdTotal: fmt(total),\n  impactoTotal: fmtUSD(total),\n  impactoMensual: fmtUSD(mensual),\n  rrhhDetalle: personas + \" persona\" + s + \" \" + dedicacion + \" × \" + hsPorPersona.toLocaleString(\"es-AR\") + \" hs/año × USD \" + hora.toFixed(2) + \"/h (incluye leyes sociales)\",\n\n  // Documento ROI Google Docs\n  docFacturasMencion: facturasMes > 0 ? fmtUSD(facturasMes) + \" facturas mensuales\" : \"un volumen relevante de facturas\",\n  docBaseLaboral: personas + \" analista\" + s + \" asignado\" + s + \" al proceso de AP en \" + pais,\n  docRrhhBase: personas + \" persona\" + s + \" × \" + hsPorPersona.toLocaleString(\"es-AR\") + \" hs/año × USD \" + hora.toFixed(2) + \"/h en \" + pais + \", incl. cargas sociales\",\n  docVolumen: fmtUSD(gasto),\n  docPctA: fmtPct1(PCT.A),\n  docPctB: fmtPct1(PCT.B),\n  docPctC: fmtPct1(PCT.C),\n  docPctD: fmtPct1(PCT.D),\n  docPctE: fmtPct1(PCT.E),\n  docValA: fmtUSD(valA),\n  docValB: fmtUSD(valB),\n  docValC: fmtUSD(valC),\n  docValD: fmtUSD(valD),\n  docValE: fmtUSD(valE),\n  docSubtotalAE: fmtUSD(subtotal),\n  docValRrhh: fmtUSD(rrhh),\n  docRecupero: fmtUSD(total),\n  docOneshot: fmtUSD(oneshot),\n  docFeeAnual: fmtUSD(feeAnual),\n  docCosto1: fmtUSD(costo1),\n  docCosto2: fmtUSD(costo2),\n  docRoi1: Math.round(roi1) + \"%\",\n  docRoi2: Math.round(roi2) + \"%\"\n} }];"
+      },
+      "id": "5970c8f7-9d0d-4f2f-ae34-7fda02ead91d",
+      "name": "Calcular impacto economico",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1568,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "calc",
+              "leftValue": "={{ $json.calculable }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "259775ed-b217-4ef3-bfb1-2efab7784d22",
+      "name": "Se pudo calcular?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1792,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "replaceText",
+        "presentationId": "={{ $json.presentationId }}",
+        "textUi": {
+          "textValues": [
+            {
+              "text": "{{GASTO_ANUAL}}",
+              "replaceText": "={{ $json.gastoFmt }}"
+            },
+            {
+              "text": "{{PAIS}}",
+              "replaceText": "={{ $json.pais }}"
+            },
+            {
+              "text": "{{PERSONAS}}",
+              "replaceText": "={{ $json.personas }}"
+            },
+            {
+              "text": "{{PERD_ERRORES}}",
+              "replaceText": "={{ $json.perdErrores }}"
+            },
+            {
+              "text": "{{PERD_FISCAL}}",
+              "replaceText": "={{ $json.perdFiscal }}"
+            },
+            {
+              "text": "{{PERD_DESC}}",
+              "replaceText": "={{ $json.perdDesc }}"
+            },
+            {
+              "text": "{{PERD_SOBRE}}",
+              "replaceText": "={{ $json.perdSobre }}"
+            },
+            {
+              "text": "{{PERD_DUPES}}",
+              "replaceText": "={{ $json.perdDupes }}"
+            },
+            {
+              "text": "{{PERD_RRHH}}",
+              "replaceText": "={{ $json.perdRrhh }}"
+            },
+            {
+              "text": "{{PERD_TOTAL}}",
+              "replaceText": "={{ $json.perdTotal }}"
+            },
+            {
+              "text": "{{IMPACTO_TOTAL}}",
+              "replaceText": "={{ $json.impactoTotal }}"
+            },
+            {
+              "text": "{{IMPACTO_MENSUAL}}",
+              "replaceText": "={{ $json.impactoMensual }}"
+            },
+            {
+              "text": "{{RRHH_DETALLE}}",
+              "replaceText": "={{ $json.rrhhDetalle }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "55beb266-d5f1-4a75-9bc7-8324ea669c43",
+      "name": "Completar pagina 4",
+      "type": "n8n-nodes-base.googleSlides",
+      "typeVersion": 2,
+      "position": [
+        2240,
+        784
+      ],
+      "credentials": {
+        "googleSlidesOAuth2Api": {
+          "id": "2zf62ANt1cqLYK9N",
+          "name": "Xtract cred-santiagow"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "user",
+        "operation": "getAll",
+        "returnAll": true
+      },
+      "id": "a2734025-2414-46e8-8a6c-837b63bfbe15",
+      "name": "Slack - Traer usuarios",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.5,
+      "position": [
+        2464,
+        208
+      ],
+      "webhookId": "a504c795-810e-4c8b-93a1-2bc3b7bcced3",
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "LOGlZWLcdTggazKj",
+          "name": "Slack personal Santi"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// =====================================================================\n// ⚠️  MODO PRUEBA -- VACIAR ESTA CONSTANTE PARA VOLVER A LO NORMAL\n//\n// Mientras tenga un id adentro, TODOS los avisos van a esa persona sin\n// importar de quien sea el lead. Con '' vuelve a mandarle al owner de la\n// card, que es el comportamiento real.\n//\n//   U09FZ5MLF0E = Ian Brandan\n// =====================================================================\nconst FORZAR_DESTINATARIO = 'D0BRPUE84UA';\n\n// =====================================================================\n// DM por Slack al owner de la card avisandole que la propuesta ya esta.\n//\n// POR QUE HAY QUE RESOLVER EL ID A MANO:\n// Notion nos da el MAIL del owner ('nicolas.gonzalez@xtract.app'), pero\n// Slack solo notifica con su member id ('U02MCAHHM1T'). El endpoint que\n// traduce mail -> id (users.lookupByEmail) necesita el scope\n// 'users:read.email', que la app \"Xtract notifications\" NO tiene: por eso\n// ningun perfil de users.list trae 'email'. Se cruza por el handle, que\n// en este workspace coincide con la parte del mail antes del @.\n// =====================================================================\n\n// =====================================================================\n// LOS DOS FORMULARIOS\n//\n// Hay dos entradas distintas al mismo calculo, y cual se ofrece depende\n// de si la pagina 4 se pudo escribir sola:\n//\n//   SOLO EL PRECIO -- la pagina 4 ya esta escrita, o sea que todos los\n//   datos del cliente ya se conocen. Viajan ocultos en el link y el\n//   comercial carga unicamente one-shot y fee. No es solo comodidad: si\n//   se los volvieramos a pedir, podria tipear un gasto distinto al que\n//   ya quedo impreso en el slide, y el documento ROI terminaria\n//   contradiciendo a la propuesta que lo acompania.\n//\n//   COMPLETO -- falto algun dato, o el comercial quiere corregir alguno.\n//   Se piden todos.\n//\n// ⚠️ AL IMPORTAR ESTE WORKFLOW A PRODUCCION las dos constantes tienen que\n// pasar a la forma con ruta fija ('/form/pagina-4-impacto' y\n// '/form/roi-precio'), porque n8n REGENERA el webhookId al importar.\n// Ver el cartel rojo del canvas. Ya paso una vez: los links quedaron 404.\n//\n// El prefill por query param SOLO funciona en la URL de PRODUCCION del\n// formulario: en modo test n8n ignora los parametros y sale vacio.\n// =====================================================================\nconst FORM_COMPLETO = 'https://n8n.xtract.app/form/67a71cbf-61e2-4ea2-84eb-da9f19dde455';\nconst FORM_SOLO_PRECIO = 'https://n8n.xtract.app/form/roi-precio';\n\nconst c = $('Calcular impacto economico').first().json;\nconst notion = $('Code - Extraer Datos').first().json;\n\nconst norm = (s) => String(s == null ? '' : s)\n  .normalize('NFD').replace(/[̀-ͯ]/g, '')\n  .toLowerCase().trim();\n\nconst ownerEmail = (Array.isArray(notion.property_owner) ? notion.property_owner[0] : notion.property_owner) || '';\nconst local = norm(ownerEmail.split('@')[0]);\n\nconst usuarios = $input.all().map((i) => i.json)\n  .filter((u) => u && u.id && !u.deleted && !u.is_bot);\n\nlet owner = null;\nif (local) {\n  // 1) handle exacto: 'nicolas.gonzalez'\n  owner = usuarios.find((u) => norm(u.name) === local) || null;\n  // 2) nombre real: 'nicolas.gonzalez' -> 'nicolas gonzalez'\n  if (!owner) {\n    const comoNombre = local.replace(/[._-]+/g, ' ');\n    owner = usuarios.find((u) => norm(u.real_name) === comoNombre) || null;\n  }\n}\n\n// Query string compartido por los dos formularios. Los nombres tienen que\n// coincidir con los fieldName de cada Form Trigger -- en el corto, los\n// mismos campos existen pero como hiddenField.\n//\n// El precio (oneshot/fee) NO se precarga a proposito: es el unico dato\n// que la automatizacion no puede saber, y precargarlo con un valor\n// \"tipico\" es exactamente como termina saliendo una propuesta con el fee\n// de otro deal.\n//\n// El desplegable de dedicacion espera la etiqueta con mayuscula\n// ('Full-time' / 'Part-time'), no el valor interno en minuscula.\nconst dedicLabel = c.dedicacion === 'part-time' ? 'Part-time' : 'Full-time';\nconst qs = [];\nqs.push('presentacion=' + encodeURIComponent(c.slideUrl || ''));\nif (c.empresa) qs.push('empresa=' + encodeURIComponent(c.empresa));\nif (c.pais) qs.push('pais=' + encodeURIComponent(c.pais));\nif (c.gastoPrefill) qs.push('gasto=' + encodeURIComponent(c.gastoPrefill));\nelse if (c.calculable && c.gastoFmt) qs.push('gasto=' + encodeURIComponent(String(c.gastoFmt).replace(/\\./g, '')));\nif (c.personasPrefill) qs.push('personas=' + encodeURIComponent(c.personasPrefill));\nelse if (c.calculable && c.personas) qs.push('personas=' + encodeURIComponent(c.personas));\nif (c.facturasMes) qs.push('facturas=' + encodeURIComponent(c.facturasMes));\nqs.push('dedicacion=' + encodeURIComponent(dedicLabel));\n\n// El formulario no tiene forma de saber a quien avisarle: lo abre\n// cualquiera que tenga el link, y no hay login. Por eso el destinatario\n// viaja EN el link, en un campo oculto ('owner_slack'), y vuelve con el\n// envio. Asi el aviso de \"ya estan los dos documentos\" le llega a la\n// misma persona que recibio este DM.\n//\n// Va el mismo id que usa este mensaje, asi que en modo prueba el aviso\n// del formulario tambien queda desviado y no se le escapa a un owner real.\nconst destinatario = FORZAR_DESTINATARIO || (owner ? owner.id : '');\nif (destinatario) qs.push('owner_slack=' + encodeURIComponent(destinatario));\n\nconst query = '?' + qs.join('&');\nconst urlCompleto = FORM_COMPLETO + query;\nconst urlSoloPrecio = FORM_SOLO_PRECIO + query;\n\nlet bloque;\nif (c.calculable) {\n  bloque = [\n    '*Impacto economico (pagina 4)* — ya escrito en el slide',\n    '• Facturas: ' + c.facturasMes + '/mes  →  gasto anual estimado USD ' + c.gastoFmt,\n    '• Pais: ' + c.pais + '  •  Personas en el proceso: ' + c.personas + ' (' + c.dedicacion + ', ' + c.hsPorPersona + ' hs/año c/u)',\n    '• Perdida anual estimada: ' + c.perdTotal + '  (USD ' + c.impactoMensual + '/mes)'\n  ];\n  // Solo se avisa de lo que NO se pudo confirmar contra el CRM. La\n  // dedicacion no entra aca: full-time es la regla, no una suposicion, y\n  // una alerta que salta en todas las propuestas es una alerta que nadie\n  // lee. El dato igual esta arriba, en el cuerpo del mensaje.\n  const alertas = [];\n  if (c.facturasOrigen !== 'card de Notion') {\n    alertas.push(':warning: Las facturas (' + c.facturasMes + '/mes) salieron de ' + c.facturasOrigen + ', no del CRM. Verificalas.');\n  }\n  if (c.paisOrigen !== 'card de Notion') {\n    alertas.push(':warning: El pais (' + c.pais + ') se dedujo de ' + c.paisOrigen + '. Verificalo.');\n  }\n  if (alertas.length) {\n    bloque = bloque.concat(['']).concat(alertas)\n      .concat(['_Si un numero esta mal, hay que volver a generar la propuesta: la pagina 4 ya quedo escrita y no se puede reescribir desde el formulario._']);\n  }\n} else {\n  // Falta algo: el slide quedo INTACTO a proposito, con los placeholders\n  // en su lugar, que es lo unico que le permite al formulario escribirlos.\n  bloque = [\n    ':pushpin: *La pagina 4 quedo pendiente.* ' + (c.motivo || ''),\n    'El slide esta sin tocar a proposito: los marcadores siguen ahi, asi el formulario los puede completar.'\n  ];\n  const yaCargado = [];\n  if (c.gastoPrefill) yaCargado.push('gasto USD ' + Number(c.gastoPrefill).toLocaleString('es-AR'));\n  if (c.personasPrefill) yaCargado.push(c.personasPrefill + ' persona(s) ' + c.dedicacion);\n  if (c.pais) yaCargado.push('pais ' + c.pais);\n  bloque.push(yaCargado.length\n    ? '_Ya va precargado: el link del Slides, ' + yaCargado.join(', ') + '. Solo falta lo demas._'\n    : '_Va precargado el link del Slides. El resto hay que completarlo._');\n  // Aca SI se menciona: la persona esta por completar el formulario y\n  // todavia puede cambiarlo. Se avisa donde se puede actuar.\n  if (!c.dedicacionConocida) {\n    bloque.push('_La llamada no aclaro la dedicacion, asi que el formulario viene en Full-time. Cambialo si corresponde._');\n  }\n}\n\n// ---------------------------------------------------------------------\n// DOCUMENTO ROI\n//\n// El link va SIEMPRE, en las dos ramas: el documento no depende de que la\n// pagina 4 se haya podido calcular, depende del PRECIO. Lo que cambia es\n// A CUAL de los dos formularios se manda.\n// ---------------------------------------------------------------------\nlet bloqueRoi;\nif (c.calculable) {\n  // Todo conocido: formulario corto. El comercial ve dos campos, no diez.\n  bloqueRoi = [\n    '',\n    ':bar_chart: *Documento ROI* — todavia no esta generado.',\n    'Falta solo el precio cotizado. Los datos de arriba ya van cargados.',\n    '',\n    ':pencil: <' + urlSoloPrecio + '|Cargar el precio y generar el ROI>',\n    '_Son dos campos: implementacion y fee mensual._',\n    '_Si alguno de los datos de arriba esta mal, <' + urlCompleto + '|usa el formulario completo> — ojo que la pagina 4 del slide ya quedo escrita y no se reescribe._'\n  ];\n} else {\n  bloqueRoi = [\n    '',\n    ':bar_chart: *Documento ROI* — todavia no esta generado.',\n    'Necesita el precio cotizado (implementacion y fee mensual), que la automatizacion no puede saber.',\n    '',\n    ':pencil: <' + urlCompleto + '|Completar la pagina 4 y generar el ROI>',\n    '_El mismo envio hace las dos cosas._'\n  ];\n}\nbloqueRoi.push('_Cuando esten los dos, te llega otro aviso por aca._');\n\n// Si el DM esta desviado por la constante de prueba, que se note en el\n// propio mensaje. Un aviso de prueba que se lee igual que uno real es la\n// forma mas facil de que alguien actue sobre el lead equivocado.\nconst notaPrueba = [];\n\nconst texto = [\n  ':page_facing_up: *Propuesta generada* — ' + c.empresa,\n  '<' + c.slideUrl + '|Abrir la propuesta en Slides>',\n  ''\n].concat(bloque)\n .concat(bloqueRoi)\n .concat(notaPrueba.length ? [''].concat(notaPrueba) : [])\n .concat(['', '_Revisala antes de mandarla: los textos los redacto un modelo._'])\n .join('\\n');\n\nreturn [{ json: {\n  texto_slack: texto,\n  owner_email: ownerEmail,\n  form_url: c.calculable ? urlSoloPrecio : urlCompleto,\n  pagina4_completada: !!c.calculable,\n  // A quien le hubiera llegado de verdad, para poder auditarlo aunque el\n  // envio este desviado por la constante de prueba.\n  owner_slack_id_real: owner ? owner.id : '',\n  owner_encontrado: !!owner,\n  owner_slack_id: FORZAR_DESTINATARIO || (owner ? owner.id : '')\n} }];"
+      },
+      "id": "69794360-5fd8-4bc0-83ad-7f25c9f1814f",
+      "name": "Armar aviso de propuesta",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2688,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://slack.com/api/chat.postMessage",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.SLACK_BOT_TOKEN || \"xoxb-...\" }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"channel\": \"{{ $json.owner_slack_id }}\",\n  \"text\": {{ JSON.stringify($json.texto_slack) }},\n  \"mrkdwn\": true\n}",
+        "options": {}
+      },
+      "id": "e46a27dc-b404-448f-ab2d-213557039173",
+      "name": "Avisar al owner por Slack",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2912,
+        208
+      ],
+      "webhookId": "1e179835-09c4-46bf-9f16-bb3da549e78d"
+    },
+    {
+      "parameters": {
+        "formTitle": "Completar página 4 y generar el documento ROI",
+        "formDescription": "Completá los datos del cliente y el precio cotizado. Se completa la página 4 del slide (si quedó pendiente) y se genera el documento ROI en Google Docs con la misma fórmula de la calculadora.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Link o ID de la propuesta en Google Slides",
+              "fieldName": "presentacion",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Nombre de la empresa",
+              "fieldName": "empresa",
+              "placeholder": "MSI Logística",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Gasto anual en proveedores (USD)",
+              "fieldType": "number",
+              "fieldName": "gasto",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Facturas por mes (opcional)",
+              "fieldType": "number",
+              "fieldName": "facturas"
+            },
+            {
+              "fieldLabel": "País",
+              "fieldType": "dropdown",
+              "fieldName": "pais",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Argentina"
+                  },
+                  {
+                    "option": "Uruguay"
+                  },
+                  {
+                    "option": "Ecuador"
+                  },
+                  {
+                    "option": "Costa Rica"
+                  },
+                  {
+                    "option": "Honduras"
+                  },
+                  {
+                    "option": "Panamá"
+                  },
+                  {
+                    "option": "México"
+                  },
+                  {
+                    "option": "Bolivia"
+                  },
+                  {
+                    "option": "Guatemala"
+                  },
+                  {
+                    "option": "Chile"
+                  },
+                  {
+                    "option": "Perú"
+                  },
+                  {
+                    "option": "Paraguay"
+                  },
+                  {
+                    "option": "Rep. Dominicana"
+                  },
+                  {
+                    "option": "Colombia"
+                  },
+                  {
+                    "option": "Brasil"
+                  },
+                  {
+                    "option": "El Salvador"
+                  },
+                  {
+                    "option": "Venezuela"
+                  }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Personas en el proceso",
+              "fieldType": "number",
+              "fieldName": "personas",
+              "defaultValue": "1",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Dedicación de esas personas",
+              "fieldType": "dropdown",
+              "fieldName": "dedicacion",
+              "defaultValue": "Full-time",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Full-time"
+                  },
+                  {
+                    "option": "Part-time"
+                  }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Implementación / One-Shot (USD)",
+              "fieldType": "number",
+              "fieldName": "oneshot",
+              "placeholder": "2500",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Fee mensual (USD)",
+              "fieldType": "number",
+              "fieldName": "fee",
+              "placeholder": "680",
+              "requiredField": true
+            },
+            {
+              "fieldType": "hiddenField",
+              "fieldName": "owner_slack"
+            }
+          ]
+        },
+        "options": {
+          "buttonLabel": "Calcular, completar el slide y generar el ROI",
+          "path": "pagina-4-impacto"
+        }
+      },
+      "id": "19037e2b-4ab6-482d-8a4e-c07e7927fbef",
+      "name": "Formulario - pagina 4 y ROI",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.6,
+      "position": [
+        1792,
+        976
+      ],
+      "webhookId": "7d666eb1-7044-4c63-a7a3-344e789e6c1d",
+      "notes": "Segundo trigger del workflow. Convive con el webhook de Notion: en cada ejecucion dispara uno solo. options.path fija la ruta -- sin eso n8n regenera el webhookId al importar y el link del aviso de Slack queda en 404, que ya paso una vez."
+    },
+    {
+      "parameters": {
+        "jsCode": "// =====================================================================\n// Completa la pagina 4 del slide Y arma el documento ROI de Google Docs.\n//\n// Las dos salidas se calculan en UNA sola pasada. Si alguien duplicara la\n// cuenta para el documento, la misma propuesta podria mostrar un total en\n// el slide y otro distinto en el Word, delante del cliente.\n//\n// OJO: la formula esta espejada en 'Calcular impacto economico', el nodo\n// de la cadena automatica de este mismo workflow. Si cambia un\n// porcentaje, cambian los dos. Unificarlos en un solo nodo es el\n// siguiente paso pendiente.\n// =====================================================================\n\n// LO ALIMENTAN DOS FORMULARIOS y por eso este nodo es el unico que los\n// conoce a los dos:\n//   - 'Formulario - solo el precio': la pagina 4 ya se escribio sola, asi\n//     que el comercial solo carga one-shot y fee; el resto viaja oculto.\n//   - 'Formulario - pagina 4 y ROI': falto algun dato, se piden todos.\n// Todo lo que necesiten los nodos de abajo sale de ACA, nunca de\n// $('<nombre del trigger>'): referenciar un trigger que no corrio hace\n// fallar la ejecucion entera.\nconst d = $input.first().json;\n\nconst RATES = { 'Argentina': 10.10, 'Uruguay': 9.30, 'Ecuador': 5.45, 'Costa Rica': 8.10, 'Honduras': 5.80, 'Panamá': 5.40, 'México': 5.25, 'Bolivia': 5.13, 'Guatemala': 5.25, 'Chile': 5.00, 'Perú': 4.35, 'Paraguay': 4.40, 'Rep. Dominicana': 3.90, 'Colombia': 3.60, 'Brasil': 4.05, 'El Salvador': 3.65, 'Venezuela': 2.70 };\n\n// Un solo lugar para los porcentajes de perdida.\n//\n// Antes el multiplicador (0.015) y el rotulo impreso (1,5%) eran dos\n// literales separados, y ya se desincronizaron una vez: la tabla decia\n// 1,5% mientras la cuenta hacia 0,1%. Ahora el documento IMPRIME este\n// numero y MULTIPLICA por este mismo numero, asi que no pueden diferir.\n// Definido por el cliente: pagos duplicados = 1,5%.\nconst PCT = { A: 1.0, B: 0.3, C: 1.0, D: 1.0, E: 1.5 };\n\nconst fmtUSD = (n) => Math.round(n).toLocaleString('es-AR');\nconst fmtPct1 = (n) => n.toLocaleString('es-AR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });\nconst fmt = (n) => 'USD ' + fmtUSD(n);\n\nlet pres = String(d.presentacion || '').trim();\nconst m = pres.match(/\\/d\\/([a-zA-Z0-9_-]+)/);\nconst presentationId = m ? m[1] : pres;\n\nconst empresa = String(d.empresa || '').trim() || 'la empresa';\nconst gasto = parseFloat(d.gasto) || 0;\nconst personas = parseFloat(d.personas) || 0;\nconst facturas = parseFloat(d.facturas) || 0;\nconst pais = d.pais || 'Uruguay';\nconst hora = RATES[pais] || 8.74;\nconst oneshot = parseFloat(d.oneshot) || 0;\nconst fee = parseFloat(d.fee) || 0;\n\n// Sin precio no hay ROI. Con costo cero la formula daria 0% de retorno y\n// el documento saldria igual, con un numero sin sentido y la firma de\n// Xtract abajo. Es preferible que corte aca.\nif (oneshot <= 0 && fee <= 0) {\n  throw new Error('Falta el precio cotizado: carga el one-shot o el fee mensual. Sin eso el ROI del documento no significa nada.');\n}\n\n// Dedicacion: full-time 1.200 hs/anio por persona, part-time 600. Si el\n// campo llegara vacio cae en full-time, que es como venia calculando esto\n// desde siempre -- asumir part-time bajaria el impacto de todas las\n// propuestas sin que nadie lo haya pedido.\nconst esPartTime = /part/i.test(String(d.dedicacion || ''));\nconst hsPorPersona = esPartTime ? 600 : 1200;\nconst dedicacion = esPartTime ? 'part-time' : 'full-time';\n\nconst valA = gasto * PCT.A / 100;\nconst valB = gasto * PCT.B / 100;\nconst valC = gasto * PCT.C / 100;\nconst valD = gasto * PCT.D / 100;\nconst valE = gasto * PCT.E / 100;\nconst subtotal = valA + valB + valC + valD + valE;\n\nconst hsAnio = personas * hsPorPersona;\nconst rrhh = Math.round(hsAnio * hora);\nconst total = subtotal + rrhh;\nconst mensual = total / 12;\n\nconst feeAnual = fee * 12;\nconst costo1 = oneshot + feeAnual;\nconst costo2 = feeAnual;\nconst roi1 = costo1 > 0 ? ((total - costo1) / costo1 * 100) : 0;\nconst roi2 = costo2 > 0 ? ((total - costo2) / costo2 * 100) : 0;\n\n// Los plurales se resuelven ACA, no en la plantilla: Google Docs\n// reemplaza texto pero no tiene condicionales, asi que un {{PERSONAS}}\n// suelto terminaria escribiendo \"1 personas asignados al proceso\".\nconst s = personas !== 1 ? 's' : '';\n\nreturn [{ json: {\n  presentationId,\n  empresa,\n  docName: 'ROI Xtract - ' + empresa,\n\n  // Viaja oculto desde el link del DM. Se normaliza aca para que el aviso\n  // final no tenga que saber cual de los dos formularios disparo.\n  owner_slack: String(d.owner_slack || '').trim(),\n\n  // ---- Pagina 4 del slide (13 marcadores) ----\n  gastoFmt: gasto.toLocaleString('es-AR'),\n  pais,\n  personas: String(personas),\n  dedicacion,\n  perdErrores: fmt(valA),\n  perdFiscal: fmt(valB),\n  perdDesc: fmt(valC),\n  perdSobre: fmt(valD),\n  perdDupes: fmt(valE),\n  perdRrhh: fmt(rrhh),\n  perdTotal: fmt(total),\n  impactoTotal: fmtUSD(total),\n  impactoMensual: fmtUSD(mensual),\n  rrhhDetalle: personas + ' persona' + s + ' ' + dedicacion + ' × ' + hsPorPersona.toLocaleString('es-AR') + ' hs/año × USD ' + hora.toFixed(2) + '/h (incluye leyes sociales)',\n\n  // ---- Documento ROI en Docs (24 marcadores) ----\n  // Van SIN el prefijo 'USD': esa palabra ya esta escrita en la plantilla.\n  docFacturasMencion: facturas > 0 ? fmtUSD(facturas) + ' facturas mensuales' : 'un volumen relevante de facturas',\n  docBaseLaboral: personas + ' analista' + s + ' asignado' + s + ' al proceso de AP en ' + pais,\n  docRrhhBase: personas + ' persona' + s + ' × ' + hsPorPersona.toLocaleString('es-AR') + ' hs/año × USD ' + hora.toFixed(2) + '/h en ' + pais + ', incl. cargas sociales',\n  docVolumen: fmtUSD(gasto),\n  docPctA: fmtPct1(PCT.A),\n  docPctB: fmtPct1(PCT.B),\n  docPctC: fmtPct1(PCT.C),\n  docPctD: fmtPct1(PCT.D),\n  docPctE: fmtPct1(PCT.E),\n  docValA: fmtUSD(valA),\n  docValB: fmtUSD(valB),\n  docValC: fmtUSD(valC),\n  docValD: fmtUSD(valD),\n  docValE: fmtUSD(valE),\n  docSubtotalAE: fmtUSD(subtotal),\n  docValRrhh: fmtUSD(rrhh),\n  docRecupero: fmtUSD(total),\n  docOneshot: fmtUSD(oneshot),\n  docFeeAnual: fmtUSD(feeAnual),\n  docCosto1: fmtUSD(costo1),\n  docCosto2: fmtUSD(costo2),\n  docRoi1: Math.round(roi1) + '%',\n  docRoi2: Math.round(roi2) + '%'\n} }];"
+      },
+      "id": "8ced56f2-1239-4239-8f7c-6fa36e5a0b67",
+      "name": "Calcular impacto y ROI (formulario)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2016,
+        1072
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "replaceText",
+        "presentationId": "={{ $json.presentationId }}",
+        "textUi": {
+          "textValues": [
+            {
+              "text": "{{GASTO_ANUAL}}",
+              "replaceText": "={{ $json.gastoFmt }}"
+            },
+            {
+              "text": "{{PAIS}}",
+              "replaceText": "={{ $json.pais }}"
+            },
+            {
+              "text": "{{PERSONAS}}",
+              "replaceText": "={{ $json.personas }}"
+            },
+            {
+              "text": "{{PERD_ERRORES}}",
+              "replaceText": "={{ $json.perdErrores }}"
+            },
+            {
+              "text": "{{PERD_FISCAL}}",
+              "replaceText": "={{ $json.perdFiscal }}"
+            },
+            {
+              "text": "{{PERD_DESC}}",
+              "replaceText": "={{ $json.perdDesc }}"
+            },
+            {
+              "text": "{{PERD_SOBRE}}",
+              "replaceText": "={{ $json.perdSobre }}"
+            },
+            {
+              "text": "{{PERD_DUPES}}",
+              "replaceText": "={{ $json.perdDupes }}"
+            },
+            {
+              "text": "{{PERD_RRHH}}",
+              "replaceText": "={{ $json.perdRrhh }}"
+            },
+            {
+              "text": "{{PERD_TOTAL}}",
+              "replaceText": "={{ $json.perdTotal }}"
+            },
+            {
+              "text": "{{IMPACTO_TOTAL}}",
+              "replaceText": "={{ $json.impactoTotal }}"
+            },
+            {
+              "text": "{{IMPACTO_MENSUAL}}",
+              "replaceText": "={{ $json.impactoMensual }}"
+            },
+            {
+              "text": "{{RRHH_DETALLE}}",
+              "replaceText": "={{ $json.rrhhDetalle }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "e56fdd40-32aa-4912-9c52-27721eacbfa2",
+      "name": "Completar pagina 4 (formulario)",
+      "type": "n8n-nodes-base.googleSlides",
+      "typeVersion": 2,
+      "position": [
+        2464,
+        1168
+      ],
+      "credentials": {
+        "googleSlidesOAuth2Api": {
+          "id": "2zf62ANt1cqLYK9N",
+          "name": "Xtract cred-santiagow"
+        }
+      },
+      "notes": "Nodo propio, NO se reusa 'Completar pagina 4' de la cadena automatica: aquel sigue hacia 'Slack - Traer usuarios' y ese aviso referencia nodos que en la cadena del formulario nunca corrieron. Si la pagina 4 ya estaba escrita, esto no encuentra marcadores, devuelve OK y no cambia nada -- inofensivo."
+    },
+    {
+      "parameters": {
+        "operation": "copy",
+        "fileId": {
+          "__rl": true,
+          "value": "1Pbc69Jz37jU4aIa7XMuYM6WHejhn1ULzDxOG8VrzT-I",
+          "mode": "id",
+          "cachedResultName": "Plantilla ROI Xtract [Google Docs]"
+        },
+        "name": "={{ $json.docName }}",
+        "sameFolder": false,
+        "driveId": {
+          "__rl": true,
+          "value": "My Drive",
+          "mode": "list",
+          "cachedResultName": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "1x2J6d1Jp7PA3dOL23xVDEbZZwkM2_LUI",
+          "mode": "list",
+          "cachedResultName": "Docs generados",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1x2J6d1Jp7PA3dOL23xVDEbZZwkM2_LUI"
+        },
+        "options": {}
+      },
+      "id": "95841089-009a-4065-9454-182e9c732007",
+      "name": "Copiar plantilla del ROI",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        2240,
+        976
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "2nHeE2yjp5ghofd4",
+          "name": "Xtract cred-santiagow"
+        }
+      },
+      "notes": "Copia la plantilla del documento ROI. El ID hay que reemplazarlo por el del Google Doc generado con el boton 'Generar plantilla para n8n' de la calculadora HTML."
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentURL": "={{ $json.id }}",
+        "actionsUi": {
+          "actionFields": [
+            {
+              "action": "replaceAll",
+              "text": "{{EMPRESA}}",
+              "replaceText": "={{ $('Calcular impacto y ROI (formulario)').first().json.empresa }}",
+              "matchCase": true
+            },
+            {
+              "action": "replaceAll",
+              "text": "{{FACTURAS_MENCION}}",
+              "replaceText": "={{ $('Calcular impacto y ROI (formulario)').first().json.docFacturasMencion }}",
+              "matchCase": true
+            },
+            {
+              "action": "replaceAll",
+              "text": "{{BASE_LABORAL}}",
+              "replaceText": "={{ $('Calcular impacto y ROI (formulario)').first().json.docBaseLaboral }}",
+              "matchCase": true
+            },
+            {
+              "action": "replaceAll",
+              "text": "{{RRHH_BASE}}",
+              "replaceText": "={{ $('Calcular impacto y ROI (formulario)').first().json.docRrhhBase }}",
+              "matchCase": true
+            },
+            {
+              "action": "replaceAll",
+              "text": "{{VOLUMEN}}",
+              "replaceText": "={{ $('Calcular impacto y ROI (formulario)').first().json.docVolumen }}",
+              "matchCase": true
+            },
+            {
+              "action": "replaceAll",
+              "text": "{{PCT_A}}",
+              "replaceText": "={{ $('Calcular impacto y ROI (formulario)').first().json.docPctA }}",
+              "matchCase": true
+            },
+            {
+              "action": "replaceAll",
+              "text": "{{PCT_B}}",
+              "replaceText": "={{ $('Calcular impacto y ROI (formulario)').first().json.docPctB }}",
+              "matchCase": true
+            },
+            {
+              "action": "replaceAll",
+              "text": "{{PCT_C}}",
+              "replaceText": "={{ $('Calcular impacto y ROI (formulario)').first().json.docPctC }}",
+              "matchCase": true
+            },
+            {
+              "action": "replaceAll",
+              "text": "{{PCT_D}}",
+              "replaceText": "={{ $('Calcular impacto y ROI (formulario)').first().json.docPctD }}",
+              "matchCase": true
+            },
+            {
+              "action": "replaceAll",
+              "text": "{{PCT_E}}",
+              "replaceText": "={{ $('Calcular impacto y ROI (formulario)').first().json.docPctE }}",
+              "matchCase": true
+            },
+            {
+              "action": "replaceAll",
+              "text": "{{VAL_A}}",
+              "replaceText": "={{ $('Calcular impacto y ROI (formulario)').first().json.docValA }}",
+              "matchCase": true
+            },
+            {
+              "action": "replaceAll",
+              "text": "{{VAL_B}}",
+              "replaceText": "={{ $('Calcular impacto y ROI (formulario)').first().json.docValB }}",
+              "matchCase": true
+            },
+            {
+              "action": "replaceAll",
+              "text": "{{VAL_C}}",
+              "replaceText": "={{ $('Calcular impacto y ROI (formulario)').first().json.docValC }}",
+              "matchCase": true
+            },
+            {
+              "action": "replaceAll",
+              "text": "{{VAL_D}}",
+              "replaceText": "={{ $('Calcular impacto y ROI (formulario)').first().json.docValD }}",
+              "matchCase": true
+            },
+            {
+              "action": "replaceAll",
+              "text": "{{VAL_E}}",
+              "replaceText": "={{ $('Calcular impacto y ROI (formulario)').first().json.docValE }}",
+              "matchCase": true
+            },
+            {
+              "action": "replaceAll",
+              "text": "{{SUBTOTAL_AE}}",
+              "replaceText": "={{ $('Calcular impacto y ROI (formulario)').first().json.docSubtotalAE }}",
+              "matchCase": true
+            },
+            {
+              "action": "replaceAll",
+              "text": "{{VAL_RRHH}}",
+              "replaceText": "={{ $('Calcular impacto y ROI (formulario)').first().json.docValRrhh }}",
+              "matchCase": true
+            },
+            {
+              "action": "replaceAll",
+              "text": "{{RECUPERO}}",
+              "replaceText": "={{ $('Calcular impacto y ROI (formulario)').first().json.docRecupero }}",
+              "matchCase": true
+            },
+            {
+              "action": "replaceAll",
+              "text": "{{ONESHOT}}",
+              "replaceText": "={{ $('Calcular impacto y ROI (formulario)').first().json.docOneshot }}",
+              "matchCase": true
+            },
+            {
+              "action": "replaceAll",
+              "text": "{{FEE_ANUAL}}",
+              "replaceText": "={{ $('Calcular impacto y ROI (formulario)').first().json.docFeeAnual }}",
+              "matchCase": true
+            },
+            {
+              "action": "replaceAll",
+              "text": "{{COSTO_1}}",
+              "replaceText": "={{ $('Calcular impacto y ROI (formulario)').first().json.docCosto1 }}",
+              "matchCase": true
+            },
+            {
+              "action": "replaceAll",
+              "text": "{{COSTO_2}}",
+              "replaceText": "={{ $('Calcular impacto y ROI (formulario)').first().json.docCosto2 }}",
+              "matchCase": true
+            },
+            {
+              "action": "replaceAll",
+              "text": "{{ROI_1}}",
+              "replaceText": "={{ $('Calcular impacto y ROI (formulario)').first().json.docRoi1 }}",
+              "matchCase": true
+            },
+            {
+              "action": "replaceAll",
+              "text": "{{ROI_2}}",
+              "replaceText": "={{ $('Calcular impacto y ROI (formulario)').first().json.docRoi2 }}",
+              "matchCase": true
+            }
+          ]
+        }
+      },
+      "id": "ffed5d30-ff61-45e1-b180-827e30f73e3d",
+      "name": "Completar el documento ROI",
+      "type": "n8n-nodes-base.googleDocs",
+      "typeVersion": 2,
+      "position": [
+        2464,
+        976
+      ],
+      "credentials": {
+        "googleDocsOAuth2Api": {
+          "id": "llGqVQqRBjrz3XhU",
+          "name": "Xtract cred-santiagow"
+        }
+      },
+      "notes": "replaceAll CONSUME el marcador: una sola pasada por documento. Los 24 nombres tienen que coincidir exacto con los que genera el boton de plantilla de la calculadora HTML."
+    },
+    {
+      "parameters": {
+        "content": "## ⚠️ Al importar este workflow a n8n.xtract.app\n\nHay **dos Form Triggers**, cada uno con su `options.path`:\n\n- `pagina-4-impacto` — formulario completo\n- `roi-precio` — solo el precio\n\nn8n **regenera el `webhookId`** al importar. En cuanto esto entre a producción, la URL vieja basada en UUID deja de existir.\n\n**En el mismo movimiento hay que:**\n\n1. En `Armar aviso de propuesta`, poner:\n   `FORM_COMPLETO   = .../form/pagina-4-impacto`\n   `FORM_SOLO_PRECIO = .../form/roi-precio`\n2. Desactivar y reactivar el workflow, para que n8n registre las rutas nuevas.\n\nSi se hace uno sin el otro, **todos los links del aviso de Slack dan 404**. Ya pasó una vez.",
+        "height": 300,
+        "width": 460,
+        "color": 3
+      },
+      "id": "fdf74944-12d0-4cf6-9c61-b4433af951fc",
+      "name": "LEER ANTES DE SINCRONIZAR A PRODUCCION",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        3760,
+        704
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "chooseBranch",
+        "useDataOfInput": "1"
+      },
+      "id": "b0245c61-3e6f-4daa-ba6a-8a611d021a94",
+      "name": "Esperar a que esten los dos",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        2688,
+        784
+      ],
+      "notes": "waitForAll: no sigue hasta que terminaron LAS DOS ramas (pagina 4 y documento ROI). Si el aviso saliera de una sola, podria decir 'ya esta todo' mientras la otra rama sigue escribiendo o fallo."
+    },
+    {
+      "parameters": {
+        "jsCode": "const FORZAR_DESTINATARIO = 'D0BRPUE84UA';\n\nconst isOneShot = $('Calcular impacto economico').isExecuted && $('Tiene precio?').first().json.tiene_precio;\nconst c = isOneShot ? $('Calcular impacto economico').first().json : $('Calcular impacto y ROI (formulario)').first().json;\nconst docNode = isOneShot ? $('Copiar plantilla del ROI (OneShot)') : $('Copiar plantilla del ROI');\nconst docId = docNode.first().json.id;\n\nconst slideUrl = 'https://docs.google.com/presentation/d/' + c.presentationId + '/edit';\nconst docUrl = 'https://docs.google.com/document/d/' + docId + '/edit';\n\nconst destinatario = FORZAR_DESTINATARIO || String(c.owner_slack || '').trim();\n\nconst texto = [\n  ':white_check_mark: *Los dos documentos ya estan generados* — ' + c.empresa,\n  '',\n  ':bar_chart: <' + docUrl + '|Abrir el documento ROI>',\n  ':page_facing_up: <' + slideUrl + '|Abrir la propuesta en Slides>',\n  '',\n  '• Gasto anual en proveedores: USD ' + c.docVolumen,\n  '• Recupero potencial: USD ' + c.docRecupero + ' / año',\n  '• Costo Xtract año 1: USD ' + c.docCosto1 + '  →  ROI ' + c.docRoi1,\n  '• Año 2 en adelante: USD ' + c.docCosto2 + '  →  ROI ' + c.docRoi2,\n  '',\n  '_' + c.docBaseLaboral + '._',\n  '',\n  '_Revisa los dos antes de mandarlos: los textos los redacto un modelo._'\n].join('\\n');\n\nreturn [{ json: {\n  texto_slack: texto,\n  owner_slack_id: destinatario,\n  hay_destinatario: !!destinatario,\n  doc_url: docUrl,\n  slide_url: slideUrl\n} }];"
+      },
+      "id": "5982c720-90e9-4840-9615-6a40a160ed9d",
+      "name": "Armar aviso del ROI",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2912,
+        784
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "dest",
+              "leftValue": "={{ $json.hay_destinatario }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "ee037002-6fbb-4ca3-86a4-3973b802d375",
+      "name": "Hay a quien avisar?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        3136,
+        784
+      ],
+      "notes": "Falso NO es un error: significa que alguien abrio el formulario a mano, sin pasar por el DM. Esa persona ya esta viendo los links en la pantalla final."
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://slack.com/api/chat.postMessage",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.SLACK_BOT_TOKEN || \"xoxb-...\" }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"channel\": \"{{ $json.owner_slack_id }}\",\n  \"text\": {{ JSON.stringify($json.texto_slack) }},\n  \"mrkdwn\": true\n}",
+        "options": {}
+      },
+      "id": "8b44b8f2-1e98-4f1f-ae20-fa088b69b9e6",
+      "name": "Avisar que estan los dos",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3360,
+        720
+      ],
+      "webhookId": "eccff1bc-5626-43bc-b59f-69b6fcd505e8",
+      "onError": "continueRegularOutput",
+      "notes": "ephemeral en false: con true el mensaje no se guarda ni notifica. onError sigue el flujo: si Slack falla, los documentos YA existen y la persona no puede quedarse sin sus links por un problema de mensajeria."
+    },
+    {
+      "parameters": {
+        "formTitle": "Generar el documento ROI",
+        "formDescription": "Los datos del cliente ya están cargados desde la propuesta. Solo falta el precio cotizado. (Los números que se van a usar están en el mensaje de Slack, arriba del link.)",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Implementación / One-Shot (USD)",
+              "fieldType": "number",
+              "fieldName": "oneshot",
+              "placeholder": "2500",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Fee mensual (USD)",
+              "fieldType": "number",
+              "fieldName": "fee",
+              "placeholder": "680",
+              "requiredField": true
+            },
+            {
+              "fieldType": "hiddenField",
+              "fieldName": "presentacion"
+            },
+            {
+              "fieldType": "hiddenField",
+              "fieldName": "empresa"
+            },
+            {
+              "fieldType": "hiddenField",
+              "fieldName": "gasto"
+            },
+            {
+              "fieldType": "hiddenField",
+              "fieldName": "facturas"
+            },
+            {
+              "fieldType": "hiddenField",
+              "fieldName": "pais"
+            },
+            {
+              "fieldType": "hiddenField",
+              "fieldName": "personas"
+            },
+            {
+              "fieldType": "hiddenField",
+              "fieldName": "dedicacion"
+            },
+            {
+              "fieldType": "hiddenField",
+              "fieldName": "owner_slack"
+            }
+          ]
+        },
+        "options": {
+          "buttonLabel": "Generar el documento ROI",
+          "path": "roi-precio"
+        }
+      },
+      "id": "00ff5cca-282b-4613-82bb-20f0bac9397b",
+      "name": "Formulario - solo el precio",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.6,
+      "position": [
+        1792,
+        1168
+      ],
+      "webhookId": "d2c0a11d-e961-41ee-8794-b8fbd772de57",
+      "notes": "Se usa cuando la pagina 4 ya se escribio sola: todos los datos del cliente ya se conocen y viajan ocultos en el link. El comercial solo carga el precio. Asi no puede tipear un numero distinto al que ya quedo en el slide."
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://slack.com/api/chat.postMessage",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.SLACK_BOT_TOKEN || \"xoxb-...\" }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"channel\": \"{{ $json.owner_slack_id }}\",\n  \"text\": {{ JSON.stringify($json.texto_slack) }},\n  \"mrkdwn\": true\n}",
+        "options": {}
+      },
+      "id": "3d5a194b-1395-447e-88f8-97043c331c07",
+      "name": "PRUEBA - Mandarme el aviso REAL",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -800,
+        1392
+      ],
+      "webhookId": "38d85b70-5ca8-47fc-b41e-3c68a42ecddf",
+      "notes": "NODO DE PRUEBA. No esta conectado a nada a proposito: se corre con 'Execute step'.\n\nQue configurar:\n  1. Credential: la app de Slack que hayas creado.\n  2. Send Message To > User: elegite a vos del desplegable.\n\nUsa el mismo formato que los avisos reales (mrkdwn, link, emoji, bullets), asi la prueba tambien te muestra como van a verse.\n\nOJO con 'Send as ephemeral': tiene que quedar en FALSE. En true el mensaje no se guarda ni te notifica, y parece que no llego nada."
+    },
+    {
+      "parameters": {
+        "content": "## Scopes de la app de Slack\n\nEn api.slack.com/apps → tu app → **OAuth & Permissions** → *Bot Token Scopes*:\n\n| Scope | Para qué |\n|---|---|\n| `chat:write` | Mandar mensajes. **Sin esto no hay nada.** |\n| `im:write` | Abrir el DM con la persona. Hace falta para escribirle a un usuario, no a un canal. |\n| `users:read` | `users.list`, que usa el nodo *Slack - Traer usuarios* para resolver al owner. |\n| `users:read.email` | **Opcional pero conviene.** |\n\n### Por qué conviene el último\n\nLa app actual de Xtract **no lo tiene**, y por eso `users.lookupByEmail` falla y ningún perfil de `users.list` trae el campo `email`.\n\nEso obliga a resolver al owner cruzando el *handle* de Slack contra la parte del mail antes del `@` — ver el nodo `Armar aviso de propuesta`.\n\nFunciona **porque en este workspace coinciden**. El día que alguien tenga un handle distinto a su mail, el aviso no le llega a nadie y nadie se entera.\n\nSi la app nueva lleva `users:read.email`, ese cruce frágil se puede borrar.",
+        "height": 380,
+        "width": 520,
+        "color": 5
+      },
+      "id": "cb659582-3715-46ac-93e2-2a929e1d42b2",
+      "name": "PERMISOS QUE NECESITA LA APP DE SLACK",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        912,
+        1632
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "tiene_precio_cond",
+              "leftValue": "={{ $json.tiene_precio }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "tiene-precio-if-node",
+      "name": "Tiene precio?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2016,
+        496
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "replaceText",
+        "presentationId": "={{ $json.presentationId }}",
+        "textUi": {
+          "textValues": [
+            {
+              "text": "{{GASTO_ANUAL}}",
+              "replaceText": "={{ $json.gastoFmt }}"
+            },
+            {
+              "text": "{{PAIS}}",
+              "replaceText": "={{ $json.pais }}"
+            },
+            {
+              "text": "{{PERSONAS}}",
+              "replaceText": "={{ $json.personas }}"
+            },
+            {
+              "text": "{{PERD_ERRORES}}",
+              "replaceText": "={{ $json.perdErrores }}"
+            },
+            {
+              "text": "{{PERD_FISCAL}}",
+              "replaceText": "={{ $json.perdFiscal }}"
+            },
+            {
+              "text": "{{PERD_DESC}}",
+              "replaceText": "={{ $json.perdDesc }}"
+            },
+            {
+              "text": "{{PERD_SOBRE}}",
+              "replaceText": "={{ $json.perdSobre }}"
+            },
+            {
+              "text": "{{PERD_DUPES}}",
+              "replaceText": "={{ $json.perdDupes }}"
+            },
+            {
+              "text": "{{PERD_RRHH}}",
+              "replaceText": "={{ $json.perdRrhh }}"
+            },
+            {
+              "text": "{{PERD_TOTAL}}",
+              "replaceText": "={{ $json.perdTotal }}"
+            },
+            {
+              "text": "{{IMPACTO_TOTAL}}",
+              "replaceText": "={{ $json.impactoTotal }}"
+            },
+            {
+              "text": "{{IMPACTO_MENSUAL}}",
+              "replaceText": "={{ $json.impactoMensual }}"
+            },
+            {
+              "text": "{{RRHH_DETALLE}}",
+              "replaceText": "={{ $json.rrhhDetalle }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "cp4-oneshot-node",
+      "name": "Completar pagina 4 (OneShot)",
+      "type": "n8n-nodes-base.googleSlides",
+      "typeVersion": 2,
+      "position": [
+        2464,
+        400
+      ],
+      "credentials": {
+        "googleSlidesOAuth2Api": {
+          "id": "2zf62ANt1cqLYK9N",
+          "name": "Xtract cred-santiagow"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentURL": "={{ $json.id }}",
+        "actionsUi": {
+          "actionFields": [
+            {
+              "action": "replaceAll",
+              "text": "{{EMPRESA}}",
+              "replaceText": "={{ $('Calcular impacto economico').first().json.empresa }}",
+              "matchCase": true
+            },
+            {
+              "action": "replaceAll",
+              "text": "{{FACTURAS_MENCION}}",
+              "replaceText": "={{ $('Calcular impacto economico').first().json.docFacturasMencion }}",
+              "matchCase": true
+            },
+            {
+              "action": "replaceAll",
+              "text": "{{BASE_LABORAL}}",
+              "replaceText": "={{ $('Calcular impacto economico').first().json.docBaseLaboral }}",
+              "matchCase": true
+            },
+            {
+              "action": "replaceAll",
+              "text": "{{RRHH_BASE}}",
+              "replaceText": "={{ $('Calcular impacto economico').first().json.docRrhhBase }}",
+              "matchCase": true
+            },
+            {
+              "action": "replaceAll",
+              "text": "{{VOLUMEN}}",
+              "replaceText": "={{ $('Calcular impacto economico').first().json.docVolumen }}",
+              "matchCase": true
+            },
+            {
+              "action": "replaceAll",
+              "text": "{{PCT_A}}",
+              "replaceText": "={{ $('Calcular impacto economico').first().json.docPctA }}",
+              "matchCase": true
+            },
+            {
+              "action": "replaceAll",
+              "text": "{{PCT_B}}",
+              "replaceText": "={{ $('Calcular impacto economico').first().json.docPctB }}",
+              "matchCase": true
+            },
+            {
+              "action": "replaceAll",
+              "text": "{{PCT_C}}",
+              "replaceText": "={{ $('Calcular impacto economico').first().json.docPctC }}",
+              "matchCase": true
+            },
+            {
+              "action": "replaceAll",
+              "text": "{{PCT_D}}",
+              "replaceText": "={{ $('Calcular impacto economico').first().json.docPctD }}",
+              "matchCase": true
+            },
+            {
+              "action": "replaceAll",
+              "text": "{{PCT_E}}",
+              "replaceText": "={{ $('Calcular impacto economico').first().json.docPctE }}",
+              "matchCase": true
+            },
+            {
+              "action": "replaceAll",
+              "text": "{{VAL_A}}",
+              "replaceText": "={{ $('Calcular impacto economico').first().json.docValA }}",
+              "matchCase": true
+            },
+            {
+              "action": "replaceAll",
+              "text": "{{VAL_B}}",
+              "replaceText": "={{ $('Calcular impacto economico').first().json.docValB }}",
+              "matchCase": true
+            },
+            {
+              "action": "replaceAll",
+              "text": "{{VAL_C}}",
+              "replaceText": "={{ $('Calcular impacto economico').first().json.docValC }}",
+              "matchCase": true
+            },
+            {
+              "action": "replaceAll",
+              "text": "{{VAL_D}}",
+              "replaceText": "={{ $('Calcular impacto economico').first().json.docValD }}",
+              "matchCase": true
+            },
+            {
+              "action": "replaceAll",
+              "text": "{{VAL_E}}",
+              "replaceText": "={{ $('Calcular impacto economico').first().json.docValE }}",
+              "matchCase": true
+            },
+            {
+              "action": "replaceAll",
+              "text": "{{SUBTOTAL_AE}}",
+              "replaceText": "={{ $('Calcular impacto economico').first().json.docSubtotalAE }}",
+              "matchCase": true
+            },
+            {
+              "action": "replaceAll",
+              "text": "{{VAL_RRHH}}",
+              "replaceText": "={{ $('Calcular impacto economico').first().json.docValRrhh }}",
+              "matchCase": true
+            },
+            {
+              "action": "replaceAll",
+              "text": "{{RECUPERO}}",
+              "replaceText": "={{ $('Calcular impacto economico').first().json.docRecupero }}",
+              "matchCase": true
+            },
+            {
+              "action": "replaceAll",
+              "text": "{{ONESHOT}}",
+              "replaceText": "={{ $('Calcular impacto economico').first().json.docOneshot }}",
+              "matchCase": true
+            },
+            {
+              "action": "replaceAll",
+              "text": "{{FEE_ANUAL}}",
+              "replaceText": "={{ $('Calcular impacto economico').first().json.docFeeAnual }}",
+              "matchCase": true
+            },
+            {
+              "action": "replaceAll",
+              "text": "{{COSTO_1}}",
+              "replaceText": "={{ $('Calcular impacto economico').first().json.docCosto1 }}",
+              "matchCase": true
+            },
+            {
+              "action": "replaceAll",
+              "text": "{{COSTO_2}}",
+              "replaceText": "={{ $('Calcular impacto economico').first().json.docCosto2 }}",
+              "matchCase": true
+            },
+            {
+              "action": "replaceAll",
+              "text": "{{ROI_1}}",
+              "replaceText": "={{ $('Calcular impacto economico').first().json.docRoi1 }}",
+              "matchCase": true
+            },
+            {
+              "action": "replaceAll",
+              "text": "{{ROI_2}}",
+              "replaceText": "={{ $('Calcular impacto economico').first().json.docRoi2 }}",
+              "matchCase": true
+            }
+          ]
+        }
+      },
+      "id": "roi-oneshot-node",
+      "name": "Completar el documento ROI (OneShot)",
+      "type": "n8n-nodes-base.googleDocs",
+      "typeVersion": 2,
+      "position": [
+        2464,
+        592
+      ],
+      "credentials": {
+        "googleDocsOAuth2Api": {
+          "id": "llGqVQqRBjrz3XhU",
+          "name": "Xtract cred-santiagow"
+        }
+      },
+      "notes": "replaceAll CONSUME el marcador: una sola pasada por documento. Los 24 nombres tienen que coincidir exacto con los que genera el boton de plantilla de la calculadora HTML."
+    },
+    {
+      "parameters": {
+        "operation": "copy",
+        "fileId": {
+          "__rl": true,
+          "value": "1Pbc69Jz37jU4aIa7XMuYM6WHejhn1ULzDxOG8VrzT-I",
+          "mode": "id",
+          "cachedResultName": "Plantilla ROI Xtract [Google Docs]"
+        },
+        "name": "={{ $json.docName }}",
+        "sameFolder": false,
+        "driveId": {
+          "__rl": true,
+          "value": "My Drive",
+          "mode": "list",
+          "cachedResultName": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "1x2J6d1Jp7PA3dOL23xVDEbZZwkM2_LUI",
+          "mode": "list",
+          "cachedResultName": "Docs generados",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1x2J6d1Jp7PA3dOL23xVDEbZZwkM2_LUI"
+        },
+        "options": {}
+      },
+      "id": "drive-roi-oneshot-node",
+      "name": "Copiar plantilla del ROI (OneShot)",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        2240,
+        592
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "2nHeE2yjp5ghofd4",
+          "name": "Xtract cred-santiagow"
+        }
+      },
+      "notes": "Copia la plantilla del documento ROI. El ID hay que reemplazarlo por el del Google Doc generado con el boton 'Generar plantilla para n8n' de la calculadora HTML."
+    }
+  ],
+  "connections": {
+    "DeepSeek Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "IA - Extraer datos de la llamada",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Copiar plantilla de propuesta": {
+      "main": [
+        [
+          {
+            "node": "Reemplazar textos en el slide",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Armar placeholders del slide": {
+      "main": [
+        [
+          {
+            "node": "Copiar plantilla de propuesta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IA - Extraer datos de la llamada": {
+      "main": [
+        [
+          {
+            "node": "Armar placeholders del slide",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar transcripcion": {
+      "main": [
+        [
+          {
+            "node": "IA - Extraer datos de la llamada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JWT1": {
+      "main": [
+        [
+          {
+            "node": "HTTP - Generar Access Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Drive - export texto": {
+      "main": [
+        [
+          {
+            "node": "Preparar transcripcion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP - Generar Access Token": {
+      "main": [
+        [
+          {
+            "node": "Drive - export texto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Extraer Datos": {
+      "main": [
+        [
+          {
+            "node": "JWT1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Link a discovery cargado": {
+      "main": [
+        [
+          {
+            "node": "Code - Extraer Datos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reemplazar textos en el slide": {
+      "main": [
+        [
+          {
+            "node": "Calcular impacto economico",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calcular impacto economico": {
+      "main": [
+        [
+          {
+            "node": "Se pudo calcular?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Se pudo calcular?": {
+      "main": [
+        [
+          {
+            "node": "Tiene precio?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Slack - Traer usuarios",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Completar pagina 4": {
+      "main": [
+        [
+          {
+            "node": "Slack - Traer usuarios",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack - Traer usuarios": {
+      "main": [
+        [
+          {
+            "node": "Armar aviso de propuesta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Armar aviso de propuesta": {
+      "main": [
+        [
+          {
+            "node": "Avisar al owner por Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formulario - pagina 4 y ROI": {
+      "main": [
+        [
+          {
+            "node": "Calcular impacto y ROI (formulario)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calcular impacto y ROI (formulario)": {
+      "main": [
+        [
+          {
+            "node": "Completar pagina 4 (formulario)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Copiar plantilla del ROI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Copiar plantilla del ROI": {
+      "main": [
+        [
+          {
+            "node": "Completar el documento ROI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Completar pagina 4 (formulario)": {
+      "main": [
+        [
+          {
+            "node": "Esperar a que esten los dos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Completar el documento ROI": {
+      "main": [
+        [
+          {
+            "node": "Esperar a que esten los dos",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Esperar a que esten los dos": {
+      "main": [
+        [
+          {
+            "node": "Armar aviso del ROI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Armar aviso del ROI": {
+      "main": [
+        [
+          {
+            "node": "Hay a quien avisar?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hay a quien avisar?": {
+      "main": [
+        [
+          {
+            "node": "Avisar que estan los dos",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Formulario - solo el precio": {
+      "main": [
+        [
+          {
+            "node": "Calcular impacto y ROI (formulario)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tiene precio?": {
+      "main": [
+        [
+          {
+            "node": "Completar pagina 4 (OneShot)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Copiar plantilla del ROI (OneShot)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Completar pagina 4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Completar pagina 4 (OneShot)": {
+      "main": [
+        [
+          {
+            "node": "Esperar a que esten los dos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Copiar plantilla del ROI (OneShot)": {
+      "main": [
+        [
+          {
+            "node": "Completar el documento ROI (OneShot)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Completar el documento ROI (OneShot)": {
+      "main": [
+        [
+          {
+            "node": "Esperar a que esten los dos",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false,
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveManualExecutions": true,
+    "saveExecutionProgress": true
+  }
+}

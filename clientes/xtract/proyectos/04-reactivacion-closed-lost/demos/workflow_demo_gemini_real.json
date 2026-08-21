@@ -1,0 +1,154 @@
+{
+  "name": "Xtract Demo — Simulador WhatsApp (Con Gemini IA Real)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "demo-simulador",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-demo",
+      "name": "Webhook — Recibir de HTML",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -200,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// =====================================================================\n// ARMAR PAYLOAD PARA GEMINI CON CONTEXTO REAL DEL CRM\n// =====================================================================\nconst body = $input.first().json.body || $input.first().json;\nconst textoCliente = (body.content || body.texto || '').toString().trim();\nconst lead = body.lead || {};\nconst paso = body.conversationStep || 1; // Estado de la conversación enviado desde el HTML\n\nconst nombre = lead.primerNombre || lead.contacto || 'Contacto';\nconst empresa = lead.empresa || 'la empresa';\nconst sistema = lead.sistema || 'su sistema ERP';\nconst facturas = lead.facturas || '400';\nconst motivo = lead.motivo || 'cambio de sistema';\n\nconst systemPrompt = `Sos un ejecutivo comercial de Xtract (xtract.app). Tu objetivo es reactivar la conversación profesional con ${nombre} de la empresa ${empresa}.\n\nFICHA DEL CLIENTE:\n- Nombre: ${nombre}\n- Empresa: ${empresa}\n- Sistema ERP: ${sistema}\n- Facturas mensuales: ${facturas}\n- Motivo registrado: \"${motivo}\"\n\nTONO Y ESTILO (MANDATORIO B2B):\n- Tono corporativo, profesional, educado y respetuoso.\n- ESTRICTAMENTE PROHIBIDO usar expresiones coloquiales (NUNCA: \"renegando\", \"dale\", \"en un toque\", \"chatear\").\n- Lenguaje ejecutivo impecable adecuado para directores de administración y finanzas.\n- Respuestas cortas: máximo 2 oraciones. Sin emojis.\n\nESTADO ACTUAL DE LA CONVERSACIÓN: PASO ${paso}\n\n${paso === 1 || paso === '1' ? `PASO 1 — PROPUESTA DE REUNIÓN:\n- El cliente acaba de responder al template inicial: \"Hola ${nombre}, ¿cómo estás? Te escribo de parte del equipo de Xtract.\"\n- Tu objetivo es retomar el vínculo comercial y proponer una reunión de 10 minutos.\n- Respondé en 2 oraciones mencionando el contexto (empresa, ERP) y preguntando si les sirve una llamada de 10 minutos.\n- NUNCA incluyas la palabra \"Calendly\" en este paso. NO agendes todavía.` : ''}\n\n${paso === 2 || paso === '2' ? `PASO 2 — CONFIRMACIÓN DE AGENDA:\n- Ya propusiste la reunión de 10 minutos. El cliente acaba de responder a esa propuesta.\n- Si acepta (\"sí\", \"dale\", \"me sirve\", \"perfecto\", \"claro\", \"agendo\", \"agendar\"):\n  Respondé: \"Excelente ${nombre}. Le comparto la opción para agendar la reunión en Calendly según la disponibilidad de su agenda:\"\n  (incluye la palabra CALENDLY para activar el card automáticamente)\n- Si no acepta claramente: despedite formalmente sin insistir.` : ''}\n\nREGLAS DE SEGURIDAD (APLICAN EN CUALQUIER PASO):\n- PREGUNTAS TÉCNICAS COMPLEJAS (APIs, código, SQL, impuestos específicos, AGIP, ARBA, SICORE, integración custom):\n  Respondé: \"Esa consulta requiere la atención de un especialista de nuestro equipo de ingeniería. Les derivamos la conversación y se comunicarán a la brevedad.\"\n  (incluye la palabra ESPECIALISTA en tu respuesta)\n- SERVICIOS FUERA DEL ALCANCE DE XTRACT: Aclarar que Xtract se especializa exclusivamente en automatización de carga contable y facturación.\n- RECHAZO EXPLÍCITO: Agradecer y despedirse formalmente.`;\n\nconst geminiBody = {\n  systemInstruction: {\n    parts: [{ text: systemPrompt }]\n  },\n  contents: [\n    {\n      role: \"model\",\n      parts: [{ text: `Hola ${nombre}, ¿cómo estás? Te escribo de parte del equipo de Xtract.` }]\n    },\n    {\n      role: \"user\",\n      parts: [{ text: textoCliente }]\n    }\n  ],\n  generationConfig: {\n    temperature: 0.3,\n    maxOutputTokens: 2048\n  }\n};\n\nreturn {\n  json: {\n    geminiPayload: geminiBody,\n    textoCliente: textoCliente,\n    lead: lead,\n    paso: paso\n  }\n};"
+      },
+      "id": "armar-prompt-gemini",
+      "name": "Armar Contexto y Prompt Gemini",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        40,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={{ $env.GEMINI_API_KEY || \"REEMPLAZAR_GEMINI_API_KEY\" }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.geminiPayload) }}",
+        "options": {
+          "retryOnFail": true,
+          "maxTries": 2,
+          "waitBetweenTries": 2000,
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "gemini-ia-http",
+      "name": "IA — Gemini 2.0 Flash (API Real)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        280,
+        0
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "let respuestaIA = '';\ntry {\n  const res = $input.first().json;\n  if (res.candidates && res.candidates[0] && res.candidates[0].content) {\n    // Gemini respondió correctamente\n    respuestaIA = res.candidates[0].content.parts[0].text || '';\n  } else {\n    // --- FALLBACK LOCAL (API key expirada o sin créditos) ---\n    const ctx = $node['Armar Contexto y Prompt Gemini'].json;\n    const lead = ctx.lead || {};\n    const nombre = lead.primerNombre || 'Gabriela';\n    const sistema = lead.sistema || 'SOFTLAND';\n    const empresa = lead.empresa || 'la empresa';\n    const facturas = lead.facturas || '400';\n    const paso = parseInt(ctx.paso) || 1;\n    const txt = (ctx.textoCliente || '').toLowerCase();\n\n    // --- RECHAZO (cualquier paso) ---\n    const rechaza = txt.includes('no gracias') || txt.includes('no me interesa') ||\n                    txt.includes('ya contratamos') || txt.includes('ya no trabajo') ||\n                    txt.includes('no es el momento') || txt.includes('no estamos interesados');\n    if (rechaza) {\n      respuestaIA = `Muchas gracias por responder, ${nombre}. Dejamos asentada la novedad en nuestro sistema. Saludos cordiales.`;\n    }\n    // --- ESCALACIÓN TÉCNICA A CHATWOOT (cualquier paso) ---\n    else if (\n      txt.includes('api') || txt.includes('webhook') || txt.includes('sql') ||\n      txt.includes('script') || txt.includes('código') || txt.includes('codigo') ||\n      txt.includes('agip') || txt.includes('arba') || txt.includes('arca') || txt.includes('sicore') ||\n      txt.includes('retención') || txt.includes('retencion') || txt.includes('percepción') ||\n      txt.includes('base de datos') || txt.includes('integracion custom') || txt.includes('integración custom') ||\n      txt.includes('desarrollo') || txt.includes('programar')\n    ) {\n      respuestaIA = `Esa consulta requiere la atención de un especialista de nuestro equipo de ingeniería. Les derivamos la conversación y se comunicarán a la brevedad.`;\n    }\n    // --- PASO 1: Primera respuesta — explicar Xtract o hacer la propuesta de reunión ---\n    else if (paso === 1) {\n      if (txt.includes('qué es') || txt.includes('que es') || txt.includes('de qué') || txt.includes('de que') || txt.includes('cómo funciona') || txt.includes('como funciona') || txt.includes('xtract')) {\n        respuestaIA = `Xtract automatiza la lectura y carga contable de facturas directamente en ${sistema}, eliminando la carga manual. ¿Les resultaría útil revisarlo 10 minutos en una llamada para ver el impacto concreto en ${empresa}?`;\n      } else if (txt.includes('precio') || txt.includes('cuánto') || txt.includes('cuanto') || txt.includes('plan') || txt.includes('costo') || txt.includes('caro')) {\n        respuestaIA = `Trabajamos con planes escalables según el volumen de facturación. Con las ${facturas} facturas mensuales de ${empresa}, el impacto sería significativo. ¿Les resultaría útil revisarlo 10 minutos en una llamada para ver los números concretos?`;\n      } else if (txt.includes('tango') || txt.includes('softland') || txt.includes('sistema') || txt.includes('erp') || txt.includes('cambio')) {\n        respuestaIA = `Justamente por eso nos comunicamos, ${nombre}. Incorporamos mejoras en la integración nativa con ${sistema} que permiten automatizar la carga contable sin modificar su configuración actual. ¿Les resultaría útil revisarlo 10 minutos en una llamada?`;\n      } else {\n        respuestaIA = `Hace un tiempo estuvimos en contacto porque desde ${empresa} buscaban optimizar la carga contable en ${sistema}. Te escribía para consultar si ya lograron resolver ese punto o si les resulta útil que lo revisemos 10 minutos en una llamada.`;\n      }\n    }\n    // --- PASO 2: El prospecto responde a la propuesta de reunión ---\n    else if (paso === 2) {\n      const tieneDia = txt.includes('lunes') || txt.includes('martes') || txt.includes('miércoles') || txt.includes('miercoles') ||\n                       txt.includes('jueves') || txt.includes('viernes') || txt.includes('mañana') || txt.includes('tarde') ||\n                       txt.includes('semana');\n\n      const acepta = tieneDia || txt.includes('sí') || txt.includes('si') || txt.includes('dale') ||\n                     txt.includes('bueno') || txt.includes('claro') || txt.includes('perfecto') ||\n                     txt.includes('agendar') || txt.includes('reunión') || txt.includes('reunion') ||\n                     txt.includes('me sirve') || txt.includes('me gustaría') || txt.includes('me gustaria') ||\n                     txt.includes('mostrame') || txt.includes('adelante') || txt.includes('ok');\n                     \n      const esSaludo = txt.includes('hola') || txt.includes('buenas') || txt.includes('qué tal') || txt.includes('que tal');\n\n      if (tieneDia) {\n        respuestaIA = `Excelente ${nombre}. Para el día solicitado tengo estos horarios disponibles en horario de Argentina:\\n1) 09:30 hs\\n2) 11:00 hs\\n3) 14:30 hs\\n¿Cuál te queda mejor y nos confirmás tu correo para enviarte la invitación por Calendly?`;\n      } else if (acepta) {\n        const opts = [\n          `Excelente ${nombre}. Le comparto la opción para agendar la reunión en Calendly según la disponibilidad de su agenda:`,\n          `Perfecto ${nombre}. Le dejo la opción para coordinar la reunión de 10 minutos a través de Calendly:`,\n          `Muy bien. Le adjunto el enlace de Calendly para agendar en el horario que le resulte más conveniente:`\n        ];\n        respuestaIA = opts[Math.floor(Math.random() * opts.length)];\n      } else if (txt.includes('qué es') || txt.includes('que es') || txt.includes('de qué') || txt.includes('de que') || txt.includes('cómo') || txt.includes('xtract')) {\n        respuestaIA = `Xtract automatiza la lectura y carga contable de facturas en ${sistema}, ahorrando más del 70% del tiempo de ingreso manual. ¿Les parece si lo revisamos 10 minutos en una llamada esta semana?`;\n      } else if (esSaludo) {\n        respuestaIA = `Hola ${nombre}. Te consultaba si a desde ${empresa} les resultaría útil coordinar una breve llamada de 10 minutos para revisar las novedades sobre ${sistema}.`;\n      } else {\n        respuestaIA = `Te consultaba ${nombre} si les sirve coordinar 10 minutos esta semana para revisar cómo optimizar la carga contable en ${sistema}. ¿Te queda bien en algún horario?`;\n      }\n    }\n    // --- PASO 3+: Ya agendó ---\n    else {\n      respuestaIA = `Quedamos coordinados, ${nombre}. Nos vemos en la llamada. ¡Hasta pronto!`;\n    }\n  }\n} catch(e) {\n  respuestaIA = 'Hola. Te escribía para consultar si lograron resolver la carga contable. ¿Les resulta útil que lo revisemos 10 minutos en una llamada?';\n}\n\nreturn {\n  json: {\n    response: respuestaIA\n  }\n};"
+      },
+      "id": "parsear-gemini",
+      "name": "Parsear Respuesta IA",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        500,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ response: $json.response, status: 'ok' }) }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "POST, GET, OPTIONS"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "responder-webhook",
+      "name": "Responder al HTML",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        720,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook — Recibir de HTML": {
+      "main": [
+        [
+          {
+            "node": "Armar Contexto y Prompt Gemini",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Armar Contexto y Prompt Gemini": {
+      "main": [
+        [
+          {
+            "node": "IA — Gemini 2.0 Flash (API Real)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IA — Gemini 2.0 Flash (API Real)": {
+      "main": [
+        [
+          {
+            "node": "Parsear Respuesta IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parsear Respuesta IA": {
+      "main": [
+        [
+          {
+            "node": "Responder al HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

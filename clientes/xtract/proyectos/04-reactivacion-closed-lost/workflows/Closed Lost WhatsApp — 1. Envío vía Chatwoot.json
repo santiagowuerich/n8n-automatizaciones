@@ -264,7 +264,7 @@
         "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ content: $('Config').first().json.WA_TEMPLATE_PREVIEW, message_type: \"outgoing\", template_params: { name: $('Config').first().json.WA_TEMPLATE_NAME || \"reactivacion_closed_lost_1\", category: \"marketing\", language: $('Config').first().json.WA_TEMPLATE_LANG || \"es_AR\", processed_params: { \"1\": $('Resolver contact_id').item.json.primer_nombre, \"2\": $('Resolver contact_id').item.json.primer_nombre_owner } } }) }}",
+        "jsonBody": "={{ JSON.stringify({ content: $('Config').first().json.WA_TEMPLATE_PREVIEW, message_type: \"outgoing\", template_params: { name: $('Config').first().json.WA_TEMPLATE_NAME || \"reactivacion_closed_lost_1\", category: \"marketing\", language: $('Config').first().json.WA_TEMPLATE_LANG || \"es_AR\", processed_params: { \"1\": $('Resolver contact_id').item.json.primer_nombre || \"allí\", \"2\": $('Resolver contact_id').item.json.primer_nombre_owner || \"el equipo de Xtract\" } } }) }}",
         "options": {
           "response": {
             "response": {
@@ -325,7 +325,8 @@
             "fecha_discovery": "={{ $('Resolver contact_id').item.json.fecha_discovery }}",
             "fecha_reunion": "={{ $('Resolver contact_id').item.json.fecha_reunion }}",
             "dias_desde_perdida": "={{ $('Resolver contact_id').item.json.dias_desde_perdida }}",
-            "hubo_reunion": "={{ $('Resolver contact_id').item.json.hubo_reunion }}"
+            "hubo_reunion": "={{ $('Resolver contact_id').item.json.hubo_reunion }}",
+            "seguimiento": "pendiente"
           },
           "matchingColumns": [
             "telefono"
@@ -756,151 +757,6 @@
         1984,
         1360
       ]
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict",
-            "version": 2
-          },
-          "conditions": [
-            {
-              "leftValue": "={{ $json.estado_real }}",
-              "rightValue": "enviado",
-              "operator": {
-                "type": "string",
-                "operation": "equals"
-              },
-              "id": "c7c8a188-4de8-4a54-98a8-838b0199d253"
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
-      },
-      "id": "a1234f05-6397-48ae-9741-20ba0bf27eac",
-      "name": "Envío OK? (habilita seguimiento)",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "position": [
-        2080,
-        1920
-      ]
-    },
-    {
-      "parameters": {
-        "amount": "={{ $('Config').first().json.WA_SEGUIMIENTO_ESPERA_MIN || 10 }}",
-        "unit": "minutes"
-      },
-      "id": "f87f87a3-5247-4bb6-bebc-3e009e6bc30a",
-      "name": "Esperar respuesta seguimiento",
-      "type": "n8n-nodes-base.wait",
-      "typeVersion": 1.1,
-      "position": [
-        2304,
-        1856
-      ],
-      "webhookId": "ec67e4e8-a996-41fa-ae5e-14e4d1bbe59c"
-    },
-    {
-      "parameters": {
-        "url": "={{ $('Config').first().json.CHATWOOT_URL }}/api/v1/accounts/{{ $('Config').first().json.CHATWOOT_ACCOUNT_ID }}/conversations/{{ $('Chatwoot - Crear conversacion').item.json.id }}/messages",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "options": {
-          "response": {
-            "response": {
-              "neverError": true
-            }
-          },
-          "timeout": 30000
-        }
-      },
-      "id": "bebd8005-32e1-4462-86e8-edf160346ff0",
-      "name": "Chatwoot - Traer mensajes seguimiento",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.4,
-      "position": [
-        2528,
-        1920
-      ],
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "BjYt68eHeT61ihqb",
-          "name": "Chatwoot API"
-        }
-      },
-      "onError": "continueRegularOutput"
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "loose",
-            "version": 2
-          },
-          "conditions": [
-            {
-              "leftValue": "={{ ($json.payload || []).some(m => m && m.private !== true && (m.message_type === 0 || m.message_type === 'incoming')) }}",
-              "rightValue": "",
-              "operator": {
-                "type": "boolean",
-                "operation": "true",
-                "singleValue": true
-              }
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
-      },
-      "id": "c07b83d1-9c7a-4b43-af2d-fac930fd54ba",
-      "name": "Hubo respuesta del lead?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "position": [
-        2752,
-        1920
-      ]
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "={{ $('Config').first().json.CHATWOOT_URL }}/api/v1/accounts/{{ $('Config').first().json.CHATWOOT_ACCOUNT_ID }}/conversations/{{ $('Chatwoot - Crear conversacion').item.json.id }}/messages",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ content: $('Config').first().json.WA_SEGUIMIENTO_PREVIEW, message_type: \"outgoing\", template_params: { name: $('Config').first().json.WA_SEGUIMIENTO_NAME || \"reactivacion_closed_lost_seguimiento\", category: \"marketing\", language: $('Config').first().json.WA_TEMPLATE_LANG || \"es_AR\", processed_params: { \"1\": $('Resolver contact_id').item.json.empresa, \"2\": $('Resolver contact_id').item.json.sistema || \"el sistema que usan\" } } }) }}",
-        "options": {
-          "response": {
-            "response": {
-              "neverError": true
-            }
-          },
-          "timeout": 30000
-        }
-      },
-      "id": "7491d5fe-707c-462b-8f76-724c0fc441f0",
-      "name": "Chatwoot - Enviar seguimiento",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.4,
-      "position": [
-        2976,
-        1952
-      ],
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "BjYt68eHeT61ihqb",
-          "name": "Chatwoot API"
-        }
-      },
-      "onError": "continueRegularOutput"
     }
   ],
   "connections": {
@@ -1115,56 +971,6 @@
         [
           {
             "node": "Marcar como enviado",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Envío OK? (habilita seguimiento)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Envío OK? (habilita seguimiento)": {
-      "main": [
-        [
-          {
-            "node": "Esperar respuesta seguimiento",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Esperar respuesta seguimiento": {
-      "main": [
-        [
-          {
-            "node": "Chatwoot - Traer mensajes seguimiento",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Chatwoot - Traer mensajes seguimiento": {
-      "main": [
-        [
-          {
-            "node": "Hubo respuesta del lead?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Hubo respuesta del lead?": {
-      "main": [
-        [],
-        [
-          {
-            "node": "Chatwoot - Enviar seguimiento",
             "type": "main",
             "index": 0
           }

@@ -1004,23 +1004,6 @@
     },
     {
       "parameters": {
-        "operation": "completion",
-        "respondWith": "showText",
-        "responseText": "=<div style=\"font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#0C2757;max-width:540px;margin:0 auto;padding:8px;\">\n  <div style=\"background:#FFFFFF;border:1px solid #E3E8F3;border-radius:14px;padding:30px 28px;\">\n\n    <div style=\"display:inline-block;background:#D7FFAB;color:#0C2757;font-weight:800;font-size:11px;letter-spacing:0.08em;padding:6px 12px;border-radius:999px;\">LISTO</div>\n\n    <div style=\"font-size:23px;font-weight:800;letter-spacing:-0.02em;margin:18px 0 8px;color:#0C2757;\">Los dos documentos están generados</div>\n\n    <div style=\"font-size:15px;line-height:1.55;color:#54607A;margin-bottom:24px;\">Se generó el documento ROI. Si la página 4 estaba pendiente, también quedó completa en el slide.</div>\n\n    <a href=\"https://docs.google.com/document/d/{{ $('Copiar plantilla del ROI').first().json.id }}/edit\" target=\"_blank\" style=\"display:block;background:#0C2757;color:#FFFFFF;text-decoration:none;font-weight:700;font-size:15px;padding:15px 18px;border-radius:11px;margin-bottom:10px;\">Abrir el documento ROI &nbsp;→</a>\n\n    <a href=\"https://docs.google.com/presentation/d/{{ $('Calcular impacto y ROI (formulario)').first().json.presentationId }}/edit\" target=\"_blank\" style=\"display:block;background:#FFFFFF;color:#0C2757;text-decoration:none;font-weight:700;font-size:15px;padding:15px 18px;border-radius:11px;border:1.5px solid #E3E8F3;\">Abrir la propuesta en Slides &nbsp;→</a>\n\n    <div style=\"margin-top:24px;padding-top:18px;border-top:1px solid #E3E8F3;font-size:13.5px;line-height:1.55;color:#54607A;\">\n      <strong style=\"color:#0C2757;\">Revisá los dos antes de mandarlos.</strong> Los textos los redactó un modelo, y los números salen de la card de Notion y de la transcripción.\n    </div>\n\n  </div>\n\n  <div style=\"text-align:center;font-size:12px;color:#94A3BE;margin-top:16px;\">Xtract · generado automáticamente</div>\n</div>"
-      },
-      "id": "d122c981-55af-4c68-a668-7d24b8fa95e6",
-      "name": "Mostrar los links generados",
-      "type": "n8n-nodes-base.form",
-      "typeVersion": 2.5,
-      "position": [
-        3632,
-        784
-      ],
-      "webhookId": "46841ee4-9765-44f7-80c6-39063b947450",
-      "notes": "Sin esta pantalla la persona envia el formulario y no recibe el documento que acaba de generar. El id del Doc sale del nodo de Drive: la operacion update de Docs devuelve solo documentId."
-    },
-    {
-      "parameters": {
         "content": "## ⚠️ Al importar este workflow a n8n.xtract.app\n\nHay **dos Form Triggers**, cada uno con su `options.path`:\n\n- `pagina-4-impacto` — formulario completo\n- `roi-precio` — solo el precio\n\nn8n **regenera el `webhookId`** al importar. En cuanto esto entre a producción, la URL vieja basada en UUID deja de existir.\n\n**En el mismo movimiento hay que:**\n\n1. En `Armar aviso de propuesta`, poner:\n   `FORM_COMPLETO   = .../form/pagina-4-impacto`\n   `FORM_SOLO_PRECIO = .../form/roi-precio`\n2. Desactivar y reactivar el workflow, para que n8n registre las rutas nuevas.\n\nSi se hace uno sin el otro, **todos los links del aviso de Slack dan 404**. Ya pasó una vez.",
         "height": 300,
         "width": 460,
@@ -1896,24 +1879,7 @@
             "index": 0
           }
         ],
-        [
-          {
-            "node": "Mostrar los links generados",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Avisar que estan los dos": {
-      "main": [
-        [
-          {
-            "node": "Mostrar los links generados",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        []
       ]
     },
     "Formulario - solo el precio": {

@@ -1573,7 +1573,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({\n  parent: {\n    page_id: $('Code - Extraer Datos').first().json.id || $('Code - Extraer Datos').first().json.page_id\n  },\n  rich_text: [\n    {\n      text: {\n        content: 'Presentacion: ' + $json.slide_url + '\\nDocumento ROI: ' + $json.doc_url\n      }\n    }\n  ]\n}) }}",
+        "jsonBody": "={{ JSON.stringify({\n  parent: {\n    page_id: $('Code - Extraer Datos').first().json.id || $('Code - Extraer Datos').first().json.page_id\n  },\n  rich_text: [\n    {\n      type: \"text\",\n      text: {\n        content: \"Presentacion: \"\n      }\n    },\n    {\n      type: \"text\",\n      text: {\n        content: $json.slide_url,\n        link: {\n          url: $json.slide_url\n        }\n      }\n    },\n    {\n      type: \"text\",\n      text: {\n        content: \"\\nDocumento ROI: \"\n      }\n    },\n    {\n      type: \"text\",\n      text: {\n        content: $json.doc_url,\n        link: {\n          url: $json.doc_url\n        }\n      }\n    }\n  ]\n}) }}",
         "options": {
           "response": {
             "response": {

@@ -1,5 +1,7 @@
 {
+  "id": "YMyp0HVPQygTa5Qn",
   "name": "Closed Lost WhatsApp — 1. Envío vía Chatwoot",
+  "active": false,
   "nodes": [
     {
       "parameters": {
@@ -67,39 +69,39 @@
     },
     {
       "parameters": {},
-      "id": "34068d3a-5185-45ee-948b-54b1fa84bfd4",
+      "id": "e78a2710-bbc0-4faf-8f3f-a789d42c97c9",
       "name": "Ejecutar tanda",
       "type": "n8n-nodes-base.manualTrigger",
       "typeVersion": 1,
       "position": [
-        240,
-        1344
+        -1152,
+        1440
       ]
     },
     {
       "parameters": {
-        "jsCode": "// Unico lugar de configuracion del workflow.\n// Esta instancia de n8n corre con N8N_BLOCK_ENV_ACCESS_IN_NODE: $env tira\n// \"access to env vars denied\" y el `|| default` NO salva, porque la excepcion\n// se tira al tocar $env. Por eso la config vive aca.\n// Todo nodo aguas abajo lee con: $('Config').first().json.LO_QUE_SEA\nreturn [{ json: {\n  // --- Chatwoot ---\n  CHATWOOT_URL: 'https://chatwoot.xtract.app',               // sin barra final, ej: https://app.chatwoot.com\n  CHATWOOT_ACCOUNT_ID: '1', // numerico, sale de la URL /app/accounts/<id>/\n  CHATWOOT_INBOX_ID: '1',     // inbox de WhatsApp, NO otro canal\n\n  // --- Hoja de control del piloto (pestanas: Enviados WA, Interacciones) ---\n  // Pestana de la MISMA planilla de donde salen los leads a contactar.\n  // Antes esto venia de Notion; se saco a pedido y el piloto se maneja\n  // 100% con la hoja.\n  WA_LEADS_TAB: 'Leads Piloto',\n\n  // Pausa entre un envio y el siguiente. NO es cosmetico permite a meta no degradar el numero\n  WA_ESPERA_ENTRE_ENVIOS_SEG: 10,\n\n  WA_SHEET_URL: 'https://docs.google.com/spreadsheets/d/1w6wVAuYmHjI8Fk4b3S1VLxAcgSSQkUjHOTrE1enmaP8/edit',\n\n  // --- Plantilla aprobada en Meta ---\n  WA_TEMPLATE_NAME: 'reactivacion_closed_lost',\n  WA_TEMPLATE_LANG: 'es_AR',\n  WA_TEMPLATE_PREVIEW: 'Hola {{1}}, como estas? Te escribo de parte del equipo de Xtract.',\n\n  // --- Barandas del piloto ---\n  WA_LIMITE_TANDA: 1,   // maximo de envios por corrida, para no quemar el numero\n  WA_SOLO_VERDES: 'true' // solo leads calificados Verde\n} }];"
+        "jsCode": "// Unico lugar de configuracion del workflow.\n// Esta instancia de n8n corre con N8N_BLOCK_ENV_ACCESS_IN_NODE: $env tira\n// \"access to env vars denied\" y el `|| default` NO salva, porque la excepcion\n// se tira al tocar $env. Por eso la config vive aca.\n// Todo nodo aguas abajo lee con: $('Config').first().json.LO_QUE_SEA\nreturn [{ json: {\n  // --- Chatwoot ---\n  CHATWOOT_URL: 'https://chatwoot.xtract.app',               // sin barra final, ej: https://app.chatwoot.com\n  CHATWOOT_ACCOUNT_ID: '1', // numerico, sale de la URL /app/accounts/<id>/\n  CHATWOOT_INBOX_ID: '1',     // inbox de WhatsApp, NO otro canal\n\n  // --- Hoja de control del piloto (pestanas: Enviados WA, Interacciones) ---\n  // Pestana de la MISMA planilla de donde salen los leads a contactar.\n  // Antes esto venia de Notion; se saco a pedido y el piloto se maneja\n  // 100% con la hoja.\n  WA_LEADS_TAB: 'Leads Piloto',\n\n  // Pausa entre un envio y el siguiente. NO es cosmetico permite a meta no degradar el numero\n  WA_ESPERA_ENTRE_ENVIOS_SEG: 8,\n\n  // Pausa antes de verificar si el envio realmente salio. Chatwoot acepta\n  // el mensaje al toque (devuelve id), pero el rechazo real de WhatsApp\n  // (numero invalido, plantilla, ventana cerrada) llega despues, de forma\n  // asincrona. Sin esta espera, se consulta el estado antes de que exista.\n  WA_ESPERA_CONFIRMACION_SEG: 10,\n\n  WA_SHEET_URL: 'https://docs.google.com/spreadsheets/d/1w6wVAuYmHjI8Fk4b3S1VLxAcgSSQkUjHOTrE1enmaP8/edit',\n\n  // --- Plantilla aprobada en Meta ---\n  WA_TEMPLATE_NAME: 'reactivacion_closed_lost_1',\n  WA_TEMPLATE_LANG: 'es_AR',\n  WA_TEMPLATE_PREVIEW: 'Hola {{1}}, cómo estás? Te escribe {{2}} del equipo de Xtract',\n\n  // --- Plantilla de seguimiento: se manda si a las 2 horas no hubo respuesta ---\n  WA_SEGUIMIENTO_ESPERA_MIN: 120,\n  WA_SEGUIMIENTO_NAME: 'reactivacion_closed_lost_seguimiento',\n  WA_SEGUIMIENTO_PREVIEW: 'Nos juntamos hace un tiempo cuando en {{1}} estaban buscando automatizar el ingreso de facturas en {{2}}. Quería saber cómo vienen con ese proceso, si ya encontraron alguna forma de automatizarlo o si lo siguen haciendo de forma manual.',\n\n  // --- Barandas del piloto ---\n  WA_LIMITE_TANDA: 4,   // maximo de envios por corrida, para no quemar el numero\n  WA_SOLO_VERDES: 'true' // solo leads calificados Verde\n} }];"
       },
-      "id": "fc44d1a0-12a2-424a-a124-16391c4dd898",
+      "id": "7a4efdbe-10e4-447a-8c05-faf70b4f8f6f",
       "name": "Config",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        416,
-        1344
+        -928,
+        1440
       ]
     },
     {
       "parameters": {
-        "jsCode": "// =====================================================================\n// ARMA LA TANDA DE ENVIO desde la pestana de leads de la planilla.\n// Antes esto leia Notion; se saco a pedido. El normalizador de telefonos\n// se conserva TAL CUAL: la hoja puede traer numeros pegados a mano y es\n// la unica pieza que evita mandarle un WhatsApp a un numero invalido.\n// =====================================================================\nconst LIMITE = parseInt($('Config').first().json.WA_LIMITE_TANDA) || 20;\nconst SOLO_VERDES = String($('Config').first().json.WA_SOLO_VERDES || 'true') === 'true';\n\n// normKey: NFD, sin acentos, minusculas, separadores colapsados.\n// Los encabezados de la hoja los escribe una persona: \"Telefono Normalizado\",\n// \"telefono_normalizado\" y \"Teléfono normalizado\" tienen que ser lo mismo.\nconst normKey = s => (s || '').toString()\n  .normalize('NFD').replace(/[\\u0300-\\u036f]/g, '')\n  .toLowerCase().replace(/[\\s_\\-\\/]+/g, ' ').trim();\n\nconst normalizarFila = r => {\n  const o = {};\n  for (const k of Object.keys(r || {})) o[normKey(k)] = r[k];\n  return o;\n};\n\n// Primer alias que exista y no venga vacio\nfunction campo(fila, ...alias) {\n  for (const a of alias) {\n    const v = fila[normKey(a)];\n    if (v != null && String(v).trim() !== '') return String(v).trim();\n  }\n  return '';\n}\n\nconst PREFIJOS = { argentina: '54', uruguay: '598', chile: '56', mexico: '52', colombia: '57', peru: '51', brasil: '55', 'costa rica': '506', ecuador: '593', panama: '507', paraguay: '595', bolivia: '591' };\n\nfunction normalizarTel(raw, paisStr) {\n  let d = (raw || '').toString().replace(/[^0-9]/g, '');\n  if (!d) return '';\n  if (d.startsWith('00')) d = d.slice(2);\n  const pais = (paisStr || '').toString().toLowerCase();\n  const clave = Object.keys(PREFIJOS).find(k => pais.includes(k)) || '';\n  const pref = PREFIJOS[clave] || '';\n\n  // Si el numero YA trae prefijo de CUALQUIER pais conocido y largo pleno,\n  // se respeta lo cargado: el campo Pais puede estar mal (datos a mano).\n  const yaInternacional = d.length >= 11 && Object.values(PREFIJOS).some(pf => d.startsWith(pf));\n\n  if (!yaInternacional && pref) {\n    if (d.startsWith('0')) d = d.slice(1);\n    d = pref + d;\n  }\n  // Argentina: moviles llevan 9 tras el 54. Sin el 9, WhatsApp lo trata\n  // como fijo y el mensaje NO SE ENTREGA (sin error).\n  if (d.startsWith('54') && !d.startsWith('549')) {\n    d = '549' + d.slice(2);\n  }\n  if (d.length < 10 || d.length > 15) return '';\n  return d;\n}\n\n// Dedupe contra lo ya enviado. Solo bloquea los que salieron DE VERDAD:\n// una fila con estado 'error' vuelve a entrar en la proxima tanda.\n// Si la hoja no existe o no se pudo leer, la lista queda vacia y no se\n// bloquea a nadie: es preferible a cortar la tanda entera.\nconst yaEnviados = new Set();\ntry {\n  for (const it of $('Leer enviados').all()) {\n    const r = it.json || {};\n    if (!String(r.estado || '').toLowerCase().startsWith('enviado')) continue;\n    const t = String(r.telefono || '').replace(/[^0-9]/g, '');\n    if (t) yaEnviados.add(t.slice(-8));\n  }\n} catch (e) {}\n\nconst elegibles = [];\nconst vistos = new Set();   // la hoja puede traer el mismo numero dos veces\n\nfor (const item of $('Leer leads del piloto').all()) {\n  const f = normalizarFila(item.json);\n\n  const empresa = campo(f, 'Empresa', 'Nombre Oportunidad');\n  const nombre  = campo(f, 'Contacto', 'Nombre', 'Nombre KDM (SDR)');\n  const pais    = campo(f, 'Pais', 'Pais(*)');\n  const calif   = campo(f, 'Calificacion');\n\n  // Si la hoja NO trae la columna de calificacion, NO se filtra: la lista\n  // del piloto ya viene filtrada a Verdes. Filtrar por una columna ausente\n  // dejaria la tanda vacia sin ningun error visible.\n  if (SOLO_VERDES && calif && !calif.toLowerCase().startsWith('verde')) continue;\n\n  const tel = normalizarTel(\n    campo(f, 'Telefono Normalizado', 'Telefono', 'Whatsapp KDM'), pais);\n  if (!tel) continue;\n\n  const cola = tel.slice(-8);\n  if (yaEnviados.has(cola) || vistos.has(cola)) continue;\n  vistos.add(cola);\n\n  // Si 'empresa' es un email cargado por error, no puede ir en la plantilla\n  const empresaDisplay = (!empresa || empresa.includes('@')) ? (nombre || 'tu empresa') : empresa;\n  const primerNombre = campo(f, 'Primer Nombre')\n    || (nombre.split(' ')[0] || '').trim()\n    || empresaDisplay;\n\n  // El motivo suele traer el mensaje de despedida pegado entero. Es el\n  // contexto mas valioso que hay, pero normalizado para no romper el prompt.\n  let motivo = campo(f, 'Motivo Perdida', 'Motivo Lost').replace(/\\s+/g, ' ').trim();\n  if (motivo.length > 600) motivo = motivo.slice(0, 600) + '…';\n\n  elegibles.push({ json: {\n    notion_page_id: campo(f, 'notion id', 'notion page id'),\n    nombre: nombre || primerNombre,\n    primer_nombre: primerNombre,\n    empresa: empresaDisplay,\n    telefono: tel,\n    telefono_e164: '+' + tel,\n    motivo_perdida: motivo,\n    sistema: campo(f, 'Sistema Actual', 'Sistema', 'Que sistema usan?(*)'),\n    pais: pais,\n    email: campo(f, 'Email'),\n    owner: campo(f, 'Comercial', 'Owner', 'Owner(*)'),\n    origen: campo(f, 'Origen'),\n    cantidad_facturas: campo(f, 'Facturas Mes', 'Cantidad de facturas', 'Cantidad de facturas(*)'),\n    company_size: campo(f, 'Company Size'),\n    fecha_discovery: campo(f, 'Fecha Discovery').slice(0, 10),\n    fecha_reunion: campo(f, 'Fecha Reunion', 'Fecha Primera Reunion').slice(0, 10),\n    fecha_propuesta: campo(f, 'Fecha Propuesta', 'Fecha Envio Propuesta').slice(0, 10),\n    dias_desde_perdida: campo(f, 'Dias desde Perdida'),\n    hubo_reunion: campo(f, 'Hubo Reunion'),\n    link_discovery: campo(f, 'Link Discovery', 'Link a Discovery(*)'),\n    calificacion: calif\n  } });\n}\n\nreturn elegibles.slice(0, LIMITE);"
+        "jsCode": "// =====================================================================\n// ARMA LA TANDA DE ENVIO desde la pestana de leads de la planilla.\n// Antes esto leia Notion; se saco a pedido. El normalizador de telefonos\n// se conserva TAL CUAL: la hoja puede traer numeros pegados a mano y es\n// la unica pieza que evita mandarle un WhatsApp a un numero invalido.\n// =====================================================================\nconst LIMITE = parseInt($('Config').first().json.WA_LIMITE_TANDA) || 20;\nconst SOLO_VERDES = String($('Config').first().json.WA_SOLO_VERDES || 'true') === 'true';\n\n// normKey: NFD, sin acentos, minusculas, separadores colapsados.\n// Los encabezados de la hoja los escribe una persona: \"Telefono Normalizado\",\n// \"telefono_normalizado\" y \"Teléfono normalizado\" tienen que ser lo mismo.\nconst normKey = s => (s || '').toString()\n  .normalize('NFD').replace(/[̀-ͯ]/g, '')\n  .toLowerCase().replace(/[\\s_\\-\\/]+/g, ' ').trim();\n\nconst normalizarFila = r => {\n  const o = {};\n  for (const k of Object.keys(r || {})) o[normKey(k)] = r[k];\n  return o;\n};\n\n// Primer alias que exista y no venga vacio\nfunction campo(fila, ...alias) {\n  for (const a of alias) {\n    const v = fila[normKey(a)];\n    if (v != null && String(v).trim() !== '') return String(v).trim();\n  }\n  return '';\n}\n\nconst PREFIJOS = { argentina: '54', uruguay: '598', chile: '56', mexico: '52', colombia: '57', peru: '51', brasil: '55', 'costa rica': '506', ecuador: '593', panama: '507', paraguay: '595', bolivia: '591' };\n\nfunction normalizarTel(raw, paisStr) {\n  let d = (raw || '').toString().replace(/[^0-9]/g, '');\n  if (!d) return '';\n  if (d.startsWith('00')) d = d.slice(2);\n  const pais = (paisStr || '').toString().toLowerCase();\n  const clave = Object.keys(PREFIJOS).find(k => pais.includes(k)) || '';\n  const pref = PREFIJOS[clave] || '';\n\n  // Si el numero YA trae prefijo de CUALQUIER pais conocido y largo pleno,\n  // se respeta lo cargado: el campo Pais puede estar mal (datos a mano).\n  const yaInternacional = d.length >= 11 && Object.values(PREFIJOS).some(pf => d.startsWith(pf));\n\n  if (!yaInternacional && pref) {\n    if (d.startsWith('0')) d = d.slice(1);\n    d = pref + d;\n  }\n  // Argentina: moviles llevan 9 tras el 54. Sin el 9, WhatsApp lo trata\n  // como fijo y el mensaje NO SE ENTREGA (sin error).\n  if (d.startsWith('54') && !d.startsWith('549')) {\n    d = '549' + d.slice(2);\n  }\n  if (d.length < 10 || d.length > 15) return '';\n  return d;\n}\n\n// Dedupe contra lo ya enviado. Solo bloquea los que salieron DE VERDAD:\n// una fila con estado 'error' vuelve a entrar en la proxima tanda.\n// Si la hoja no existe o no se pudo leer, la lista queda vacia y no se\n// bloquea a nadie: es preferible a cortar la tanda entera.\nconst yaEnviados = new Set();\ntry {\n  for (const it of $('Leer enviados').all()) {\n    const r = it.json || {};\n    if (!String(r.estado || '').toLowerCase().startsWith('enviado')) continue;\n    const t = String(r.telefono || '').replace(/[^0-9]/g, '');\n    if (t) yaEnviados.add(t.slice(-8));\n  }\n} catch (e) {}\n\n// Nombre de pila real del equipo comercial, por email. La columna\n// Owner/Comercial de la hoja a veces trae el email en vez del nombre\n// completo (ej. \"nicolas.gonzalez@xtract.app\"), y derivar el nombre de la\n// parte local del email pierde los acentos (\"Nicolas\" en vez de \"Nicolás\").\n// Con la tabla se manda el nombre real, tal como lo escribe el equipo.\nconst OWNERS_PRIMER_NOMBRE = {\n  'nicolas.gonzalez@xtract.app': 'Nicolás',\n  'juan.alvarez@xtract.app': 'Juan',\n  'matias.febre@xtract.app': 'Matías',\n  'jesus.soria@xtract.app': 'Jesús',\n  'damian.deggeller@xtract.app': 'Damián',\n  'jesus@xtract.app': 'Jesús',\n  'nicolas@xtract.app': 'Nicolás',\n  'tomas@xtract.app': 'Tomás',\n  'wenceslao.hoepner@xtract.app': 'Wenceslao',\n  'greta.bruno@xtract.app': 'Greta'\n};\n\n// Fallback generico para cuando el owner no esta en la tabla de arriba (ej.\n// alguien nuevo que todavia no se sumo a la lista), o para el primer nombre\n// del CONTACTO del lead (ahi no hay tabla posible: son emails externos de\n// cualquier empresa). Si viene un email, saca el nombre de la parte local\n// -- sin acentos, es lo maximo que se puede inferir sin una tabla.\nfunction primerNombreDe(raw) {\n  const s = (raw || '').toString().trim();\n  if (!s) return '';\n  if (s.includes('@')) {\n    const local = s.split('@')[0].split(/[._-]+/)[0];\n    return local ? local.charAt(0).toUpperCase() + local.slice(1).toLowerCase() : '';\n  }\n  return (s.split(' ')[0] || '').trim();\n}\n\nconst elegibles = [];\nconst vistos = new Set();   // la hoja puede traer el mismo numero dos veces\n\nfor (const item of $('Leer leads del piloto').all()) {\n  const f = normalizarFila(item.json);\n\n  const empresa = campo(f, 'Empresa', 'Nombre Oportunidad');\n  const nombre  = campo(f, 'Contacto', 'Nombre', 'Nombre KDM (SDR)');\n  const pais    = campo(f, 'Pais', 'Pais(*)');\n  const calif   = campo(f, 'Calificacion');\n\n  // Si la hoja NO trae la columna de calificacion, NO se filtra: la lista\n  // del piloto ya viene filtrada a Verdes. Filtrar por una columna ausente\n  // dejaria la tanda vacia sin ningun error visible.\n  if (SOLO_VERDES && calif && !calif.toLowerCase().startsWith('verde')) continue;\n\n  const tel = normalizarTel(\n    campo(f, 'Telefono Normalizado', 'Telefono', 'Whatsapp KDM'), pais);\n  if (!tel) continue;\n\n  const cola = tel.slice(-8);\n  if (yaEnviados.has(cola) || vistos.has(cola)) continue;\n  vistos.add(cola);\n\n  // Si 'empresa' es un email cargado por error, no puede ir en la plantilla\n  const empresaDisplay = (!empresa || empresa.includes('@')) ? (nombre || 'tu empresa') : empresa;\n  const primerNombre = campo(f, 'Primer Nombre')\n    || primerNombreDe(nombre)\n    || empresaDisplay;\n\n  // Owner/comercial: primero la tabla de nombres reales, despues el\n  // fallback generico si no esta listado.\n  const ownerNombre = campo(f, 'Comercial', 'Owner', 'Owner(*)');\n  const primerNombreOwner = OWNERS_PRIMER_NOMBRE[ownerNombre.toLowerCase()]\n    || primerNombreDe(ownerNombre)\n    || ownerNombre;\n\n  // El motivo suele traer el mensaje de despedida pegado entero. Es el\n  // contexto mas valioso que hay, pero normalizado para no romper el prompt.\n  let motivo = campo(f, 'Motivo Perdida', 'Motivo Lost').replace(/\\s+/g, ' ').trim();\n  if (motivo.length > 600) motivo = motivo.slice(0, 600) + '…';\n\n  elegibles.push({ json: {\n    notion_page_id: campo(f, 'notion id', 'notion page id'),\n    nombre: nombre || primerNombre,\n    primer_nombre: primerNombre,\n    empresa: empresaDisplay,\n    telefono: tel,\n    telefono_e164: '+' + tel,\n    motivo_perdida: motivo,\n    sistema: campo(f, 'Sistema Actual', 'Sistema', 'Que sistema usan?(*)'),\n    pais: pais,\n    email: campo(f, 'Email'),\n    owner: ownerNombre,\n    primer_nombre_owner: primerNombreOwner,\n    origen: campo(f, 'Origen'),\n    cantidad_facturas: campo(f, 'Facturas Mes', 'Cantidad de facturas', 'Cantidad de facturas(*)'),\n    company_size: campo(f, 'Company Size'),\n    fecha_discovery: campo(f, 'Fecha Discovery').slice(0, 10),\n    fecha_reunion: campo(f, 'Fecha Reunion', 'Fecha Primera Reunion').slice(0, 10),\n    fecha_propuesta: campo(f, 'Fecha Propuesta', 'Fecha Envio Propuesta').slice(0, 10),\n    dias_desde_perdida: campo(f, 'Dias desde Perdida'),\n    hubo_reunion: campo(f, 'Hubo Reunion'),\n    link_discovery: campo(f, 'Link Discovery', 'Link a Discovery(*)'),\n    calificacion: calif\n  } });\n}\n\nreturn elegibles.slice(0, LIMITE);"
       },
-      "id": "0c3ead92-8bde-4bfd-b09c-895744511f2b",
+      "id": "e4fccd99-50c8-4533-9a48-135eb0421ce9",
       "name": "Filtrar elegibles y armar tanda",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1072,
-        1344
+        -256,
+        1440
       ]
     },
     {
@@ -125,12 +127,12 @@
           "timeout": 30000
         }
       },
-      "id": "00480c09-a124-4e31-9659-747352030528",
+      "id": "955a5256-ae44-4c79-b35b-60dd1a666b6c",
       "name": "Chatwoot - Buscar contacto",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1536,
+        192,
         1360
       ],
       "credentials": {
@@ -163,12 +165,12 @@
         },
         "options": {}
       },
-      "id": "255abd02-f814-4417-a191-d066075ba6b5",
+      "id": "aef4fda4-85d8-40d0-b35e-74932d3772c8",
       "name": "Existe el contacto?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        1776,
+        416,
         1360
       ]
     },
@@ -190,13 +192,13 @@
           "timeout": 30000
         }
       },
-      "id": "5ba3420e-9755-4966-b609-7f1c432cc17d",
+      "id": "8d1e926f-8bb1-43ff-aaa5-10f6c3d26483",
       "name": "Chatwoot - Crear contacto",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        2048,
-        1472
+        640,
+        1552
       ],
       "credentials": {
         "httpHeaderAuth": {
@@ -211,13 +213,13 @@
         "mode": "runOnceForEachItem",
         "jsCode": "// =====================================================================\n// Saca el contact_id de Chatwoot y lo pega a los datos del lead.\n//\n// OJO CON EL CRUCE: antes esto cruzaba por indice (metas[idx]) sobre la\n// salida de un nodo Merge. El Merge de n8n concatena rama-verdadera y\n// rama-falsa, asi que el orden NO es el original: el contact_id de un lead\n// terminaba pegado a los datos de otro y se mandaba la plantilla con el\n// nombre equivocado.\n// Ahora usa el paired item ($('Nodo').item), que n8n mantiene aunque el\n// item haya pasado por un IF. Por eso el nodo corre \"Once for Each Item\":\n// .item no existe en modo \"All Items\".\n// =====================================================================\nconst meta = $('Loop de envio').item.json;\nconst j = $input.item.json || {};\n\nlet contactId = null;\nif (Array.isArray(j.payload) && j.payload.length > 0) {\n  contactId = j.payload[0].id;                       // busqueda con resultado\n} else if (j.payload && j.payload.contact && j.payload.contact.id) {\n  contactId = j.payload.contact.id;                  // contacto recien creado\n} else if (j.payload && j.payload.id) {\n  contactId = j.payload.id;\n}\n\n// Sin contact_id no se puede seguir: se descarta el item y este lead queda\n// SIN marcar como enviado, asi que entra en la proxima tanda.\nif (!contactId) return null;\n\nreturn { json: Object.assign({}, meta, { contact_id: contactId }) };"
       },
-      "id": "d7eda39f-4d6a-4636-b757-1831e63d1ded",
+      "id": "e03d50b7-58fa-44c7-9ce2-ad666530dc8f",
       "name": "Resolver contact_id",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2352,
-        1344
+        864,
+        1360
       ]
     },
     {
@@ -238,13 +240,13 @@
           "timeout": 30000
         }
       },
-      "id": "788557df-892e-492d-9d05-704f7b4c2027",
+      "id": "0d825fdc-89f4-47e1-acf0-0448d16ba35b",
       "name": "Chatwoot - Crear conversacion",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        2576,
-        1344
+        1088,
+        1360
       ],
       "credentials": {
         "httpHeaderAuth": {
@@ -262,7 +264,7 @@
         "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ content: $('Config').first().json.WA_TEMPLATE_PREVIEW, message_type: \"outgoing\", template_params: { name: $('Config').first().json.WA_TEMPLATE_NAME || \"reactivacion_closed_lost\", category: \"marketing\", language: $('Config').first().json.WA_TEMPLATE_LANG || \"es_AR\", processed_params: { \"1\": $('Resolver contact_id').item.json.primer_nombre } } }) }}",
+        "jsonBody": "={{ JSON.stringify({ content: $('Config').first().json.WA_TEMPLATE_PREVIEW, message_type: \"outgoing\", template_params: { name: $('Config').first().json.WA_TEMPLATE_NAME || \"reactivacion_closed_lost_1\", category: \"marketing\", language: $('Config').first().json.WA_TEMPLATE_LANG || \"es_AR\", processed_params: { \"1\": $('Resolver contact_id').item.json.primer_nombre, \"2\": $('Resolver contact_id').item.json.primer_nombre_owner } } }) }}",
         "options": {
           "response": {
             "response": {
@@ -272,13 +274,13 @@
           "timeout": 30000
         }
       },
-      "id": "1510f959-ecb2-44d3-af11-0d56bb0dc64e",
+      "id": "4779ec55-372a-4787-952c-92d2b4d47e59",
       "name": "Chatwoot - Enviar plantilla WA",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        2800,
-        1344
+        1312,
+        1360
       ],
       "credentials": {
         "httpHeaderAuth": {
@@ -313,7 +315,7 @@
             "chatwoot_contact_id": "={{ $('Resolver contact_id').item.json.contact_id }}",
             "chatwoot_conversation_id": "={{ $('Chatwoot - Crear conversacion').item.json.id }}",
             "fecha_envio": "={{ $now.toISO() }}",
-            "estado": "={{ $json.id ? 'enviado' : ('error: ' + ($json.message || $json.error || 'sin detalle')).toString().slice(0, 120) }}",
+            "estado": "={{ $json.estado_real }}",
             "pais": "={{ $('Resolver contact_id').item.json.pais }}",
             "email": "={{ $('Resolver contact_id').item.json.email }}",
             "fecha_propuesta": "={{ $('Resolver contact_id').item.json.fecha_propuesta }}",
@@ -516,13 +518,13 @@
         },
         "options": {}
       },
-      "id": "75e1d1a5-0f7c-4f60-97f6-aec7b5d4c5ba",
+      "id": "3db5bf38-f70d-4473-9adf-304c4ed0ba50",
       "name": "Marcar como enviado",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
-        3024,
-        1344
+        2208,
+        1360
       ],
       "credentials": {
         "googleSheetsOAuth2Api": {
@@ -546,13 +548,13 @@
         },
         "options": {}
       },
-      "id": "1ec8f607-b308-4f5c-8b70-e8cea8a5418a",
+      "id": "dcbe5d76-ab61-4457-bd27-ff382e73a2d8",
       "name": "Leer enviados",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
-        848,
-        1344
+        -480,
+        1440
       ],
       "alwaysOutputData": true,
       "executeOnce": true,
@@ -582,13 +584,13 @@
           "timeout": 30000
         }
       },
-      "id": "451a1d21-b8c7-4320-9a04-4cecfaab8cec",
+      "id": "c6677fe1-d1b3-493e-be1f-35398f5a75ce",
       "name": "Chatwoot - Etiquetar piloto",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        3248,
-        1344
+        2432,
+        1360
       ],
       "credentials": {
         "httpHeaderAuth": {
@@ -606,7 +608,7 @@
         "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ (R => JSON.stringify({ custom_attributes: { nombre: R.nombre, empresa: R.empresa, motivo_perdida: R.motivo_perdida, sistema: R.sistema, pais: R.pais, email: R.email, owner: R.owner, cantidad_facturas: R.cantidad_facturas, fecha_discovery: R.fecha_discovery, fecha_reunion: R.fecha_reunion, fecha_propuesta: R.fecha_propuesta, dias_desde_perdida: R.dias_desde_perdida, hubo_reunion: R.hubo_reunion, calificacion: R.calificacion } }))($('Resolver contact_id').item.json) }}",
+        "jsonBody": "={{ (R => JSON.stringify({ custom_attributes: { nombre: R.nombre, empresa: R.empresa, motivo_perdida: R.motivo_perdida, sistema: R.sistema, pais: R.pais, emailkdm: R.email, owner: R.owner, cantidad_facturas: R.cantidad_facturas, fecha_discovery: R.fecha_discovery, fecha_reunion: R.fecha_reunion, fecha_propuesta: R.fecha_propuesta, dias_desde_perdida: R.dias_desde_perdida, hubo_reunion: R.hubo_reunion, calificacion: R.calificacion } }))($('Resolver contact_id').item.json) }}",
         "options": {
           "response": {
             "response": {
@@ -619,10 +621,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        3472,
-        1344
+        2656,
+        1360
       ],
-      "id": "c2d2cf57-e4ad-4825-8836-2262fd631b54",
+      "id": "97c7eba8-61b0-44e8-a6b5-b49dbec0c7d0",
       "name": "Chatwoot - Guardar contexto CRM",
       "credentials": {
         "httpHeaderAuth": {
@@ -636,26 +638,27 @@
       "parameters": {
         "options": {}
       },
-      "id": "a78d726c-7d3a-4dff-aa53-70963dc4043f",
+      "id": "2ebd2b40-8b77-4ebc-ae81-67604e227672",
       "name": "Loop de envio",
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
       "position": [
-        1280,
-        1344
+        -32,
+        1440
       ]
     },
     {
       "parameters": {
-        "amount": "={{ $('Config').first().json.WA_ESPERA_ENTRE_ENVIOS_SEG || 8 }}"
+        "amount": "={{ $('Config').first().json.WA_ESPERA_ENTRE_ENVIOS_SEG || 8 }}",
+        "unit": "minutes"
       },
-      "id": "5701b85c-aa7d-4ab2-b906-c29e7c6f5265",
+      "id": "205ee726-b317-4633-9938-73f22bca45ed",
       "name": "Esperar entre envios",
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
       "position": [
-        3664,
-        1504
+        2880,
+        1360
       ],
       "webhookId": "c0ffee12-0012-4000-8000-00000000c012"
     },
@@ -675,15 +678,18 @@
           "cachedResultName": "Leads Piloto",
           "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1w6wVAuYmHjI8Fk4b3S1VLxAcgSSQkUjHOTrE1enmaP8/edit#gid=1753358619"
         },
+        "filtersUI": {
+          "values": []
+        },
         "options": {}
       },
-      "id": "3401497b-f873-4546-9b4d-0b7ce984f425",
+      "id": "3347de38-9459-45a9-b1c6-5731ddcbadb8",
       "name": "Leer leads del piloto",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
-        624,
-        1344
+        -704,
+        1472
       ],
       "executeOnce": false,
       "credentials": {
@@ -692,9 +698,211 @@
           "name": "SheetCuentaSantiago"
         }
       }
+    },
+    {
+      "parameters": {
+        "amount": "={{ $('Config').first().json.WA_ESPERA_CONFIRMACION_SEG || 10 }}"
+      },
+      "id": "b48f77a2-34db-4fe7-9fa1-23df32c57aea",
+      "name": "Esperar confirmacion de envio",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1536,
+        1360
+      ],
+      "webhookId": "bd79fb53-f39a-40d7-b5bf-6fb2f5db2f40"
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Config').first().json.CHATWOOT_URL }}/api/v1/accounts/{{ $('Config').first().json.CHATWOOT_ACCOUNT_ID }}/conversations/{{ $('Chatwoot - Crear conversacion').item.json.id }}/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "2a398b3e-bbcf-43c6-a125-33b4295aabdc",
+      "name": "Chatwoot - Verificar estado del mensaje",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1760,
+        1360
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "BjYt68eHeT61ihqb",
+          "name": "Chatwoot API"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// =====================================================================\n// El POST de 'Chatwoot - Enviar plantilla WA' solo prueba que Chatwoot\n// ACEPTO crear el mensaje -- no que WhatsApp lo entrego. El rechazo real\n// (numero invalido, plantilla, ventana cerrada) le llega a Chatwoot\n// despues, de forma asincrona, y recien ahi el status pasa a 'failed'.\n// Por eso se espero (Config.WA_ESPERA_CONFIRMACION_SEG) y se vuelve a\n// consultar el mensaje puntual antes de escribir 'enviado' en la hoja.\n// =====================================================================\nconst envio = $('Chatwoot - Enviar plantilla WA').item.json || {};\n\n// Si ni siquiera se creo el mensaje (Chatwoot rechazo el POST de entrada),\n// no hay nada que verificar despues: es error directo.\nif (!envio.id) {\n  return { json: { estado_real: ('error: ' + (envio.message || envio.error || 'sin detalle')).toString().slice(0, 120) } };\n}\n\nconst lista = $input.item.json || {};\nconst mensajes = Array.isArray(lista.payload) ? lista.payload : [];\nconst m = mensajes.find(x => x && x.id === envio.id);\n\n// Si no aparece en la lista (raro, pero posible), no se puede confirmar:\n// mejor marcarlo error para revisar a mano que un 'enviado' que no fue.\nif (!m) {\n  return { json: { estado_real: 'error: no se pudo confirmar el envio' } };\n}\n\nconst externalError = (m.content_attributes && m.content_attributes.external_error) || '';\n\n// OJO: esto detecta el rechazo RAPIDO (el que reporto el usuario). No es\n// confirmacion de entrega -- 'sent'/null a esta altura solo significa que\n// no fallo todavia, no que WhatsApp lo entrego de verdad.\nconst estado_real = m.status === 'failed'\n  ? ('error: ' + (externalError || 'rechazado por WhatsApp')).toString().slice(0, 120)\n  : 'enviado';\n\nreturn { json: { estado_real } };"
+      },
+      "id": "e10606f1-7dba-4e34-99ee-fdf37548ea32",
+      "name": "Determinar estado real del envio",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1984,
+        1360
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.estado_real }}",
+              "rightValue": "enviado",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "id": "c7c8a188-4de8-4a54-98a8-838b0199d253"
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "a1234f05-6397-48ae-9741-20ba0bf27eac",
+      "name": "Envío OK? (habilita seguimiento)",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2080,
+        1920
+      ]
+    },
+    {
+      "parameters": {
+        "amount": "={{ $('Config').first().json.WA_SEGUIMIENTO_ESPERA_MIN || 10 }}",
+        "unit": "minutes"
+      },
+      "id": "f87f87a3-5247-4bb6-bebc-3e009e6bc30a",
+      "name": "Esperar respuesta seguimiento",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        2304,
+        1856
+      ],
+      "webhookId": "ec67e4e8-a996-41fa-ae5e-14e4d1bbe59c"
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Config').first().json.CHATWOOT_URL }}/api/v1/accounts/{{ $('Config').first().json.CHATWOOT_ACCOUNT_ID }}/conversations/{{ $('Chatwoot - Crear conversacion').item.json.id }}/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "bebd8005-32e1-4462-86e8-edf160346ff0",
+      "name": "Chatwoot - Traer mensajes seguimiento",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        2528,
+        1920
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "BjYt68eHeT61ihqb",
+          "name": "Chatwoot API"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ ($json.payload || []).some(m => m && m.private !== true && (m.message_type === 0 || m.message_type === 'incoming')) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "c07b83d1-9c7a-4b43-af2d-fac930fd54ba",
+      "name": "Hubo respuesta del lead?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2752,
+        1920
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Config').first().json.CHATWOOT_URL }}/api/v1/accounts/{{ $('Config').first().json.CHATWOOT_ACCOUNT_ID }}/conversations/{{ $('Chatwoot - Crear conversacion').item.json.id }}/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ content: $('Config').first().json.WA_SEGUIMIENTO_PREVIEW, message_type: \"outgoing\", template_params: { name: $('Config').first().json.WA_SEGUIMIENTO_NAME || \"reactivacion_closed_lost_seguimiento\", category: \"marketing\", language: $('Config').first().json.WA_TEMPLATE_LANG || \"es_AR\", processed_params: { \"1\": $('Resolver contact_id').item.json.empresa, \"2\": $('Resolver contact_id').item.json.sistema || \"el sistema que usan\" } } }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "7491d5fe-707c-462b-8f76-724c0fc441f0",
+      "name": "Chatwoot - Enviar seguimiento",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        2976,
+        1952
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "BjYt68eHeT61ihqb",
+          "name": "Chatwoot API"
+        }
+      },
+      "onError": "continueRegularOutput"
     }
   ],
-  "pinData": {},
   "connections": {
     "Ejecutar tanda": {
       "main": [
@@ -795,7 +1003,7 @@
       "main": [
         [
           {
-            "node": "Marcar como enviado",
+            "node": "Esperar confirmacion de envio",
             "type": "main",
             "index": 0
           }
@@ -879,20 +1087,94 @@
           }
         ]
       ]
+    },
+    "Esperar confirmacion de envio": {
+      "main": [
+        [
+          {
+            "node": "Chatwoot - Verificar estado del mensaje",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chatwoot - Verificar estado del mensaje": {
+      "main": [
+        [
+          {
+            "node": "Determinar estado real del envio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Determinar estado real del envio": {
+      "main": [
+        [
+          {
+            "node": "Marcar como enviado",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Envío OK? (habilita seguimiento)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Envío OK? (habilita seguimiento)": {
+      "main": [
+        [
+          {
+            "node": "Esperar respuesta seguimiento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Esperar respuesta seguimiento": {
+      "main": [
+        [
+          {
+            "node": "Chatwoot - Traer mensajes seguimiento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chatwoot - Traer mensajes seguimiento": {
+      "main": [
+        [
+          {
+            "node": "Hubo respuesta del lead?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hubo respuesta del lead?": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Chatwoot - Enviar seguimiento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
-  "active": false,
   "settings": {
     "executionOrder": "v1",
     "binaryMode": "separate",
     "availableInMCP": false
-  },
-  "versionId": "2277daf9-2302-4a43-9994-dc100bfbc998",
-  "meta": {
-    "templateCredsSetupCompleted": true,
-    "instanceId": "d729adb04299e5fdffaac16c28e03747e08c9a30aca5ba4f79d1664c88201e08"
-  },
-  "nodeGroups": [],
-  "id": "YMyp0HVPQygTa5Qn",
-  "tags": []
+  }
 }

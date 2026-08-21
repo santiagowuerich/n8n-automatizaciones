@@ -1,0 +1,458 @@
+{
+  "id": "q15OfWTln72jtdnf",
+  "name": "Xtract Demo — Simulador WhatsApp (Agente IA n8n)",
+  "active": true,
+  "nodes": [
+    {
+      "parameters": {
+        "url": "https://api.calendly.com/users/me",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "calendlyOAuth2Api",
+        "options": {}
+      },
+      "id": "9f9a70ce-a985-4952-a32d-eb13cd94ee50",
+      "name": "1. Obtener Usuario Calendly",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -7136,
+        3200
+      ],
+      "credentials": {
+        "calendlyOAuth2Api": {
+          "id": "VJnAlINTOaMmBHc6",
+          "name": "Calendly micaela.marcos"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://api.calendly.com/event_types",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "calendlyOAuth2Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "user",
+              "value": "={{ $json.resource.uri }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "cba0ecdf-daac-4d14-90fb-d8ba742f8bb5",
+      "name": "2. Extraer Event Types",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -6880,
+        3200
+      ],
+      "credentials": {
+        "calendlyOAuth2Api": {
+          "id": "VJnAlINTOaMmBHc6",
+          "name": "Calendly micaela.marcos"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "demo-simulador",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "id": "e9d97338-e8f3-46f8-90d7-6f252ad8e27f",
+      "name": "Webhook — Recibir de HTML",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -8704,
+        2544
+      ],
+      "webhookId": "f6371aea-3f81-4873-95f7-1d115b5492f1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// =====================================================================\n// BASE DE CONOCIMIENTO DE XTRACT\n// Fuente: 'base-conocimiento-xtract.pdf' (documento oficial de Xtract).\n// Editar SOLO aca. Es lo unico que el bot puede afirmar sobre la empresa.\n// Todo lo que no este en esta lista, el bot NO lo sabe y deriva a un humano.\n// =====================================================================\nconst BASE_CONOCIMIENTO = [\n  'Xtract es una plataforma SaaS 100% en la nube con IA, para automatizar el procesamiento de facturas de compra, los flujos de aprobacion y la gestion de gastos corporativos. Sitio: xtract.app',\n  'El objetivo es eliminar el tipeo manual de facturas, reducir errores de digitacion, evitar pagos duplicados y acelerar la contabilizacion en el ERP SIN cambiar el sistema contable que ya usan.',\n  'No requiere instalar nada: es 100% nube, accesible por navegador y app movil.',\n  'MODULO 1 - Contabilizacion automatica: las facturas entran solas redirigiendo los mails de proveedores (Gmail u Outlook) a una casilla de Xtract; se configura en menos de 10 minutos.',\n  'La IA lee facturas en PDF sin importar el diseno, el idioma, la moneda o el pais. Extrae emisor y receptor, numero de factura, fechas, importes, impuestos, items, ordenes de compra, cuentas contables y centros de costo.',\n  'Incluye repositorio digital ilimitado con busqueda por numero, fecha, proveedor, estado, centro de costo o importe.',\n  'MODULO 2 - Flujo de aprobacion: rutea cada comprobante al responsable segun reglas, manda recordatorios automaticos y deja trazabilidad completa (pendiente / aprobado / rechazado, con motivo).',\n  'MODULO 3 - Gestion de gastos: app iOS y Android donde el colaborador rinde gastos sacando una foto del comprobante. Genera los reportes y se integra al ERP para los reembolsos.',\n  'ERPs con conexion nativa: SAP, Microsoft Dynamics 365, Oracle y NetSuite. Tambien se integra con cualquier ERP local o desarrollo a medida.',\n  'Formas de integrar: API REST con SDKs oficiales (Ruby, NodeJS, Java) y sincronizacion bidireccional en tiempo real, o archivos planos (CSV, TXT, XLS) adaptados a como importa el ERP del cliente.',\n  'Se conecta con Power BI y Tableau para tableros de gastos en tiempo real.',\n  'Tiene funcionalidad multicuenta para estudios contables que llevan varios clientes.',\n  'Resultados que reporta Xtract: hasta 40% menos de costos administrativos, hasta 110 horas ahorradas por mes por empresa, procesamiento de hasta 100 facturas por segundo.',\n  'La implementacion estandar (por archivos planos o API) toma alrededor de 5 dias habiles.',\n  'Soporte: lunes a viernes de 08:00 a 20:00. Tecnico: support@xtract.app. Comercial: xtract@xtract.app'\n];\n\n// Preguntas frecuentes con respuesta corta y aprobada.\n// Si la consulta no entra aca ni en la base de arriba, se deriva.\nconst FAQ = [\n  ['Hay que instalar algo', 'No, es 100% nube: se usa desde el navegador y desde la app movil, 24/7.'],\n  ['Que facturas puede leer', 'Facturas de compra en PDF, sin importar el diseno, el idioma, la moneda ni el pais de origen.'],\n  ['Cuanto tarda la implementacion', 'La implementacion estandar, por archivos planos o API, se completa en unos 5 dias habiles.'],\n  ['Como llegan las facturas', 'Se configura una regla de redireccion desde la casilla de compras hacia la casilla asignada en Xtract. Menos de 10 minutos.'],\n  ['Se pueden asignar centros de costo antes del registro', 'Si, se automatiza la asignacion de centros de costo, cuentas contables y ordenes de compra durante la lectura y la aprobacion.'],\n  ['Hay que cambiar de sistema contable', 'No. Xtract trabaja sobre el ERP que ya usan.'],\n  ['Cuanto sale', 'DERIVAR. No hay precios publicados: la cotizacion se arma a medida segun volumen e integracion.']\n];\n\n// Limites que el PROPIO documento marca como no confirmados.\n// Son justamente las preguntas donde es mas tentador inventar.\nconst NO_AFIRMAR = [\n  'PRECIOS o planes: no hay tarifas publicadas. La cotizacion es a medida. Siempre DERIVAR.',\n  'Formatos que NO sean PDF (JPG, PNG, XML sueltos): no esta confirmado que se puedan ingestar. No lo afirmes.',\n  'Limites de almacenamiento, cuotas o rate limits de la API: no estan documentados. No los inventes.',\n  'Conexion nativa con ERPs que no sean SAP, Dynamics 365, Oracle o NetSuite: se integra igual, pero via API o archivos planos. NO digas que hay conector nativo para otros.'\n];\n\n// Extraer datos del lead y preparar entrada para el Agente\n// Se lee del webhook por nombre: ahora 'Config' esta en el medio, asi que\n// $input ya no es el payload del HTML.\nconst W = $('Webhook — Recibir de HTML').first().json;\nconst body = W.body || W;\nconst CFG = $('Config').first().json;\nconst OPCIONES = parseInt(CFG.CALENDLY_OPCIONES) || 3;\nconst HORA_DESDE = parseInt(CFG.CALENDLY_HORA_DESDE) || 9;\nconst HORA_HASTA = parseInt(CFG.CALENDLY_HORA_HASTA) || 18;\nconst DURACION = parseInt(CFG.CALENDLY_DURACION_MIN) || 10;\nconst KIND = (CFG.CALENDLY_LOCATION_KIND || '').toString().toLowerCase();\nconst MODALIDAD = KIND.indexOf('zoom') !== -1 ? 'Es una videollamada por Zoom'\n  : KIND.indexOf('google') !== -1 ? 'Es una videollamada por Google Meet'\n  : KIND.indexOf('teams') !== -1 ? 'Es una videollamada por Microsoft Teams'\n  : KIND.indexOf('physical') !== -1 ? 'Es presencial'\n  : 'Es una videollamada';\nconst INSTALAR = KIND.indexOf('physical') !== -1\n  ? 'No aplica, la reunion es presencial.'\n  : 'Con el link del correo alcanza. Si le ofrece descargar una aplicacion, puede entrar igual desde el navegador.';\nconst textoCliente = (body.content || body.texto || '').toString().trim();\nconst lead = body.lead || {};\nconst paso = parseInt(body.conversationStep) || 1;\n\n// Respuestas al cuestionario obligatorio de Calendly. Se arman ACA con\n// datos del CRM, no las decide el modelo: si las inventara, cada reunion\n// llegaria con una calificacion distinta y falsa, y el comercial la lee\n// para preparar la llamada.\nconst DATOS_QA = { empresa: lead.empresa || '', nombre: (lead.contacto || lead.primerNombre || ''),\n  telefono: lead.telefono || '', sistema: lead.sistema || '', pais: lead.pais || '' };\nconst calendly_qa = (Array.isArray(CFG.CALENDLY_PREGUNTAS) ? CFG.CALENDLY_PREGUNTAS : [])\n  .map(function (q) {\n    // {campo|fallback}: sin el fallback, un dato que falta deja la respuesta\n    // vacia y Calendly rechaza el alta entera por campo obligatorio.\n    const resp = (q.respuesta || '').toString().replace(/\\{(\\w+)(?:\\|([^}]*))?\\}/g, function (_, k, def) {\n      const v = (DATOS_QA[k] || '').toString().trim();\n      return v || (def || '').toString();\n    }).trim();\n    const o = { question: (q.pregunta || '').toString(), answer: resp };\n    if (q.position !== undefined) o.position = q.position;\n    return o;\n  })\n  .filter(function (q) { return q.question && q.answer; });\n\n// Si el lead trae correo, se propone y se pide confirmacion en vez de\n// pedirlo de cero: en el CRM casi siempre hay uno, pero puede tener anos.\nconst emailCrm = /^[a-z0-9._%+-]+@[a-z0-9.-]+\\.[a-z]{2,}$/i.test((lead.email || '').toString().trim())\n  ? lead.email.toString().trim().toLowerCase() : '';\n\n// El sessionId lo manda el HTML e incluye un id de corrida.\n// Si no cambia entre demos, la memoria de n8n arrastra la charla anterior\n// y el bot arranca sabiendo cosas que en pantalla nunca pasaron.\nconst sessionId = body.sessionId || 'demo-123';\n\nconst nombre = lead.primerNombre || lead.contacto || 'Contacto';\nconst empresa = lead.empresa || 'la empresa';\nconst sistema = lead.sistema || 'su sistema ERP';\nconst facturas = lead.facturas || '400';\nconst motivo = lead.motivo || 'cambio de sistema';\n\n// =====================================================================\n// CANDADOS DETERMINISTAS — corren ANTES que la IA y no dependen de ella.\n// Un modelo puede fallar al clasificar. Estas dos reglas no.\n// =====================================================================\n\n// 1) OPT-OUT. Requisito de Meta: si piden la baja, se corta y no se\n//    vuelve a escribir NUNCA. No puede depender de que el LLM lo detecte.\n//    Ojo: \"no me interesa\" NO es opt-out, es un rechazo comercial comun.\nconst OPT_OUT = [\n  // \"baja\" suelta NO alcanza: \"estamos en baja temporada\" es charla normal\n  // y daria de baja a un lead sano para siempre. Se exige contexto.\n  /\\bdar(me|nos)? de baja\\b|\\bsolicito la baja\\b|\\bbaja de la (lista|base)\\b/i,\n  /\\b(stop|unsubscribe|desuscribir|desuscribime)\\b/i,\n  /no me (escrib|contact|manden|mande|llamen|molest)/i,\n  /dejen de (escrib|molest|contact|mandar)/i,\n  // Enclitico pegado: \"sacame\", \"borrenme\", \"saquenme\" van en UNA palabra.\n  // Ojo sacar -> saquen: cambia la raiz, por eso sa[cq] y no solo sac.\n  /\\b(borr|elimin|sa[cq]|quit)\\w*me\\b/i,\n  /(borren|elimin\\w*|saquen|quiten)\\s+(me|mi|mis)\\b/i,\n  /no quiero (que me|recibir|mas mensaje)/i,\n  /reportar como spam|es spam|esto es spam/i\n];\nconst MSG_OPT_OUT = 'Entendido. Damos de baja el contacto y no volveremos a escribirle. Disculpe la molestia.';\n\n// 2) TOPE DE TURNOS. El objetivo es agendar una reunion, no sostener un\n//    chat de soporte. Cuanto mas largo el hilo, mas chances de que el\n//    modelo diga algo que no debia. A partir del tope, lo toma un humano.\nconst MAX_TURNOS = 6;\nconst MSG_TOPE = 'Prefiero que siga la conversacion un integrante del equipo comercial, que le va a poder dar mas detalle. Ya le paso el contacto.';\n\nconst turno = parseInt(body.turnoCliente) || 1;\n\nlet bloqueado = '';\nlet respuestaFija = '';\n\n// EL OPT-OUT ES PEGAJOSO. Se evalua el mensaje actual PERO tambien si ya\n// hubo una baja antes en esta conversacion. Sin esto, el cliente pide la\n// baja, el bot la confirma, escribe \"hola\" y el bot le contesta de nuevo:\n// el candado solo miraba el mensaje que tenia adelante.\nconst bajaPrevia = body.optOutPrevio === true || body.optOutPrevio === 'true';\n\n// LA CONVERSACION TIENE ESTADO TERMINAL. Una vez que cerro (baja, despedida,\n// o derivacion a un humano) el bot NO vuelve a hablar. Sin esto, despues de\n// derivar a un ingeniero el bot le seguia contestando por encima al humano\n// que ya habia tomado la conversacion: peor que no derivar.\nconst cerrada = body.conversacionCerrada === true || body.conversacionCerrada === 'true';\n\nif (cerrada) {\n  bloqueado = 'cerrada';\n  respuestaFija = '';\n} else if (bajaPrevia) {\n  bloqueado = 'optout_previo';\n  respuestaFija = '';   // ya se le contesto la baja: no se le escribe mas\n} else if (OPT_OUT.some(re => re.test(textoCliente))) {\n  bloqueado = 'optout';\n  respuestaFija = MSG_OPT_OUT;\n} else if (turno > MAX_TURNOS) {\n  bloqueado = 'tope';\n  respuestaFija = MSG_TOPE;\n}\n\nconst conocimiento = BASE_CONOCIMIENTO.map(l => '- ' + l).join('\\n');\nconst faq = FAQ.map(f => '- ' + f[0] + ' -> ' + f[1]).join('\\n');\nconst limites = NO_AFIRMAR.map(l => '- ' + l).join('\\n');\n\nconst systemPrompt = `Sos un ejecutivo comercial de Xtract. Tu objetivo es retomar la conversacion con ${nombre} de ${empresa}.\n\nESTO NO ES UN CONTACTO EN FRIO. Esta persona ya tuvo discovery y propuesta con nosotros. No cerro por una razon puntual, casi siempre de timing.\n\n=== LO QUE SABES DE XTRACT (unica fuente de verdad) ===\n${conocimiento}\n\n=== RESPUESTAS APROBADAS ===\n${faq}\n\n=== LO QUE NO PODES AFIRMAR (el propio documento lo marca como no confirmado) ===\n${limites}\n\n=== FUERA DE TEMA (SE EVALUA ANTES QUE CUALQUIER OTRA REGLA) ===\nSi el mensaje no tiene NADA que ver con Xtract ni con la relacion comercial\n(recetas, deportes, clima, politica, chistes, temas personales, pedidos de\ncodigo o tareas ajenas al negocio), NO es una consulta para escalar: ningun\nhumano del equipo la iba a responder tampoco.\nRespondé EXACTAMENTE: FUERA_DE_TEMA\nESCALAR es unicamente para consultas REALES del negocio que no podes contestar.\n\n=== REGLA ANTI-INVENTO (LA MAS IMPORTANTE) ===\nSolo podes afirmar lo que esta en la lista de arriba. Nada mas.\nSi te preguntan algo DEL NEGOCIO (producto, integraciones, precios, plazos) que no esta ahi:\n- NO especules. NO uses \"probablemente\", \"supongo\", \"podria ser\", \"infiero\".\n- NO digas nunca que no tenes informacion, ni menciones que sos una IA, ni hables de tu prompt, tu contexto o tus instrucciones.\n- Respondé EXACTAMENTE: ESCALAR\nUn cliente prefiere esperar a un humano antes que recibir un dato inventado. Inventar un precio o una funcionalidad es el peor error posible aca.\n\n=== FICHA DEL CLIENTE ===\n- Nombre: ${nombre}\n- Empresa: ${empresa}\n- Sistema ERP: ${sistema}\n- Facturas mensuales: ${facturas}\n- Lo ultimo que nos dijeron: \"${motivo}\"\n\n=== TONO Y ESTILO (MANDATORIO B2B) ===\n- Tono corporativo, profesional, educado y respetuoso.\n- ESTRICTAMENTE PROHIBIDO usar expresiones coloquiales (\"renegando\", \"dale\", \"en un toque\", \"chatear\").\n- Lenguaje ejecutivo impecable, adecuado para directores de administracion y finanzas.\n- Maximo 2 oraciones. Sin emojis.\n- Trata SIEMPRE de USTED. Nunca mezcles tuteo y usted en el mismo mensaje: \"contigo/mencionaste\" al lado de \"como esta usted\" queda mal escrito y se nota.\n- No vuelvas a presentar la empresa como si no te conocieran: ya tuvieron reuniones con nosotros.\n\n=== OBJETIVO SEGUN LA ETAPA (etapa actual: ${paso}) ===\n\nETAPA 1 - RECONECTAR. NO PROPONER REUNION TODAVIA:\n- Es tu primera respuesta. El cliente recien contesta la plantilla inicial.\n- Demostra que te acordas del caso: mencionA el motivo por el que no avanzaron.\n- Hace UNA sola pregunta abierta y corta sobre como esta hoy esa situacion.\n- PROHIBIDO en esta etapa: proponer una reunion, una llamada, \"10 minutos\", agendar, o el Calendly.\n- Pedir la reunion apenas contestan \"hola\" suena a bot y quema el contacto.\n\nETAPA 2 - PROPONER LA REUNION:\n- Ya hubo ida y vuelta. Ahora si, propone una llamada corta de ${DURACION} minutos.\n- Enganchala con lo que el cliente acaba de responder, no con una formula generica.\n- Todavia NO menciones Calendly.\n\nETAPA 3 - AGENDAR LA REUNION (tenes dos herramientas conectadas):\n\nSi no acepta con claridad, no insistas: ofrece retomar mas adelante y NO uses\nninguna herramienta.\n\nSi acepta, segui estos pasos EN ORDEN. No saltees ninguno.\n\n1. Llama a \"consultar_disponibilidad_calendly\". NUNCA ofrezcas un horario\n   sin haberla llamado: no tenes forma de saber la agenda y un horario\n   inventado hace que el cliente se presente cuando no hay nadie.\n\n2. Los horarios vuelven en UTC. Argentina es UTC-3: restale 3 horas para\n   decir la hora. Ejemplo: 2026-08-11T13:00:00Z son las 10:00 de Argentina.\n   - Ofrece como maximo ${OPCIONES} opciones, en dias DISTINTOS.\n   - Solo entre las ${HORA_DESDE}:00 y las ${HORA_HASTA}:00 de Argentina.\n   - Numeralas 1), 2), 3) y aclara SIEMPRE \"horario de Argentina\".\n   - Si no vuelve ningun horario, decile que le va a escribir un integrante\n     del equipo para coordinar y responde ESCALAR.\n\n3. Cuando elija un horario, PEDILE EL CORREO Y ESPERA LA CONFIRMACION.\n   Esto no es opcional y no se saltea nunca.\n   ${emailCrm\n     ? 'Tenemos registrado \"' + emailCrm + '\". Proponeselo y pedile que confirme si sigue siendo valido o que te pase otro. NO agendes hasta que conteste.'\n     : 'No tenemos su correo: pediselo.'}\n\n4. Recien con horario elegido Y correo confirmado por escrito, llama a\n   \"agendar_reunion_calendly\".\n   En start_time copia EXACTAMENTE el texto que devolvio la consulta de\n   disponibilidad, sin convertirlo ni reescribirlo. Si lo tocas, la reunion\n   queda a otra hora y el comercial se sienta solo.\n\n5. Si la herramienta confirma, avisale que quedo agendada, deci el dia y la\n   hora en horario de Argentina, y TERMINA TU MENSAJE con [AGENDADO].\n   Ese marcador lo saca el sistema: el cliente no lo ve.\n   Si la herramienta falla, NO lo reintentes y NO derives: estas en un\n   SIMULADOR. Responde EXACTAMENTE asi para poder depurarlo:\n   [ERROR_TOOL] seguido del texto tal cual que devolvio la herramienta.\n\nREGLA QUE MANDA SOBRE LA ETAPA:\nLa etapa es orientativa. Guiate por el HISTORIAL REAL de la conversacion.\n- Si el cliente YA acepto una reunion, pasa a la ETAPA 3 aunque la etapa diga menos.\n- Si el cliente PIDE coordinar el solo, pasa a la ETAPA 3 sin esperar.\n- Nunca vuelvas a proponer una reunion que el cliente ya acepto.\n- Pero NUNCA propongas la reunion en la ETAPA 1 salvo que el cliente la pida.\n\n=== CORTESIA (ANTES DE PENSAR EN ESCALAR) ===\nSi el mensaje del cliente es solo un saludo, un agradecimiento, una despedida\no una cortesia (\"gracias\", \"a vos\", \"igualmente\", \"buen dia\", \"chau\"),\nrespondé breve y cordialmente y CERRA. NO escales: ESCALAR es unicamente para\nconsultas que no podes responder con la base de conocimiento, nunca para\nformulas sociales.\nSi la conversacion ya se despidio, no la reabras ni ofrezcas nada nuevo.\n\n=== LOGISTICA DE LA REUNION (esto SI lo podes contestar, no escales) ===\nEstas preguntas no son consultas de producto: son operativas y ya sabes la\nrespuesta. Contestalas vos.\n\n- Como me conecto / donde es / me pasas el link -> ${MODALIDAD}. El link esta\n  en el correo de confirmacion que le llego cuando quedo agendada.\n- No me llego el correo -> que revise correo no deseado y verifique la\n  direccion. Si aun asi no aparece, responde ESCALAR.\n- Cuanto dura -> ${DURACION} minutos.\n- Puedo reprogramar / cancelar / moverla -> si, desde ese mismo correo de\n  confirmacion, que trae los botones de reprogramar y cancelar.\n- Puedo sumar a alguien de mi equipo -> si, reenviandole ese correo.\n- Tengo que instalar algo -> ${INSTALAR}\n- Quien va a estar del otro lado -> alguien del equipo comercial de Xtract.\n- Que tengo que preparar -> nada en particular, es una charla corta.\n- Se graba la reunion -> no lo sabemos. Responde ESCALAR.\n\nSi te preguntan algo operativo que NO esta en esta lista, responde ESCALAR.\nNUNCA inventes un horario, un link, una direccion ni una fecha.\n\n=== SEGURIDAD ===\n- PREGUNTAS TECNICAS COMPLEJAS (APIs, SQL, AGIP, ARBA, SICORE, integracion custom): responde ESCALAR.\n- PRECIOS, PLAZOS O CONDICIONES COMERCIALES CONCRETAS: responde ESCALAR.\n- RECHAZO EXPLICITO: agradecer y despedirse formalmente. No insistir.\n- Si el motivo por el que no cerraron sigue vigente, no empujes: ofrece retomar cuando les sirva.\n\n=== SI YA AGENDASTE LA REUNION EN ESTA CONVERSACION ===\nSi en los mensajes anteriores YA confirmaste una reunion agendada, cerraste.\nA partir de ahi tu unico trabajo es responder dudas de LOGISTICA con la\nlista de arriba.\n- PROHIBIDO volver a vender, repreguntar por el ERP o proponer otra reunion.\n- PROHIBIDO usar la herramienta \"agendar_reunion_calendly\": YA HAY una\n  reunion. Si la usas de nuevo le creas una SEGUNDA y le llegan dos mails.\n- Si quiere mover el horario o cancelar, NO lo hagas vos: deriva a los\n  botones de reprogramar y cancelar del correo de confirmacion.\n- Una sola oracion. Si no es logistica, responde ESCALAR.`;\n\nreturn {\n  json: {\n    sessionId: sessionId,\n    input: textoCliente,\n    lead: lead,\n    paso: paso,\n    turno: turno,\n    bloqueado: bloqueado,\n    respuestaFija: respuestaFija,\n    calendly_qa: calendly_qa,\n    promptSystem: systemPrompt\n  }\n};\n"
+      },
+      "id": "9b26e678-3760-4ad1-9e26-9cd56793200a",
+      "name": "Preparar Datos Lead",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -8256,
+        2544
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.input }}",
+        "options": {
+          "systemMessage": "={{ $json.promptSystem }}",
+          "enableStreaming": false
+        }
+      },
+      "id": "465e1e93-5716-4b28-838e-08dcd536a6d3",
+      "name": "Agente IA",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -7680,
+        2416
+      ]
+    },
+    {
+      "parameters": {
+        "model": "deepseek-v4-flash",
+        "options": {
+          "maxTokens": 1000,
+          "temperature": 0.3
+        }
+      },
+      "id": "f2f4bdd0-dca8-4543-aa8d-b73b34b84d84",
+      "name": "DeepSeek Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatDeepSeek",
+      "typeVersion": 1,
+      "position": [
+        -7840,
+        2688
+      ],
+      "credentials": {
+        "deepSeekApi": {
+          "id": "H5fC2aZoNphCCole",
+          "name": "SantiagoApikey"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.sessionId }}",
+        "contextWindowLength": 10
+      },
+      "id": "a929cfd3-fbd2-4323-8694-4ad3f021ce19",
+      "name": "Window Buffer Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [
+        -7696,
+        2688
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Frase unica de derivacion. El HTML la detecta por \"especialista\".\nconst MSG_ESCALAR = 'Esa consulta la puede responder mejor un especialista de nuestro equipo. Le derivo la conversacion y se comunican a la brevedad.';\n\n// =====================================================================\n// CANDADO: si 'Preparar Datos Lead' bloqueo la conversacion (opt-out o\n// tope de turnos), la respuesta es FIJA. Ni siquiera se mira la salida\n// del modelo. Es la unica forma de garantizar el comportamiento.\n// =====================================================================\nlet pre = {};\ntry { pre = $('Preparar Datos Lead').first().json || {}; } catch (e) { pre = {}; }\n\nif (pre.bloqueado) {\n  // respuestaFija vacia = silencio deliberado (la baja ya se confirmo antes).\n  // OJO: NO devolver [] aca. Con 0 items 'Responder al HTML' nunca corre y\n  // la peticion queda colgada hasta el timeout. Se responde con texto vacio\n  // y el cliente decide no pintar nada.\n  return { json: { agendado: false, response: pre.respuestaFija || '', bloqueado: pre.bloqueado } };\n}\n\n// Respaldo para la demo: si el modelo falla (sin credito, 429, timeout),\n// igual sale una respuesta coherente en vez de un error en pantalla.\nlet respuestaIA = '';\n\ntry {\n  const item = $input.first().json || {};\n  if (typeof item === 'string') {\n    respuestaIA = item;\n  } else if (item.output) {\n    respuestaIA = typeof item.output === 'string' ? item.output : (item.output.text || item.output.content || JSON.stringify(item.output));\n  } else if (item.text) {\n    respuestaIA = typeof item.text === 'string' ? item.text : JSON.stringify(item.text);\n  } else if (item.content) {\n    respuestaIA = typeof item.content === 'string' ? item.content : JSON.stringify(item.content);\n  } else if (item.response) {\n    respuestaIA = typeof item.response === 'string' ? item.response : JSON.stringify(item.response);\n  } else if (item.result) {\n    respuestaIA = typeof item.result === 'string' ? item.result : JSON.stringify(item.result);\n  }\n} catch (e) {\n  respuestaIA = '';\n}\n\n// El modelo ESCRIBIO el nombre de la herramienta en vez de llamarla.\n// Sintoma de un modelo sin tool calling nativo: en vez de emitir la\n// llamada, la escribe como texto. Al cliente le llegaria un mensaje que\n// dice \"agendar_reunion_calendly\". Las tools tienen \"calendly\" AL FINAL,\n// asi que el patron matchea en los dos ordenes.\nconst nombroLaTool = /(consultar|agendar)[a-z_ -]*calendly|calendly[ \\t_-]*(consultar|agendar)/i.test(respuestaIA);\n\nconst fallo = !respuestaIA.trim()\n  || respuestaIA.includes('Error fetching')\n  || respuestaIA.includes('429')\n  || respuestaIA === '[object Object]'\n  || nombroLaTool;\n\n// =====================================================================\n// [AGENDADO]: el modelo llamo a \"agendar_reunion_calendly\" y le confirmo.\n// Es un marcador de control, no texto para el cliente: se saca siempre.\n// A diferencia de produccion, aca NO se cierra la conversacion: se deja\n// abierta a proposito para poder probar las preguntas de logistica\n// (\"como me conecto?\", \"puedo moverla?\") justo despues de agendar.\n// =====================================================================\nlet agendado = false;\nif (/\\[\\s*agendado\\s*\\]/i.test(respuestaIA)) {\n  agendado = true;\n  respuestaIA = respuestaIA.replace(/\\[\\s*agendado\\s*\\]/ig, '').replace(/\\s+/g, ' ').trim();\n  if (!respuestaIA) respuestaIA = 'Listo, quedo agendada la reunion. Le llega la invitacion por correo.';\n}\n\nif (fallo) {\n  return { json: {\n    response: nombroLaTool\n      ? '⚠️ El modelo ESCRIBIO el nombre de la herramienta en vez de llamarla. Ese modelo no sabe usar tools: cambialo por uno con function calling.'\n      : '⚠️ La IA no respondió. Revisá la credencial del modelo en n8n (o su rate limit).',\n    cierre: '',\n    agendado: false,\n    error_modelo: true\n  } };\n}\n\n// =====================================================================\n// [ERROR_TOOL]: fallo Calendly y el modelo copio el motivo textual.\n// Se muestra CRUDO y se corta aca, ANTES de la red anti-escalacion: si el\n// error dijera \"derive\" o \"especialista\", esa red lo convertiria en la\n// frase de derivacion y perderias justo el dato para arreglarlo.\n// =====================================================================\nif (/\\[\\s*error_tool\\s*\\]/i.test(respuestaIA)) {\n  return { json: {\n    response: '🔧 ' + respuestaIA.replace(/\\[\\s*error_tool\\s*\\]/ig, '').trim(),\n    cierre: '', agendado: false, error_tool: true\n  } };\n}\n\n// FUERA DE TEMA: preguntas ajenas al negocio (la receta de hamburguesa).\n// Se desvia con cortesia y la conversacion SIGUE ABIERTA. Va ANTES del\n// chequeo de ESCALAR: no se le hace perder el tiempo a un humano con algo\n// que ningun humano del equipo iba a contestar.\n// OJO con el texto de abajo: NO puede contener \"especialista\", \"derivar\",\n// \"escalar\" ni \"chatwoot\". La red de seguridad que sigue lo convertiria en\n// MSG_ESCALAR, y el front pinta la tarjeta de escalacion con esas palabras.\nif (/\\bfuera[_ ]?de[_ ]?tema\\b/i.test(respuestaIA)) {\n  const empresaFT = ((pre.lead || {}).empresa) || 'su empresa';\n  respuestaIA = 'Me voy a limitar a los temas de gestion de facturas y gastos, que es donde puedo serle util. Como viene hoy esa parte en ' + empresaFT + '?';\n}\n\n// El modelo casi nunca devuelve ESCALAR literal: lo parafrasea\n// (\"Necesito escalar su consulta...\"). Verificado en pruebas reales.\n// Por eso se matchea la palabra completa sin distinguir mayusculas.\n// Este token de control NUNCA puede llegar crudo al cliente.\nif (/\\bescalar\\b|\\bderiv(o|ar|amos)\\b|\\bespecialista\\b/i.test(respuestaIA)) {\n  respuestaIA = MSG_ESCALAR;\n}\n\n// Ultima red: si el modelo se puso a especular igual, se deriva.\nif (/no tengo (informaci|datos)|no cuento con|como (IA|modelo)|puedo inferir|probablemente sea/i.test(respuestaIA)) {\n  respuestaIA = MSG_ESCALAR;\n}\n\n// Se le avisa al front por que motivo cerro, para que no siga mandando.\n// 'escalado' = lo tomo un humano. 'despedida' = la charla termino bien.\nlet cierre = '';\nif (respuestaIA === MSG_ESCALAR) cierre = 'escalado';\nelse if (/\badi[oó]s\b|hasta pronto|quedamos a disposicion|quedamos a disposici[oó]n|le agradezco la respuesta|damos de baja/i.test(respuestaIA)) cierre = 'despedida';\n\nreturn { json: { response: respuestaIA, cierre: cierre, agendado: agendado } };\n"
+      },
+      "id": "0ed44a9a-4946-41d4-b514-b7dcec7e11cb",
+      "name": "Procesar Respuesta",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -7152,
+        2560
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ response: $json.response, bloqueado: $json.bloqueado || '', cierre: $json.cierre || '', agendado: $json.agendado === true, error_tool: $json.error_tool === true, status: 'ok' }) }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "POST, GET, OPTIONS"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "98544bfd-1a08-470d-bc62-a01d07402c4e",
+      "name": "Responder al HTML",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        -6864,
+        2560
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.bloqueado }}",
+              "operator": {
+                "type": "string",
+                "operation": "empty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "ea312a69-fe6e-4eb6-b57f-2067e56c78f3",
+      "name": "Responde el bot?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -8032,
+        2544
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Config del SIMULADOR. Espeja la de produccion para que lo que probas aca\n// sea lo mismo que va a correr despues.\n// OJO: CALENDLY_EVENT_TYPE apunta a una agenda REAL. Cada reunion que el bot\n// agende desde el HTML se crea de verdad y manda el mail de invitacion.\n// Para probar, usa un event type descartable, no el del equipo comercial.\nreturn [{ json: {\n  // nicolas-xtract/agenda-una-prueba - 45 min - 1 pregunta obligatoria\n  CALENDLY_EVENT_TYPE: 'https://api.calendly.com/event_types/1aa8c188-af98-4d9b-809d-67529b221e38',\n  // Desde cuando se empieza a buscar. 0 = desde ahora mismo. En el simulador va en 7 para\n  // que las pruebas caigan la semana que viene y no en la agenda de hoy.\n  CALENDLY_DESDE_DIAS: 7,\n  CALENDLY_DIAS: 3,               // ventana de disponibilidad corta para respuesta ultrarrápida\n  CALENDLY_OPCIONES: 3,\n  CALENDLY_HORA_DESDE: 9,         // horario laboral ARGENTINO\n  CALENDLY_HORA_HASTA: 18,\n  // Respuestas a las preguntas del event type. 'position' importa: es como\n  // Calendly las identifica. Salieron de:\n  //   GET https://api.calendly.com/event_types/<uuid> -> custom_questions\n  //\n  // Los single_select / multi_select SOLO aceptan una opcion textual de las\n  // que define el evento. Texto libre ahi hace que rechace el alta.\n  // Comodines: {campo} o {campo|valor por defecto}\n  //   -> empresa, nombre, telefono, sistema, pais\n  // Preguntas del evento 'agenda-una-prueba'. La 'position' es como las\n  // identifica Calendly. Salieron de custom_questions del event type.\n  // Comodines: {campo} o {campo|valor por defecto}\n  //   -> empresa, nombre, telefono, sistema, pais\n  CALENDLY_PREGUNTAS: [\n    // La UNICA obligatoria. En produccion el telefono es el numero de\n    // WhatsApp del lead, asi que sale del CRM y no lo inventa el modelo.\n    { position: 1, pregunta: 'Número de teléfono', respuesta: '{telefono|+5491112345678}' },\n    // Opcional. Se usa para dejar constancia de que la reunion la coordino\n    // el bot: sin esto, el comercial la lee como una reserva normal.\n    { position: 0, pregunta: 'Cuéntenos algo que nos ayude a prepararnos para la reunión.',\n      respuesta: 'Reunion coordinada por el asistente de reactivacion de Closed Lost ({empresa|empresa sin identificar}, ERP: {sistema|no informado}). El cliente acepto por WhatsApp.' }\n  ],\n\n  CALENDLY_LOCATION_KIND: 'google_conference',\n  CALENDLY_DURACION_MIN: 45\n} }];"
+      },
+      "id": "478e1e69-5f4e-4ba9-bfed-aa04b1cf5ef2",
+      "name": "Config",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -8480,
+        2544
+      ]
+    },
+    {
+      "parameters": {
+        "toolDescription": "Devuelve los horarios libres reales de la agenda comercial para los proximos dias. Usala ANTES de ofrecerle cualquier horario al cliente. No recibe parametros. Los horarios vuelven en UTC.",
+        "url": "https://api.calendly.com/event_type_available_times",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "calendlyOAuth2Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "event_type",
+              "value": "={{ $('Config').first().json.CALENDLY_EVENT_TYPE }}"
+            },
+            {
+              "name": "start_time",
+              "value": "={{ $now.plus(Math.max(parseInt($('Config').first().json.CALENDLY_DESDE_DIAS) || 0, 0), 'days').plus(10, 'minutes').toUTC().toISO() }}"
+            },
+            {
+              "name": "end_time",
+              "value": "={{ $now.plus(Math.max(parseInt($('Config').first().json.CALENDLY_DESDE_DIAS) || 0, 0), 'days').plus(10, 'minutes').plus(Math.min(parseInt($('Config').first().json.CALENDLY_DIAS) || 7, 7), 'days').toUTC().toISO() }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          },
+          "timeout": 30000
+        },
+        "optimizeResponse": true,
+        "dataField": "collection",
+        "fieldsToInclude": "selected",
+        "fields": "start_time,status"
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.4,
+      "position": [
+        -7520,
+        2688
+      ],
+      "id": "ea878edb-9f64-47b9-aea2-94c603bcb59f",
+      "name": "consultar_disponibilidad_calendly",
+      "credentials": {
+        "calendlyOAuth2Api": {
+          "id": "VJnAlINTOaMmBHc6",
+          "name": "Calendly micaela.marcos"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toolDescription": "Agenda la reunion en la agenda comercial y le manda la invitacion por correo al cliente. SOLO se usa cuando el cliente ya eligio un horario Y confirmo por escrito su correo. Es irreversible.",
+        "method": "POST",
+        "url": "https://api.calendly.com/invitees",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "calendlyOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ event_type: $('Config').first().json.CALENDLY_EVENT_TYPE, start_time: $fromAI('start_time', 'El horario elegido, copiado EXACTAMENTE como lo devolvio consultar disponibilidad (ISO 8601 UTC terminado en Z). No lo conviertas ni lo modifiques.', 'string'), invitee: { name: $fromAI('nombre', 'Nombre y apellido del cliente', 'string'), email: $fromAI('email', 'Correo que el cliente confirmo por escrito en la conversacion', 'string'), timezone: 'America/Argentina/Buenos_Aires' }, questions_and_answers: $('Preparar Datos Lead').first().json.calendly_qa || [], location: { kind: $('Config').first().json.CALENDLY_LOCATION_KIND } }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.4,
+      "position": [
+        -7344,
+        2688
+      ],
+      "id": "acadb4c6-e9e6-4bce-b1a1-4c525929dad4",
+      "name": "agendar_reunion_calendly",
+      "credentials": {
+        "calendlyOAuth2Api": {
+          "id": "VJnAlINTOaMmBHc6",
+          "name": "Calendly micaela.marcos"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "1. Obtener Usuario Calendly": {
+      "main": [
+        [
+          {
+            "node": "2. Extraer Event Types",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook — Recibir de HTML": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Datos Lead": {
+      "main": [
+        [
+          {
+            "node": "Responde el bot?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DeepSeek Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Agente IA",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Window Buffer Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Agente IA",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agente IA": {
+      "main": [
+        [
+          {
+            "node": "Procesar Respuesta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Procesar Respuesta": {
+      "main": [
+        [
+          {
+            "node": "Responder al HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Responde el bot?": {
+      "main": [
+        [
+          {
+            "node": "Agente IA",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Procesar Respuesta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Preparar Datos Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "consultar_disponibilidad_calendly": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente IA",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "agendar_reunion_calendly": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente IA",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  }
+}

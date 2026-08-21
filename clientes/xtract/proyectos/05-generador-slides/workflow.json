@@ -1,5 +1,7 @@
 {
+  "id": "bAh0FYSFTM0UeXSc",
   "name": "Xtract - 05 Generador de slides desde Discovery call",
+  "active": true,
   "nodes": [
     {
       "parameters": {
@@ -278,7 +280,7 @@
           "parameters": [
             {
               "name": "Authorization",
-              "value": "Bearer {{ $env.SLACK_BOT_TOKEN || \"xoxb-...\" }}"
+              "value": "=Bearer {{ $json.access_token }}"
             }
           ]
         },
@@ -526,7 +528,7 @@
           "parameters": [
             {
               "name": "Authorization",
-              "value": "Bearer {{ $env.SLACK_BOT_TOKEN || \"xoxb-...\" }}"
+              "value": "Bearer REEMPLAZAR_SLACK_BOT_TOKEN"
             },
             {
               "name": "Content-Type",
@@ -1002,6 +1004,23 @@
     },
     {
       "parameters": {
+        "operation": "completion",
+        "respondWith": "showText",
+        "responseText": "=<div style=\"font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#0C2757;max-width:540px;margin:0 auto;padding:8px;\">\n  <div style=\"background:#FFFFFF;border:1px solid #E3E8F3;border-radius:14px;padding:30px 28px;\">\n\n    <div style=\"display:inline-block;background:#D7FFAB;color:#0C2757;font-weight:800;font-size:11px;letter-spacing:0.08em;padding:6px 12px;border-radius:999px;\">LISTO</div>\n\n    <div style=\"font-size:23px;font-weight:800;letter-spacing:-0.02em;margin:18px 0 8px;color:#0C2757;\">Los dos documentos están generados</div>\n\n    <div style=\"font-size:15px;line-height:1.55;color:#54607A;margin-bottom:24px;\">Se generó el documento ROI. Si la página 4 estaba pendiente, también quedó completa en el slide.</div>\n\n    <a href=\"https://docs.google.com/document/d/{{ $('Copiar plantilla del ROI').first().json.id }}/edit\" target=\"_blank\" style=\"display:block;background:#0C2757;color:#FFFFFF;text-decoration:none;font-weight:700;font-size:15px;padding:15px 18px;border-radius:11px;margin-bottom:10px;\">Abrir el documento ROI &nbsp;→</a>\n\n    <a href=\"https://docs.google.com/presentation/d/{{ $('Calcular impacto y ROI (formulario)').first().json.presentationId }}/edit\" target=\"_blank\" style=\"display:block;background:#FFFFFF;color:#0C2757;text-decoration:none;font-weight:700;font-size:15px;padding:15px 18px;border-radius:11px;border:1.5px solid #E3E8F3;\">Abrir la propuesta en Slides &nbsp;→</a>\n\n    <div style=\"margin-top:24px;padding-top:18px;border-top:1px solid #E3E8F3;font-size:13.5px;line-height:1.55;color:#54607A;\">\n      <strong style=\"color:#0C2757;\">Revisá los dos antes de mandarlos.</strong> Los textos los redactó un modelo, y los números salen de la card de Notion y de la transcripción.\n    </div>\n\n  </div>\n\n  <div style=\"text-align:center;font-size:12px;color:#94A3BE;margin-top:16px;\">Xtract · generado automáticamente</div>\n</div>"
+      },
+      "id": "d122c981-55af-4c68-a668-7d24b8fa95e6",
+      "name": "Mostrar los links generados",
+      "type": "n8n-nodes-base.form",
+      "typeVersion": 2.5,
+      "position": [
+        3632,
+        784
+      ],
+      "webhookId": "46841ee4-9765-44f7-80c6-39063b947450",
+      "notes": "Sin esta pantalla la persona envia el formulario y no recibe el documento que acaba de generar. El id del Doc sale del nodo de Drive: la operacion update de Docs devuelve solo documentId."
+    },
+    {
+      "parameters": {
         "content": "## ⚠️ Al importar este workflow a n8n.xtract.app\n\nHay **dos Form Triggers**, cada uno con su `options.path`:\n\n- `pagina-4-impacto` — formulario completo\n- `roi-precio` — solo el precio\n\nn8n **regenera el `webhookId`** al importar. En cuanto esto entre a producción, la URL vieja basada en UUID deja de existir.\n\n**En el mismo movimiento hay que:**\n\n1. En `Armar aviso de propuesta`, poner:\n   `FORM_COMPLETO   = .../form/pagina-4-impacto`\n   `FORM_SOLO_PRECIO = .../form/roi-precio`\n2. Desactivar y reactivar el workflow, para que n8n registre las rutas nuevas.\n\nSi se hace uno sin el otro, **todos los links del aviso de Slack dan 404**. Ya pasó una vez.",
         "height": 300,
         "width": 460,
@@ -1026,7 +1045,7 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2,
       "position": [
-        2688,
+        2768,
         784
       ],
       "notes": "waitForAll: no sigue hasta que terminaron LAS DOS ramas (pagina 4 y documento ROI). Si el aviso saliera de una sola, podria decir 'ya esta todo' mientras la otra rama sigue escribiendo o fallo."
@@ -1040,7 +1059,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2912,
+        2960,
         784
       ]
     },
@@ -1074,7 +1093,7 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        3136,
+        3184,
         784
       ],
       "notes": "Falso NO es un error: significa que alguien abrio el formulario a mano, sin pasar por el DM. Esa persona ya esta viendo los links en la pantalla final."
@@ -1088,7 +1107,7 @@
           "parameters": [
             {
               "name": "Authorization",
-              "value": "Bearer {{ $env.SLACK_BOT_TOKEN || \"xoxb-...\" }}"
+              "value": "Bearer REEMPLAZAR_SLACK_BOT_TOKEN"
             },
             {
               "name": "Content-Type",
@@ -1106,8 +1125,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        3360,
-        720
+        3376,
+        592
       ],
       "webhookId": "eccff1bc-5626-43bc-b59f-69b6fcd505e8",
       "onError": "continueRegularOutput",
@@ -1192,7 +1211,7 @@
           "parameters": [
             {
               "name": "Authorization",
-              "value": "Bearer {{ $env.SLACK_BOT_TOKEN || \"xoxb-...\" }}"
+              "value": "Bearer REEMPLAZAR_SLACK_BOT_TOKEN"
             },
             {
               "name": "Content-Type",
@@ -1553,6 +1572,48 @@
         }
       },
       "notes": "Copia la plantilla del documento ROI. El ID hay que reemplazarlo por el del Google Doc generado con el boton 'Generar plantilla para n8n' de la calculadora HTML."
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.notion.com/v1/comments",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "2022-06-28"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  parent: {\n    page_id: $('Code - Extraer Datos').first().json.id || $('Code - Extraer Datos').first().json.page_id\n  },\n  rich_text: [\n    {\n      text: {\n        content: 'Presentacion: ' + $json.slide_url + '\\nDocumento ROI: ' + $json.doc_url\n      }\n    }\n  ]\n}) }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3800,
+        1200
+      ],
+      "id": "notion-comment-links",
+      "name": "Notion - Comentar links generados",
+      "credentials": {
+        "notionApi": {
+          "id": "hCkfHhloIjGdaqmd",
+          "name": "Xtract Notion"
+        }
+      }
     }
   ],
   "connections": {
@@ -1817,6 +1878,11 @@
             "node": "Hay a quien avisar?",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "Notion - Comentar links generados",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -1830,7 +1896,24 @@
             "index": 0
           }
         ],
-        []
+        [
+          {
+            "node": "Mostrar los links generados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Avisar que estan los dos": {
+      "main": [
+        [
+          {
+            "node": "Mostrar los links generados",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Formulario - solo el precio": {

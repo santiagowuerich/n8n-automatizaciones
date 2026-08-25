@@ -15,11 +15,20 @@ Este repositorio implementa un sistema personal de orquestación autónoma sobre
 
 ---
 
+> **Descubrimiento por host:** las skills viven en `.agents/skills/`. Claude Code las carga a
+> través del symlink `.claude/skills`; el resto de los hosts las indexa vía
+> `.atl/skill-registry.md`.
+
+---
+
 ## Memoria Operativa (`docs/brain/`)
 
-- [`catalogo-patrones.md`](docs/brain/catalogo-patrones.md): Catálogo de topologías estándar (event-driven, cron polling, fallback de IA).
+Empezá por el índice: [`README.md`](docs/brain/README.md) — define el orden de lectura y el ciclo de trabajo.
+
+- [`sistemas.md`](docs/brain/sistemas.md): Instancias DEV (`santiagowuerich.info`) y PROD (`xtract.app`), **matriz de acceso MCP por host** y protocolo de transición.
+- [`credenciales.md`](docs/brain/credenciales.md): Catálogo de IDs y nombres de credenciales por entorno, convención de exports y cómo re-verificar.
+- [`catalogo-patrones.md`](docs/brain/catalogo-patrones.md): Catálogo de topologías estándar (event-driven, cron polling, fallback de IA, ledger, handoff a humano, verificación post-acción).
+- [`n8n-reglas-construccion.md`](docs/brain/n8n-reglas-construccion.md): Reglas arquitectónicas de topología, sincronización (Merges), OAuth2, referencias seguras y organización de archivos.
 - [`criterios-critica.md`](docs/brain/criterios-critica.md): Checklist de stress test, rate limits y evaluación adversarial.
-- [`sistemas.md`](docs/brain/sistemas.md): Definición de instancias DEV (`santiagowuerich.info`) y PROD (`xtract.app`).
-- [`credenciales.md`](docs/brain/credenciales.md): Catálogo de IDs y nombres de credenciales disponibles en cada entorno.
-- [`testing-protocol.md`](docs/brain/testing-protocol.md): Reglas de testing, estructura de mocks y política de reintentos.
-- [`n8n-reglas-construccion.md`](docs/brain/n8n-reglas-construccion.md): Reglas arquitectónicas de topología, sincronización (Merges), OAuth2 y referencias seguras.
+- [`testing-protocol.md`](docs/brain/testing-protocol.md): Reglas de testing, mocks, política de reintentos y limpieza del entorno.
+- [`lecciones.md`](docs/brain/lecciones.md): Comportamientos no obvios de n8n y el porqué de cada regla.

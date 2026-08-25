@@ -56,6 +56,39 @@ Normas obligatorias para diseñar, modificar y validar workflows de n8n en desar
 | Directorio | Propósito Exclusivo |
 | :--- | :--- |
 | `docs/brain/` | **Solo documentación operativa en Markdown** (`sistemas.md`, `credenciales.md`, etc.). Prohibido crear scripts `.js` o archivos temporales aquí. |
-| `clientes/<cliente>/proyectos/<id>/` | Workflows limpios (`workflow.json`), `README.md`, `decisiones.md` y `MANIFESTO.md`. |
-| `.agents/skills/` | Skills de automatización y testing del Second Brain. |
-| `scratch/` | Scripts temporales o de diagnóstico de una sola ejecución. |
+| `clientes/<cliente>/proyectos/<id>/` | **Trabajo facturable.** Workflows limpios (`workflow.json`), `README.md`, `decisiones.md` y `MANIFESTO.md`. |
+| `personal/proyectos/<id>/` | **Proyectos propios.** Misma estructura, sin entregables de cliente. |
+| `.agents/skills/` | Skills de automatización y testing del Second Brain (expuestas a Claude Code vía el symlink `.claude/skills`). |
+| `scratch/` | Scripts temporales, dumps de API y diagnósticos de una sola ejecución. **Ignorado por git.** |
+
+**Regla de propiedad:** antes de crear un directorio de proyecto, definir de quién es. Un
+proyecto propio en `clientes/` termina facturado o entregado por error; uno de cliente en
+`personal/` se pierde del alcance contratado.
+
+**Regla de raíz limpia:** ningún `.json`, `.js` o dump suelto en la raíz del repositorio.
+Si es un volcado de una consulta a una API para inspeccionar, va a `scratch/`. Si es un
+entregable, va al proyecto que le corresponde en `clientes/`.
+
+---
+
+## 6. Entorno de origen de los `workflow.json`
+
+Un `workflow.json` versionado es siempre el export de **la instancia donde ese proyecto es
+producción** (ver [propiedad y roles](sistemas.md#propiedad-de-los-proyectos-y-rol-de-cada-instancia)).
+
+### Proyectos de cliente (`clientes/`)
+Los exports vienen de `n8n.xtract.app`: llevan IDs de workflow y de credenciales productivos.
+La copia en DEV del mismo workflow vive bajo **otro ID** y con **otras credenciales**.
+
+1. Antes de importar un JSON del repo a DEV, remapear las credenciales según
+   [`credenciales.md §3`](credenciales.md#3-convención-de-exports-en-el-repositorio).
+2. Al versionar un workflow nuevo, dejar registrado en el `README.md` del proyecto el par
+   **ID en DEV ↔ ID en PROD**. Sin ese mapeo, la próxima modificación arranca a ciegas.
+3. Nunca sobrescribir un `workflow.json` del repo con un export de DEV sin antes remapear:
+   se pierde la referencia productiva.
+
+### Proyectos propios (`personal/`)
+Los exports vienen de `n8n.santiagowuerich.info` y ya traen las credenciales correctas: **no
+hay remapeo**, porque no hay segunda instancia. A cambio, el repo es la **única copia de
+respaldo** del workflow — versionar el JSON después de cada cambio relevante deja de ser
+prolijidad y pasa a ser el backup.

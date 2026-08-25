@@ -19,3 +19,10 @@ node_modules/
 
 # Logs
 *.log
+
+# Scratch: diagnósticos y dumps de una sola ejecución
+scratch/*
+!scratch/README.md
+
+# Claude Code: config local del usuario (el symlink .claude/skills sí se versiona)
+.claude/settings.local.json

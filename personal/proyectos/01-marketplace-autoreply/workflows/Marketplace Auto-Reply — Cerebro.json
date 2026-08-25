@@ -1,0 +1,3344 @@
+{
+  "updatedAt": "2026-08-23T00:41:57.607Z",
+  "createdAt": "2026-08-11T02:40:12.918Z",
+  "id": "o1hQpxHMFMbj3Nnw",
+  "name": "Marketplace Auto-Reply — Cerebro (Webhook + IA)",
+  "description": "Backend server-side: recibe un mensaje de comprador de Marketplace vía webhook, genera una respuesta con IA (Groq) y la devuelve. No toca Facebook — corre en Dokploy. La parte que sí abre sesión en Facebook (extensión de navegador) vive en un dispositivo ",
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "marketplace-reply",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "e6ce034b-edd5-45ce-8375-24674008bb27",
+      "name": "Webhook: Mensaje Marketplace",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        240,
+        512
+      ],
+      "webhookId": "c6faaf76-3d99-45f6-8fdb-cad585bf8d53"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "cuenta",
+              "name": "cuenta",
+              "value": "={{ $json.body?.cuenta ?? $json.cuenta ?? \"sin-cuenta\" }}",
+              "type": "string"
+            },
+            {
+              "id": "mensaje",
+              "name": "mensaje",
+              "value": "={{ $json.body?.mensaje ?? $json.mensaje ?? \"\" }}",
+              "type": "string"
+            },
+            {
+              "id": "nombreComprador",
+              "name": "nombreComprador",
+              "value": "={{ $json.body?.nombreComprador ?? $json.nombreComprador ?? \"el comprador\" }}",
+              "type": "string"
+            },
+            {
+              "id": "idConversacion",
+              "name": "idConversacion",
+              "value": "={{ $json.body?.idConversacion ?? $json.idConversacion ?? \"\" }}",
+              "type": "string"
+            },
+            {
+              "id": "systemPrompt",
+              "name": "systemPrompt",
+              "value": "={{ $json.body?.systemPrompt ?? $json.systemPrompt ?? \"\" }}",
+              "type": "string"
+            },
+            {
+              "id": "esSeguimiento",
+              "name": "esSeguimiento",
+              "value": "={{ $json.body?.esSeguimiento ?? $json.esSeguimiento ?? false }}",
+              "type": "boolean"
+            },
+            {
+              "id": "yaEscribimos",
+              "name": "yaEscribimos",
+              "value": "={{ $json.body?.yaEscribimos ?? $json.yaEscribimos ?? null }}",
+              "type": "boolean"
+            },
+            {
+              "id": "numeroDelComprador",
+              "name": "numeroDelComprador",
+              "value": "={{ $json.body?.numeroDelComprador ?? $json.numeroDelComprador ?? \"\" }}",
+              "type": "string"
+            },
+            {
+              "id": "esMensajeWeb",
+              "name": "esMensajeWeb",
+              "value": "={{ $json.body?.esMensajeWeb ?? $json.esMensajeWeb ?? false }}",
+              "type": "boolean"
+            },
+            {
+              "id": "producto",
+              "name": "producto",
+              "value": "={{ $json.body?.producto ?? $json.producto ?? \"\" }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "e6fac2e2-5f67-43e6-91c6-e8a75f9c9a54",
+      "name": "Normalizar Payload",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        464,
+        512
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.esSeguimiento ? `Pasó un rato desde tu último mensaje a ${$json.nombreComprador} y no contestó. Escribile algo corto y amable para retomar, sin reclamarle el silencio. Volvele a pasar el catálogo tal cual: ${$json.linkWhatsApp || 'https://wa.me/c/5493625281890'} — decíle que ahí ve todo con fotos y precios. NO le pidas el número.` : `${$json.nombreComprador} escribió: '${$json.mensaje}'\\n\\nContestá la consulta en una línea si podés, y pasale el catálogo para que vea los productos y te escriba él por ahí. NO le pidas el número ni le digas que vos le vas a escribir.` }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "={{ 'Sos un vendedor de SC Equipamientos respondiendo consultas de compradores en Facebook Marketplace.\\n\\nESTILO: escribí en español rioplatense, de vos: \"podés\", \"tenés\", \"dejame\", \"te paso\". Nunca uses tú ni usted. Mensajes cortos, de una o dos líneas, como escribe un vendedor por chat: sin saludos formales, sin firmas y sin sonar a folleto.\\n\\nQUÉ VENDEMOS: sillas de oficina, fijas, ergonómicas, gamer, de diseño (como Tulip) y de escritorio; escritorios y muebles a medida en MDF. NUNCA digas que no vendemos algo ni descartes modelos o productos: si preguntan por fotos, modelos o qué es un producto, pasale directamente el catálogo para que vea todos los modelos y fotos ahí.\\n\\nOBJETIVO ÚNICO: que el comprador entre al catálogo de WhatsApp y te escriba ÉL por ahí. Pasale este link tal cual, sin acortarlo ni cambiarlo: ' + ($json.linkWhatsApp || 'https://wa.me/c/5493625281890') + ' — decile que ahí ve todos los productos con fotos y precios.\\n\\nNUNCA le pidas el número de teléfono, ni el WhatsApp, ni que te lo deje, ni de manera directa ni indirecta. No lo vamos a usar. Si te lo da igual, agradecele en una línea y decile que te escriba él al catálogo. Tampoco le digas que vos le vas a escribir: el que escribe es él.\\n\\nREGLA FIJA DE PRECIOS: los únicos precios que podés mencionar son los del catálogo: silla giratoria $75.000, silla fija $50.000, escritorio $115.000. Si el comprador pregunta por el precio de uno de esos productos, decilo exactamente con esos montos. NUNCA menciones ningún otro monto ni número con $: si no es uno de esos tres, decile que en el catálogo ve todos los productos con fotos y precios y pasale el link.\\n\\nUBICACIÓN: sos de Resistencia, Chaco. Si preguntan de dónde sos o dónde estás, decilo exactamente: Resistencia, Chaco. NO digas otra ciudad ni provincia. NO AFIRMES lo que no sabés: envíos, tiempos de entrega, stock y medidas se ven por WhatsApp. Si preguntan por eso, decilo así en vez de arriesgar un dato.\\n\\nNunca digas ni des a entender que sos un bot, una IA o una respuesta automática, ni que la conversación la sigue otra persona.\\n\\nMarcá necesitaHumano en true cuando el comprador: pregunta si habla con un bot o con una persona, se molesta o te reclama, hace un reclamo por una compra anterior, pide algo que no podés resolver con el catálogo, o insiste con algo que ya no sabés cómo responder. Cuando lo marques, tu respuesta no se le va a enviar a nadie, así que escribí cualquier cosa breve y neutra. En cualquier otro caso necesitaHumano va en false.' + ($json.systemPrompt ? ('\\n\\nNOTAS DE ESTA CUENTA: ' + $json.systemPrompt) : '') + ($json.estiloExtra ? ('\\n\\n' + $json.estiloExtra) : '') }}"
+        }
+      },
+      "id": "ae19deab-c615-4e7d-923a-4e67a28041ac",
+      "name": "IA: Armar Respuesta",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1808,
+        608
+      ]
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-oss-120b",
+        "options": {}
+      },
+      "id": "4c6f98b3-acd1-4787-b0ad-c16ed9047eec",
+      "name": "Groq Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        1816,
+        824
+      ],
+      "credentials": {
+        "groqApi": {
+          "id": "Qa47kiif6fRN0Qb8",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "respuesta",
+              "name": "respuesta",
+              "value": "={{ $json.output.respuesta }}",
+              "type": "string"
+            },
+            {
+              "id": "pidioNumero",
+              "name": "pidioNumero",
+              "value": "={{ Boolean($json.output.pidioNumero) && /n[úu]mero|whats ?app|wsp|celular/i.test($json.output.respuesta || '') }}",
+              "type": "boolean"
+            },
+            {
+              "id": "numeroRecibido",
+              "name": "numeroRecibido",
+              "value": "={{ $json.output.numeroRecibido || $('Detectar Número').item.json.hayNumero }}",
+              "type": "boolean"
+            },
+            {
+              "id": "necesitaHumano",
+              "name": "necesitaHumano",
+              "value": "={{ Boolean($json.output.necesitaHumano) || $('Detectar Número').item.json.pidioHumano }}",
+              "type": "boolean"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "e314fdde-87c8-4bb6-936a-fbc88b89a53d",
+      "name": "Formatear Respuesta",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        2160,
+        608
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"respuesta\": $json.respuesta, \"pidioNumero\": $json.pidioNumero, \"numeroRecibido\": $json.numeroRecibido, \"necesitaHumano\": $json.necesitaHumano, \"esPrimerMensaje\": $('Detectar Número').item.json.esPrimerMensaje, \"avisarNumero\": $('Detectar Número').item.json.avisarNumero } }}",
+        "options": {}
+      },
+      "id": "e440600b-ca24-4ebb-982b-fc77cb079250",
+      "name": "Responder al Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        2384,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.esPrimerMensaje }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "92a841d7-8a92-4ca1-b33f-cd42df2d8747",
+      "name": "¿Es el primer mensaje?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1136,
+        512
+      ]
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{ \"respuesta\": \"Hola, gracias por tu mensaje\", \"pidioNumero\": true, \"numeroRecibido\": false, \"necesitaHumano\": false }"
+      },
+      "id": "c6605e6e-37dd-4c2a-8279-fbeb27a5443c",
+      "name": "Parser de Respuesta",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        1944,
+        824
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Resuelve el estado de la conversación combinando dos fuentes:\n// - la data table (sobrevive a que se pierda el storage del browser)\n// - lo que la extensión leyó del DOM de la conversación abierta\nconst payload = $('Normalizar Payload').first().json;\nconst guardado = $input.first().json || {};\nconst tieneFila = Boolean(guardado.idConversacion);\n\nconst mensaje = payload.mensaje || '';\n\n// Detector avanzado de teléfonos: decodifica números escritos en palabras y tolera símbolos de ofuscación\nfunction extraerTelefonoAvanzado(texto) {\n  if (!texto) return '';\n  let t = String(texto).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');\n\n  const DECENAS = [\n    { p: /\\bnoventa\\s+y\\s+/gi, d: '9 ' },\n    { p: /\\bochenta\\s+y\\s+/gi, d: '8 ' },\n    { p: /\\bsetenta\\s+y\\s+/gi, d: '7 ' },\n    { p: /\\bsesenta\\s+y\\s+/gi, d: '6 ' },\n    { p: /\\bcincuenta\\s+y\\s+/gi, d: '5 ' },\n    { p: /\\bcuarenta\\s+y\\s+/gi, d: '4 ' },\n    { p: /\\btreinta\\s+y\\s+/gi, d: '3 ' },\n    { p: /\\bnoventa\\b/gi, d: '90 ' },\n    { p: /\\bochenta\\b/gi, d: '80 ' },\n    { p: /\\bsetenta\\b/gi, d: '70 ' },\n    { p: /\\bsesenta\\b/gi, d: '60 ' },\n    { p: /\\bcincuenta\\b/gi, d: '50 ' },\n    { p: /\\bcuarenta\\b/gi, d: '40 ' },\n    { p: /\\btreinta\\b/gi, d: '30 ' },\n    { p: /\\bveintinueve\\b/gi, d: '29 ' },\n    { p: /\\bveintiocho\\b/gi, d: '28 ' },\n    { p: /\\bveintisiete\\b/gi, d: '27 ' },\n    { p: /\\bveintiseis\\b/gi, d: '26 ' },\n    { p: /\\bveinticinco\\b/gi, d: '25 ' },\n    { p: /\\bveinticuatro\\b/gi, d: '24 ' },\n    { p: /\\bveintitres\\b/gi, d: '23 ' },\n    { p: /\\bveintidos\\b/gi, d: '22 ' },\n    { p: /\\bveintiuno\\b|\\bveintiun\\b/gi, d: '21 ' },\n    { p: /\\bveinte\\b/gi, d: '20 ' },\n    { p: /\\bdiecinueve\\b/gi, d: '19 ' },\n    { p: /\\bdieciocho\\b/gi, d: '18 ' },\n    { p: /\\bdiecisiete\\b/gi, d: '17 ' },\n    { p: /\\bdieciseis\\b/gi, d: '16 ' },\n    { p: /\\bquince\\b/gi, d: '15 ' },\n    { p: /\\bcatorce\\b/gi, d: '14 ' },\n    { p: /\\btrece\\b/gi, d: '13 ' },\n    { p: /\\bdoce\\b/gi, d: '12 ' },\n    { p: /\\bonce\\b/gi, d: '11 ' },\n    { p: /\\bdiez\\b/gi, d: '10 ' },\n    { p: /\\bcero\\b/gi, d: '0 ' },\n    { p: /\\buno\\b|\\bun\\b|\\buna\\b/gi, d: '1 ' },\n    { p: /\\bdos\\b/gi, d: '2 ' },\n    { p: /\\btres\\b/gi, d: '3 ' },\n    { p: /\\bcuatro\\b/gi, d: '4 ' },\n    { p: /\\bcinco\\b/gi, d: '5 ' },\n    { p: /\\bseis\\b/gi, d: '6 ' },\n    { p: /\\bsiete\\b/gi, d: '7 ' },\n    { p: /\\bocho\\b/gi, d: '8 ' },\n    { p: /\\bnueve\\b/gi, d: '9 ' },\n  ];\n\n  for (const item of DECENAS) {\n    t = t.replace(item.p, item.d);\n  }\n\n  const candidatos = t.match(/\\+?\\d[\\d\\s\\-()./_*~|]{6,}\\d/g) || [];\n  const numeros = candidatos\n    .map((c) => c.replace(/\\D/g, ''))\n    .filter((n) => n.length >= 8 && n.length <= 15);\n\n  return numeros[0] || '';\n}\n\nconst telDetectado = extraerTelefonoAvanzado(mensaje);\nconst numero = telDetectado || payload.numeroDelComprador || guardado.numero || '';\nconst numeroCompartido = Boolean(guardado.numeroCompartido) || Boolean(numero);\nconst esNumeroNuevo = !guardado.numeroCompartido && Boolean(numero);\n\nconst esPrimerMensaje = payload.yaEscribimos === null || payload.yaEscribimos === undefined\n  ? !tieneFila\n  : !payload.yaEscribimos;\n\nconst normalizado = mensaje.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');\n\nconst PATRONES_HUMANO = [\n  /\\b(sos|eres|es|son)\\s+(un[ao]?\\s+)?(bot|robot|maquina|ia)\\b/,\n  /\\bbot\\s*\\?/,\n  /habl\\w*\\s+con\\s+(un[ao]?\\s+)?(persona|humano|alguien)/,\n  /(atiende|responde|contesta)\\s+(un[ao]?\\s+)?(persona|humano)/,\n  /\\bautomatic/,\n  /\\b(estafa|estafador|chorro|ladron)\\b/,\n  /\\b(reclamo|garantia|devolucion|factura)\\b/,\n];\nconst pidioHumano = PATRONES_HUMANO.some((p) => p.test(normalizado));\n\nfunction aFormatoWhatsApp(digitos) {\n  if (!digitos) return '';\n  let n = digitos;\n  if (n.startsWith('54')) n = n.slice(2);\n  if (n.startsWith('0')) n = n.slice(1);\n  if (n.startsWith('9')) n = n.slice(1);\n  n = n.replace(/^(\\d{2,4})15(\\d{6,8})$/, '$1$2');\n  return `549${n}`;\n}\n\nconst PREFIJOS = [{\"p\":\"2221\",\"u\":\"Buenos Aires (Magdalena / Punta Indio)\"},{\"p\":\"2223\",\"u\":\"Buenos Aires (Brandsen)\"},{\"p\":\"2224\",\"u\":\"Buenos Aires (Glew / Guernica / GBA)\"},{\"p\":\"2225\",\"u\":\"Buenos Aires (San Vicente / GBA)\"},{\"p\":\"2226\",\"u\":\"Buenos Aires (Cañuelas)\"},{\"p\":\"2227\",\"u\":\"Buenos Aires (Lobos / Navarro / Roque Pérez)\"},{\"p\":\"2241\",\"u\":\"Buenos Aires (Chascomús / Lezama)\"},{\"p\":\"2242\",\"u\":\"Buenos Aires (General Belgrano)\"},{\"p\":\"2243\",\"u\":\"Buenos Aires (General Paz / Ranchos)\"},{\"p\":\"2244\",\"u\":\"Buenos Aires (Las Flores)\"},{\"p\":\"2245\",\"u\":\"Buenos Aires (Dolores / Castelli)\"},{\"p\":\"2246\",\"u\":\"Buenos Aires (Santa Teresita / La Costa)\"},{\"p\":\"2252\",\"u\":\"Buenos Aires (San Clemente del Tuyú)\"},{\"p\":\"2254\",\"u\":\"Buenos Aires (Pinamar / Cariló / Valeria del Mar)\"},{\"p\":\"2255\",\"u\":\"Buenos Aires (Villa Gesell)\"},{\"p\":\"2257\",\"u\":\"Buenos Aires (Mar de Ajó / San Bernardo)\"},{\"p\":\"2261\",\"u\":\"Buenos Aires (Lobería)\"},{\"p\":\"2262\",\"u\":\"Buenos Aires (Necochea / Quequén)\"},{\"p\":\"2264\",\"u\":\"Buenos Aires (Miramar)\"},{\"p\":\"2265\",\"u\":\"Buenos Aires (Coronel Vidal)\"},{\"p\":\"2266\",\"u\":\"Buenos Aires (Balcarce)\"},{\"p\":\"2267\",\"u\":\"Buenos Aires (General Madariaga)\"},{\"p\":\"2268\",\"u\":\"Buenos Aires (Maipú)\"},{\"p\":\"2271\",\"u\":\"Buenos Aires (San Antonio de Areco)\"},{\"p\":\"2272\",\"u\":\"Buenos Aires (Carmen de Areco)\"},{\"p\":\"2273\",\"u\":\"Buenos Aires (San Andrés de Giles)\"},{\"p\":\"2274\",\"u\":\"Buenos Aires (Saladillo / Del Carril)\"},{\"p\":\"2281\",\"u\":\"Buenos Aires (Azul)\"},{\"p\":\"2283\",\"u\":\"Buenos Aires (Tapalqué)\"},{\"p\":\"2284\",\"u\":\"Buenos Aires (Olavarría / Sierras Bayas)\"},{\"p\":\"2285\",\"u\":\"Buenos Aires (Laprida / General La Madrid)\"},{\"p\":\"2286\",\"u\":\"Buenos Aires (Benito Juárez)\"},{\"p\":\"2291\",\"u\":\"Buenos Aires (General Alvarado)\"},{\"p\":\"2292\",\"u\":\"Buenos Aires (González Chaves)\"},{\"p\":\"2296\",\"u\":\"Buenos Aires (Ayacucho)\"},{\"p\":\"2297\",\"u\":\"Buenos Aires (Rauch)\"},{\"p\":\"2314\",\"u\":\"Buenos Aires (Bolívar / Daireaux)\"},{\"p\":\"2316\",\"u\":\"Buenos Aires (General Arenales)\"},{\"p\":\"2317\",\"u\":\"Buenos Aires (Nueve de Julio)\"},{\"p\":\"2320\",\"u\":\"Buenos Aires (José C. Paz / Grand Bourg / GBA)\"},{\"p\":\"2323\",\"u\":\"Buenos Aires (Luján)\"},{\"p\":\"2324\",\"u\":\"Buenos Aires (Mercedes / Suipacha)\"},{\"p\":\"2325\",\"u\":\"Buenos Aires (San Andrés de Giles)\"},{\"p\":\"2326\",\"u\":\"Buenos Aires (San Antonio de Areco)\"},{\"p\":\"2342\",\"u\":\"Buenos Aires (Bragado)\"},{\"p\":\"2343\",\"u\":\"Buenos Aires (General Viamonte / Los Toldos)\"},{\"p\":\"2344\",\"u\":\"Buenos Aires (Saladillo)\"},{\"p\":\"2345\",\"u\":\"Buenos Aires (Veinticinco de Mayo)\"},{\"p\":\"2346\",\"u\":\"Buenos Aires (Chivilcoy / Alberti)\"},{\"p\":\"2352\",\"u\":\"Buenos Aires (Chacabuco)\"},{\"p\":\"2353\",\"u\":\"Buenos Aires (General Arenales)\"},{\"p\":\"2354\",\"u\":\"Buenos Aires (Vedia / Leandro N. Alem)\"},{\"p\":\"2355\",\"u\":\"Buenos Aires (Lincoln)\"},{\"p\":\"2356\",\"u\":\"Buenos Aires (General Pinto)\"},{\"p\":\"2357\",\"u\":\"Buenos Aires (Carlos Tejedor)\"},{\"p\":\"2358\",\"u\":\"Buenos Aires (Los Toldos)\"},{\"p\":\"2392\",\"u\":\"Buenos Aires (Trenque Lauquen / Pellegrini)\"},{\"p\":\"2393\",\"u\":\"Buenos Aires (Salliqueló)\"},{\"p\":\"2394\",\"u\":\"Buenos Aires (Tres Lomas)\"},{\"p\":\"2395\",\"u\":\"Buenos Aires (Carlos Casares)\"},{\"p\":\"2396\",\"u\":\"Buenos Aires (Pehuajó)\"},{\"p\":\"2473\",\"u\":\"Buenos Aires (Colón)\"},{\"p\":\"2474\",\"u\":\"Buenos Aires (Rojas / Carabelas)\"},{\"p\":\"2475\",\"u\":\"Buenos Aires (Salto)\"},{\"p\":\"2477\",\"u\":\"Buenos Aires (Pergamino)\"},{\"p\":\"2478\",\"u\":\"Buenos Aires (Arrecifes / Capitán Sarmiento)\"},{\"p\":\"2921\",\"u\":\"Buenos Aires (Coronel Dorrego / Monte Hermoso)\"},{\"p\":\"2922\",\"u\":\"Buenos Aires (Coronel Pringles)\"},{\"p\":\"2923\",\"u\":\"Buenos Aires (Pigüé / Coronel Suárez)\"},{\"p\":\"2924\",\"u\":\"Buenos Aires (Darregueira)\"},{\"p\":\"2925\",\"u\":\"Buenos Aires (Médanos / Villarino)\"},{\"p\":\"2926\",\"u\":\"Buenos Aires (Coronel Suárez)\"},{\"p\":\"2927\",\"u\":\"Buenos Aires (Monte Hermoso)\"},{\"p\":\"2928\",\"u\":\"Buenos Aires (Tres Arroyos)\"},{\"p\":\"2929\",\"u\":\"Buenos Aires (Carhué / Guaminí)\"},{\"p\":\"2931\",\"u\":\"Buenos Aires (Carmen de Patagones)\"},{\"p\":\"2932\",\"u\":\"Buenos Aires (Punta Alta / Puerto Belgrano)\"},{\"p\":\"2933\",\"u\":\"Buenos Aires (Tornquist)\"},{\"p\":\"2934\",\"u\":\"Buenos Aires (Pellegrini)\"},{\"p\":\"2935\",\"u\":\"Buenos Aires (Puan)\"},{\"p\":\"2936\",\"u\":\"Buenos Aires (Casbas / Guaminí)\"},{\"p\":\"2982\",\"u\":\"Buenos Aires (Claromecó)\"},{\"p\":\"2983\",\"u\":\"Buenos Aires (Tres Arroyos / Gonzales Chaves)\"},{\"p\":\"3327\",\"u\":\"Buenos Aires (Benavídez / Garín / GBA)\"},{\"p\":\"3329\",\"u\":\"Buenos Aires (San Pedro / Baradero)\"},{\"p\":\"3388\",\"u\":\"Buenos Aires (General Villegas)\"},{\"p\":\"3487\",\"u\":\"Buenos Aires (Zárate / Lima)\"},{\"p\":\"3489\",\"u\":\"Buenos Aires (Campana)\"},{\"p\":\"3832\",\"u\":\"Catamarca (Recreo / La Paz)\"},{\"p\":\"3835\",\"u\":\"Catamarca (Andalgalá / Belén / Santa María / Tinogasta)\"},{\"p\":\"3837\",\"u\":\"Catamarca (Tinogasta / Fiambalá)\"},{\"p\":\"3732\",\"u\":\"Chaco (Sáenz Peña / Quitilipi / Machagai)\"},{\"p\":\"3735\",\"u\":\"Chaco (Villa Ángela / Du Graty / Santa Sylvina)\"},{\"p\":\"3731\",\"u\":\"Chaco (Charata / Las Breñas / Pinedo)\"},{\"p\":\"3734\",\"u\":\"Chaco (Gral. San Martín / Pampa del Indio)\"},{\"p\":\"3725\",\"u\":\"Chaco (Gral. San Martín / Las Garcitas / Pres. de la Plaza)\"},{\"p\":\"3741\",\"u\":\"Chaco (Juan José Castelli)\"},{\"p\":\"3745\",\"u\":\"Chaco (Tres Isletas)\"},{\"p\":\"2945\",\"u\":\"Chubut (Esquel / Trevelin)\"},{\"p\":\"2972\",\"u\":\"Chubut (Sarmiento)\"},{\"p\":\"3521\",\"u\":\"Córdoba (Deán Funes / Ischilín)\"},{\"p\":\"3522\",\"u\":\"Córdoba (Cruz del Eje)\"},{\"p\":\"3524\",\"u\":\"Córdoba (Villa del Totoral)\"},{\"p\":\"3525\",\"u\":\"Córdoba (Jesús María / Colonia Caroya)\"},{\"p\":\"3532\",\"u\":\"Córdoba (Oliva / Hernando)\"},{\"p\":\"3533\",\"u\":\"Córdoba (Las Varillas)\"},{\"p\":\"3537\",\"u\":\"Córdoba (Bell Ville)\"},{\"p\":\"3541\",\"u\":\"Córdoba (Villa Carlos Paz / Cosquín / La Falda)\"},{\"p\":\"3542\",\"u\":\"Córdoba (Salsacate)\"},{\"p\":\"3543\",\"u\":\"Córdoba (Río Ceballos / Unquillo / Villa Allende)\"},{\"p\":\"3544\",\"u\":\"Córdoba (Villa Dolores / Mina Clavero)\"},{\"p\":\"3546\",\"u\":\"Córdoba (Santa Rosa de Calamuchita / V. Gral. Belgrano)\"},{\"p\":\"3547\",\"u\":\"Córdoba (Alta Gracia)\"},{\"p\":\"3548\",\"u\":\"Córdoba (La Falda / Capilla del Monte / La Cumbre)\"},{\"p\":\"3549\",\"u\":\"Córdoba (Cruz del Eje)\"},{\"p\":\"3562\",\"u\":\"Córdoba (Morteros / Brinkmann)\"},{\"p\":\"3563\",\"u\":\"Córdoba (Balnearia)\"},{\"p\":\"3564\",\"u\":\"Córdoba (San Francisco / Devoto)\"},{\"p\":\"3571\",\"u\":\"Córdoba (Río Tercero / Almafuerte)\"},{\"p\":\"3572\",\"u\":\"Córdoba (Oncativo / Río Segundo / Pilar)\"},{\"p\":\"3573\",\"u\":\"Córdoba (Villa del Rosario)\"},{\"p\":\"3574\",\"u\":\"Córdoba (Río Primero / Monte Cristo)\"},{\"p\":\"3575\",\"u\":\"Córdoba (Santa Rosa de Río Primero)\"},{\"p\":\"3576\",\"u\":\"Córdoba (Arroyito)\"},{\"p\":\"3582\",\"u\":\"Córdoba (Sampacho)\"},{\"p\":\"3583\",\"u\":\"Córdoba (Vicuña Mackenna)\"},{\"p\":\"3584\",\"u\":\"Córdoba (La Carlota)\"},{\"p\":\"3585\",\"u\":\"Córdoba (Canals)\"},{\"p\":\"3385\",\"u\":\"Córdoba (Laboulaye)\"},{\"p\":\"3387\",\"u\":\"Córdoba (General Levalle)\"},{\"p\":\"3383\",\"u\":\"Córdoba (Huinca Renancó)\"},{\"p\":\"3777\",\"u\":\"Corrientes (Goya / Santa Lucía / Lavalle)\"},{\"p\":\"3772\",\"u\":\"Corrientes (Paso de los Libres)\"},{\"p\":\"3773\",\"u\":\"Corrientes (Mercedes)\"},{\"p\":\"3774\",\"u\":\"Corrientes (Curuzú Cuatiá)\"},{\"p\":\"3775\",\"u\":\"Corrientes (Monte Caseros)\"},{\"p\":\"3756\",\"u\":\"Corrientes (Santo Tomé / Gobernador Virasoro)\"},{\"p\":\"3781\",\"u\":\"Corrientes (Caá Catí)\"},{\"p\":\"3782\",\"u\":\"Corrientes (Saladas / Bella Vista)\"},{\"p\":\"3786\",\"u\":\"Corrientes (Ituzaingó)\"},{\"p\":\"3435\",\"u\":\"Entre Ríos (Nogoyá)\"},{\"p\":\"3436\",\"u\":\"Entre Ríos (Victoria)\"},{\"p\":\"3437\",\"u\":\"Entre Ríos (La Paz)\"},{\"p\":\"3438\",\"u\":\"Entre Ríos (Bovril / Federal)\"},{\"p\":\"3442\",\"u\":\"Entre Ríos (Concepción del Uruguay)\"},{\"p\":\"3444\",\"u\":\"Entre Ríos (Gualeguay)\"},{\"p\":\"3445\",\"u\":\"Entre Ríos (Rosario del Tala / Basavilbaso)\"},{\"p\":\"3446\",\"u\":\"Entre Ríos (Gualeguaychú)\"},{\"p\":\"3447\",\"u\":\"Entre Ríos (Colón / San José / Villa Elisa)\"},{\"p\":\"3454\",\"u\":\"Entre Ríos (Federal)\"},{\"p\":\"3455\",\"u\":\"Entre Ríos (Villaguay)\"},{\"p\":\"3456\",\"u\":\"Entre Ríos (Chajarí / Federación)\"},{\"p\":\"3711\",\"u\":\"Formosa (El Colorado)\"},{\"p\":\"3715\",\"u\":\"Formosa (Las Lomitas)\"},{\"p\":\"3716\",\"u\":\"Formosa (Ingeniero Juárez)\"},{\"p\":\"3718\",\"u\":\"Formosa (Clorinda)\"},{\"p\":\"3885\",\"u\":\"Jujuy (La Quiaca / Humahuaca)\"},{\"p\":\"3886\",\"u\":\"Jujuy (Libertador Gral. San Martín / Ledesma)\"},{\"p\":\"3887\",\"u\":\"Jujuy (Tilcara / Maimará)\"},{\"p\":\"3888\",\"u\":\"Jujuy (San Pedro de Jujuy)\"},{\"p\":\"2952\",\"u\":\"La Pampa (General Acha)\"},{\"p\":\"2953\",\"u\":\"La Pampa (Macachín)\"},{\"p\":\"2954\",\"u\":\"La Pampa (Santa Rosa / Toay)\"},{\"p\":\"2302\",\"u\":\"La Pampa (General Pico / Intendente Alvear)\"},{\"p\":\"2331\",\"u\":\"La Pampa (Realicó)\"},{\"p\":\"2333\",\"u\":\"La Pampa (Quemú Quemú)\"},{\"p\":\"2334\",\"u\":\"La Pampa (Eduardo Castex)\"},{\"p\":\"2335\",\"u\":\"La Pampa (Caleufú)\"},{\"p\":\"2336\",\"u\":\"La Pampa (Victorica)\"},{\"p\":\"2337\",\"u\":\"La Pampa (Guatraché)\"},{\"p\":\"2338\",\"u\":\"La Pampa (Bernasconi)\"},{\"p\":\"3821\",\"u\":\"La Rioja (Chepes)\"},{\"p\":\"3825\",\"u\":\"La Rioja (Chilecito / Famatina)\"},{\"p\":\"3826\",\"u\":\"La Rioja (Chamical)\"},{\"p\":\"3827\",\"u\":\"La Rioja (Aimogasta / Arauco)\"},{\"p\":\"2622\",\"u\":\"Mendoza (Tunuyán / Tupungato / San Carlos / Valle de Uco)\"},{\"p\":\"2624\",\"u\":\"Mendoza (Uspallata)\"},{\"p\":\"2625\",\"u\":\"Mendoza (General Alvear)\"},{\"p\":\"2626\",\"u\":\"Mendoza (La Paz)\"},{\"p\":\"3751\",\"u\":\"Misiones (Eldorado / Montecarlo)\"},{\"p\":\"3754\",\"u\":\"Misiones (Leandro N. Alem / San Javier)\"},{\"p\":\"3755\",\"u\":\"Misiones (Oberá / San Vicente / Aristóbulo del Valle)\"},{\"p\":\"3756\",\"u\":\"Misiones (San José)\"},{\"p\":\"3757\",\"u\":\"Misiones (Puerto Iguazú / Wanda / Esperanza)\"},{\"p\":\"3758\",\"u\":\"Misiones (Apóstoles / Concepción de la Sierra)\"},{\"p\":\"2942\",\"u\":\"Neuquén (Zapala / Las Lajas / Loncopué)\"},{\"p\":\"2948\",\"u\":\"Neuquén (Chos Malal / Andacollo)\"},{\"p\":\"2972\",\"u\":\"Neuquén (San Martín de los Andes / Junín de los Andes)\"},{\"p\":\"2920\",\"u\":\"Río Negro (Viedma)\"},{\"p\":\"2934\",\"u\":\"Río Negro (San Antonio Oeste / Las Grutas)\"},{\"p\":\"2944\",\"u\":\"Río Negro (Ingeniero Jacobacci / Los Menucos)\"},{\"p\":\"2946\",\"u\":\"Río Negro (Choele Choel / Río Colorado)\"},{\"p\":\"3868\",\"u\":\"Salta (Cafayate)\"},{\"p\":\"3873\",\"u\":\"Salta (Tartagal)\"},{\"p\":\"3876\",\"u\":\"Salta (Metán / Rosario de la Frontera)\"},{\"p\":\"3877\",\"u\":\"Salta (Joaquín V. González)\"},{\"p\":\"3878\",\"u\":\"Salta (San Ramón de la Nueva Orán / Pichanal)\"},{\"p\":\"2646\",\"u\":\"San Juan (San Agustín de Valle Fértil)\"},{\"p\":\"2647\",\"u\":\"San Juan (Jáchal / Iglesia)\"},{\"p\":\"2648\",\"u\":\"San Juan (Calingasta / Barreal)\"},{\"p\":\"2651\",\"u\":\"San Luis (San Francisco del Monte de Oro)\"},{\"p\":\"2652\",\"u\":\"San Luis\"},{\"p\":\"2655\",\"u\":\"San Luis (La Toma)\"},{\"p\":\"2656\",\"u\":\"San Luis (Merlo / Santa Rosa de Conlara)\"},{\"p\":\"2657\",\"u\":\"San Luis (Villa Mercedes / Justo Daract)\"},{\"p\":\"2962\",\"u\":\"Santa Cruz (Puerto San Julián / Luis Piedrabuena)\"},{\"p\":\"2963\",\"u\":\"Santa Cruz (Perito Moreno / Los Antiguos)\"},{\"p\":\"2964\",\"u\":\"Tierra del Fuego (Río Grande)\"},{\"p\":\"2966\",\"u\":\"Santa Cruz (Río Gallegos / El Calafate / Río Turbio)\"},{\"p\":\"3401\",\"u\":\"Santa Fe (San Jorge / El Trébol / Sastre)\"},{\"p\":\"3402\",\"u\":\"Santa Fe (Arroyo Seco)\"},{\"p\":\"3404\",\"u\":\"Santa Fe (Gálvez / San Carlos Centro)\"},{\"p\":\"3405\",\"u\":\"Santa Fe (Helvecia / San Javier)\"},{\"p\":\"3406\",\"u\":\"Santa Fe (Coronda)\"},{\"p\":\"3407\",\"u\":\"Santa Fe (Ramallo)\"},{\"p\":\"3408\",\"u\":\"Santa Fe (San Cristóbal)\"},{\"p\":\"3409\",\"u\":\"Santa Fe (Ceres)\"},{\"p\":\"3462\",\"u\":\"Santa Fe (Venado Tuerto / Firmat / Rufino)\"},{\"p\":\"3464\",\"u\":\"Santa Fe (Casilda)\"},{\"p\":\"3465\",\"u\":\"Santa Fe (Firmat)\"},{\"p\":\"3466\",\"u\":\"Santa Fe (Barrancas)\"},{\"p\":\"3471\",\"u\":\"Santa Fe (Cañada de Gómez / Las Parejas / Armstrong)\"},{\"p\":\"3472\",\"u\":\"Santa Fe / Córdoba (Marcos Juárez / Armstrong)\"},{\"p\":\"3476\",\"u\":\"Santa Fe (San Lorenzo / Capitán Bermúdez)\"},{\"p\":\"3482\",\"u\":\"Santa Fe (Reconquista / Avellaneda / Villa Ocampo)\"},{\"p\":\"3483\",\"u\":\"Santa Fe (Vera / Calchaquí)\"},{\"p\":\"3491\",\"u\":\"Santa Fe (Ceres / Tostado)\"},{\"p\":\"3492\",\"u\":\"Santa Fe (Rafaela / Sunchales)\"},{\"p\":\"3493\",\"u\":\"Santa Fe (Sunchales)\"},{\"p\":\"3496\",\"u\":\"Santa Fe (Esperanza / Humboldt)\"},{\"p\":\"3497\",\"u\":\"Santa Fe (Llambi Campbell)\"},{\"p\":\"3498\",\"u\":\"Santa Fe (San Justo / Gobernador Crespo)\"},{\"p\":\"3841\",\"u\":\"Santiago del Estero (Monte Quemado)\"},{\"p\":\"3843\",\"u\":\"Santiago del Estero (Quimilí)\"},{\"p\":\"3844\",\"u\":\"Santiago del Estero (Loreto)\"},{\"p\":\"3845\",\"u\":\"Santiago del Estero (Bandera / Malbrán)\"},{\"p\":\"3846\",\"u\":\"Santiago del Estero (Tintina / Campo Gallo)\"},{\"p\":\"3854\",\"u\":\"Santiago del Estero (Añatuya)\"},{\"p\":\"3856\",\"u\":\"Santiago del Estero (Fernández / Suncho Corral)\"},{\"p\":\"3857\",\"u\":\"Santiago del Estero (Frías)\"},{\"p\":\"3858\",\"u\":\"Santiago del Estero (Termas de Río Hondo)\"},{\"p\":\"2901\",\"u\":\"Tierra del Fuego (Ushuaia / Tolhuin)\"},{\"p\":\"3863\",\"u\":\"Tucumán (Monteros / Famaillá / Tafí del Valle)\"},{\"p\":\"3865\",\"u\":\"Tucumán (Concepción / Aguilares)\"},{\"p\":\"3867\",\"u\":\"Tucumán (Trancas)\"},{\"p\":\"3869\",\"u\":\"Tucumán (Graneros / Simoca / Alberdi)\"},{\"p\":\"221\",\"u\":\"Buenos Aires (La Plata / Berisso / Ensenada)\"},{\"p\":\"223\",\"u\":\"Buenos Aires (Mar del Plata / Batán)\"},{\"p\":\"236\",\"u\":\"Buenos Aires (Junín)\"},{\"p\":\"237\",\"u\":\"Buenos Aires (Moreno / Gral. Rodríguez / GBA)\"},{\"p\":\"220\",\"u\":\"Buenos Aires (Merlo / Pontevedra / GBA)\"},{\"p\":\"230\",\"u\":\"Buenos Aires (Pilar / Fátima / GBA)\"},{\"p\":\"249\",\"u\":\"Buenos Aires (Tandil)\"},{\"p\":\"260\",\"u\":\"Mendoza (San Rafael / Malargüe / Gral. Alvear)\"},{\"p\":\"261\",\"u\":\"Mendoza (Gran Mendoza / Guaymallén / Godoy Cruz)\"},{\"p\":\"263\",\"u\":\"Mendoza (San Martín / Rivadavia / Junín)\"},{\"p\":\"264\",\"u\":\"San Juan (San Juan Capital / Rawson / Rivadavia)\"},{\"p\":\"266\",\"u\":\"San Luis (San Luis Capital / Juana Koslay / La Punta)\"},{\"p\":\"280\",\"u\":\"Chubut (Trelew / Puerto Madryn / Rawson)\"},{\"p\":\"291\",\"u\":\"Buenos Aires (Bahía Blanca / Punta Alta)\"},{\"p\":\"294\",\"u\":\"Río Negro / Neuquén (Bariloche / V. La Angostura / El Bolsón)\"},{\"p\":\"297\",\"u\":\"Chubut / Santa Cruz (Comodoro Rivadavia / Caleta Olivia)\"},{\"p\":\"298\",\"u\":\"Río Negro (General Roca / Villa Regina / Allen)\"},{\"p\":\"299\",\"u\":\"Neuquén / Río Negro (Neuquén Capital / Cipolletti / Plottier)\"},{\"p\":\"341\",\"u\":\"Santa Fe (Rosario / Gran Rosario / San Lorenzo)\"},{\"p\":\"342\",\"u\":\"Santa Fe (Santa Fe Capital / Santo Tomé)\"},{\"p\":\"343\",\"u\":\"Entre Ríos (Paraná / Crespo / Diamante)\"},{\"p\":\"345\",\"u\":\"Entre Ríos (Concordia / San Salvador)\"},{\"p\":\"348\",\"u\":\"Buenos Aires (Escobar / Belén de Escobar / GBA)\"},{\"p\":\"351\",\"u\":\"Córdoba (Córdoba Capital)\"},{\"p\":\"353\",\"u\":\"Córdoba (Villa María / Villa Nueva)\"},{\"p\":\"358\",\"u\":\"Córdoba (Río Cuarto / Holmberg)\"},{\"p\":\"362\",\"u\":\"Chaco (Resistencia / Barranqueras / Fontana / Vilelas)\"},{\"p\":\"364\",\"u\":\"Chaco (Presidencia Roque Sáenz Peña)\"},{\"p\":\"370\",\"u\":\"Formosa (Formosa Capital / Pirané)\"},{\"p\":\"376\",\"u\":\"Misiones (Posadas / Garupá / Candelaria)\"},{\"p\":\"379\",\"u\":\"Corrientes (Corrientes Capital)\"},{\"p\":\"380\",\"u\":\"La Rioja (La Rioja Capital / Sanagasta)\"},{\"p\":\"381\",\"u\":\"Tucumán (San Miguel de Tucumán / Yerba Buena / Tafí Viejo)\"},{\"p\":\"383\",\"u\":\"Catamarca (San Fernando del Valle de Catamarca / Valle Viejo)\"},{\"p\":\"385\",\"u\":\"Santiago del Estero (Santiago del Estero Capital / La Banda)\"},{\"p\":\"387\",\"u\":\"Salta (Salta Capital / Cerrillos / Rosario de Lerma)\"},{\"p\":\"388\",\"u\":\"Jujuy (San Salvador de Jujuy / Palpalá)\"},{\"p\":\"11\",\"u\":\"Buenos Aires (CABA / AMBA / Gran Buenos Aires)\"}];\n\nfunction detectarUbicacion(digitos) {\n  if (!digitos) return 'Desconocida';\n  let n = digitos.replace(/\\D/g, '');\n  if (n.startsWith('54')) n = n.slice(2);\n  if (n.startsWith('0')) n = n.slice(1);\n  if (n.startsWith('9')) n = n.slice(1);\n  n = n.replace(/^(\\d{2,4})15(\\d{6,8})$/, '$1$2');\n\n  for (const item of PREFIJOS) {\n    if (n.startsWith(item.p)) return item.u;\n  }\n  return 'Argentina (Otra zona)';\n}\n\nconst escaparHtml = (s) => String(s || '')\n  .replace(/&/g, '&amp;')\n  .replace(/</g, '&lt;')\n  .replace(/>/g, '&gt;');\n\nconst producto = payload.producto || '';\nconst ubicacion = detectarUbicacion(numero);\n\nreturn [{\n  json: {\n    ...payload,\n    esPrimerMensaje,\n    vecesPedidoNumero: Number(guardado.vecesPedidoNumero || 0),\n    seguimientoEnviado: Boolean(guardado.seguimientoEnviado),\n    mensajeWebEnviado: Boolean(guardado.mensajeWebEnviado),\n    derivadaAHumano: Boolean(guardado.derivadaAHumano),\n    numeroCompartido,\n    hayNumero: Boolean(numero),\n    avisarNumero: esNumeroNuevo,\n    pidioHumano,\n    numero,\n    ubicacion,\n    numeroWhatsApp: aFormatoWhatsApp(numero),\n    mensajeHtml: escaparHtml(mensaje),\n    nombreHtml: escaparHtml(payload.nombreComprador),\n    producto,\n    productoHtml: escaparHtml(producto),\n    productoUrl: encodeURIComponent(producto || 'Marketplace'),\n    nombreUrl: encodeURIComponent(payload.nombreComprador || 'Buenas'),\n  },\n}];"
+      },
+      "id": "aa4a3b6d-9fa8-4fa1-bd16-f28f22f45e78",
+      "name": "Detectar Número",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        912,
+        512
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $('Detectar Número').item.json.avisarNumero }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "4bdd76d1-0f8e-4917-9bfd-b0e3ee7f0d85",
+      "name": "¿Compartió el número?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2608,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "7507263174",
+        "text": "=📞 <b>¡Lead nuevo de Marketplace!</b>\n\n<b>Comprador:</b> {{ $('Detectar Número').item.json.nombreHtml }}\n<b>Producto:</b> {{ $('Detectar Número').item.json.productoHtml || 'Marketplace' }}\n<b>Número:</b> <code>{{ $('Detectar Número').item.json.numero }}</code>\n<b>Ubicación:</b> 📍 {{ $('Detectar Número').item.json.ubicacion }}\n\n<b>Escribió:</b> {{ $('Detectar Número').item.json.mensajeHtml }}",
+        "replyMarkup": "inlineKeyboard",
+        "inlineKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "💬 Abrir WhatsApp",
+                    "additionalFields": {
+                      "url": "=https://wa.me/{{ $('Detectar Número').item.json.numeroWhatsApp }}?text=Hola%20{{ $('Detectar Número').item.json.nombreUrl }}!%20Te%20escribo%20de%20SC%20Equipamientos%20por%20tu%20consulta%20de%20{{ $('Detectar Número').item.json.productoUrl }}"
+                    }
+                  },
+                  {
+                    "text": "💬 Ver en Messenger",
+                    "additionalFields": {
+                      "url": "=https://www.messenger.com/t/{{ $('Detectar Número').item.json.idConversacion }}/"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "additionalFields": {
+          "appendAttribution": false,
+          "disable_web_page_preview": true,
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "656e7970-4711-4274-a8a1-ecf139619f6d",
+      "name": "Avisar Número por Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2832,
+        288
+      ],
+      "webhookId": "90c1e139-3baa-438b-9f0e-f082cda71cbf",
+      "credentials": {
+        "telegramApi": {
+          "id": "f3LD7RSRhhIq5QZc",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "marketplace-alerta",
+        "options": {}
+      },
+      "id": "27c3fff6-8864-4670-9855-5ccbb2a05412",
+      "name": "Webhook: Alerta de la Extensión",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        240,
+        1072
+      ],
+      "webhookId": "e1057667-6829-422a-bcf4-b348c4ce05b0"
+    },
+    {
+      "parameters": {
+        "jsCode": "// El aviso va con parse_mode HTML y el detalle suele traer texto de error\n// crudo. Un '<' sin escapar rompe el mensaje entero y no llega ninguna\n// alerta — justo cuando más falta hace.\nconst cuerpo = $input.first().json.body || $input.first().json || {};\n\nconst escaparHtml = (s) => String(s ?? '')\n  .replace(/&/g, '&amp;')\n  .replace(/</g, '&lt;')\n  .replace(/>/g, '&gt;');\n\nreturn [{\n  json: {\n    tipo: escaparHtml(cuerpo.tipo || 'desconocido'),\n    detalle: escaparHtml(cuerpo.detalle || 'sin detalle'),\n    nombreCuenta: escaparHtml(cuerpo.nombreCuenta || 'sin identificar'),\n    fecha: new Date().toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' }),\n  },\n}];"
+      },
+      "id": "37a4bf50-ee03-495b-b00d-7bf8f96cc86d",
+      "name": "Sanear Alerta",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        464,
+        1072
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "7507263174",
+        "text": "=⚠️ <b>Marketplace Auto-Reply con problemas</b>\n\n<b>Cuenta:</b> {{ $json.nombreCuenta }}\n<b>Problema:</b> {{ $json.tipo }}\n<b>Detalle:</b> {{ $json.detalle }}\n<b>Cuándo:</b> {{ $json.fecha }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "disable_web_page_preview": true,
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "1ee6ad73-8e94-4b4b-a716-82d119342e54",
+      "name": "Avisar Problema por Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        688,
+        1072
+      ],
+      "webhookId": "2e70faa7-aa54-4d2c-8a9e-cc538a79acb6",
+      "credentials": {
+        "telegramApi": {
+          "id": "f3LD7RSRhhIq5QZc",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.necesitaHumano }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "4f9b0a3e-3283-461f-b57f-d74956625125",
+      "name": "¿Necesita un humano?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2608,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "7507263174",
+        "text": "=🙋 <b>Esta conversación te necesita a vos</b>\n\n<b>Comprador:</b> {{ $('Detectar Número').item.json.nombreHtml }}\n<b>Escribió:</b> {{ $('Detectar Número').item.json.mensajeHtml }}\n\nNo se le contestó nada y el bot no le va a volver a escribir en esta conversación. Queda esperando tu respuesta.",
+        "replyMarkup": "inlineKeyboard",
+        "inlineKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "💬 Abrir la conversación",
+                    "additionalFields": {
+                      "url": "=https://www.messenger.com/t/{{ $('Detectar Número').item.json.idConversacion }}/"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "additionalFields": {
+          "appendAttribution": false,
+          "disable_web_page_preview": true,
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "03d8ed11-e336-41d6-96fe-712e3a9130d5",
+      "name": "Avisar Derivación por Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2832,
+        480
+      ],
+      "webhookId": "a8419065-d7e3-4df2-9647-f3f701f52148",
+      "credentials": {
+        "telegramApi": {
+          "id": "f3LD7RSRhhIq5QZc",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "marketplace-resumen",
+        "options": {}
+      },
+      "id": "ddcddfc9-db35-4ac9-a538-5059a5c04222",
+      "name": "Webhook: Resumen Diario",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        240,
+        1296
+      ],
+      "webhookId": "1fd477ce-2b18-48c5-b3bd-29ee876c3fa4"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Arma el texto del resumen del día. Los números los cuenta la extensión,\n// que es la que sabe qué pasó en cada conversación; acá solo se formatea.\nconst cuerpo = $input.first().json.body || $input.first().json || {};\n\nconst n = (v) => Number(v || 0);\nconst contactados = n(cuerpo.contactados);\nconst respuestas = n(cuerpo.respuestas);\nconst numeros = n(cuerpo.numeros);\nconst seguimientos = n(cuerpo.seguimientos);\nconst derivadas = n(cuerpo.derivadas);\n\nconst escaparHtml = (s) => String(s ?? '')\n  .replace(/&/g, '&amp;')\n  .replace(/</g, '&lt;')\n  .replace(/>/g, '&gt;');\n\n// La conversión es el número que importa: de cada 100 personas contactadas,\n// cuántas dejaron el WhatsApp.\nconst conversion = contactados > 0\n  ? `${Math.round((numeros / contactados) * 100)}%`\n  : 'sin datos';\n\nconst sinResponder = Math.max(0, contactados - respuestas);\n\nreturn [{\n  json: {\n    nombreCuenta: escaparHtml(cuerpo.nombreCuenta || 'sin identificar'),\n    fecha: escaparHtml(cuerpo.fecha || ''),\n    contactados,\n    respuestas,\n    numeros,\n    seguimientos,\n    derivadas,\n    sinResponder,\n    conversion,\n  },\n}];"
+      },
+      "id": "ee769e99-bc3e-47c0-b676-676b5c906d55",
+      "name": "Armar Resumen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        464,
+        1296
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "7507263174",
+        "text": "=📊 <b>Resumen del día — {{ $json.fecha }}</b>\n<i>{{ $json.nombreCuenta }}</i>\n\n💬 Contactados: <b>{{ $json.contactados }}</b>\n↩️ Contestaron: <b>{{ $json.respuestas }}</b>\n📞 Números conseguidos: <b>{{ $json.numeros }}</b>\n\n🔁 Seguimientos enviados: {{ $json.seguimientos }}\n🙋 Derivadas a vos: {{ $json.derivadas }}\n🔕 Sin responder: {{ $json.sinResponder }}\n\n🎯 Conversión: <b>{{ $json.conversion }}</b>",
+        "additionalFields": {
+          "appendAttribution": false,
+          "disable_web_page_preview": true,
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "42dd3604-bb06-4604-8c6f-db3486f19b9f",
+      "name": "Enviar Resumen por Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        688,
+        1296
+      ],
+      "webhookId": "53bf632a-31bc-4962-ab78-eb1c5d8c1d17",
+      "credentials": {
+        "telegramApi": {
+          "id": "f3LD7RSRhhIq5QZc",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "X7KPWA15ET7huZSG"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "cuenta",
+              "keyValue": "={{ $json.cuenta }}"
+            },
+            {
+              "keyName": "idConversacion",
+              "keyValue": "={{ $json.idConversacion }}"
+            }
+          ]
+        },
+        "limit": 1
+      },
+      "id": "81d309c1-f9a8-4747-9f31-88c913d5b2a8",
+      "name": "Leer Estado",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        688,
+        512
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "X7KPWA15ET7huZSG"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "cuenta",
+              "keyValue": "={{ $('Detectar Número').item.json.cuenta }}"
+            },
+            {
+              "keyName": "idConversacion",
+              "keyValue": "={{ $('Detectar Número').item.json.idConversacion }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "matchingColumns": [
+            "cuenta",
+            "idConversacion"
+          ],
+          "value": {
+            "cuenta": "={{ $('Detectar Número').item.json.cuenta }}",
+            "idConversacion": "={{ $('Detectar Número').item.json.idConversacion }}",
+            "nombreComprador": "={{ $('Detectar Número').item.json.nombreComprador }}",
+            "numero": "={{ $('Detectar Número').item.json.numero }}",
+            "numeroCompartido": "={{ $('Detectar Número').item.json.numeroCompartido }}",
+            "vecesPedidoNumero": "={{ $('Detectar Número').item.json.numeroCompartido ? $('Detectar Número').item.json.vecesPedidoNumero : $('Detectar Número').item.json.vecesPedidoNumero + ($json.pidioNumero ? 1 : 0) }}",
+            "seguimientoEnviado": "={{ $('Detectar Número').item.json.seguimientoEnviado || $('Detectar Número').item.json.esSeguimiento }}",
+            "derivadaAHumano": "={{ $('Detectar Número').item.json.derivadaAHumano || $json.necesitaHumano }}",
+            "ultimoEnvio": "={{ $now.toISO() }}",
+            "mensajeWebEnviado": "={{ $('Detectar Número').item.json.mensajeWebEnviado || $('Detectar Número').item.json.esMensajeWeb }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "fd97124d-697e-4af8-8ac2-37785909d937",
+      "name": "Guardar Estado",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        2608,
+        672
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "marketplace-pendientes",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "ba1ebbb1-d964-46b1-b84a-88bca6b0d1a9",
+      "name": "Webhook: Pendientes",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        240,
+        1520
+      ],
+      "webhookId": "9ce1d4b7-2a0e-496b-8049-ae23713859aa"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "X7KPWA15ET7huZSG"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "cuenta",
+              "keyValue": "={{ $('Webhook: Pendientes').first().json.body?.cuenta ?? \"sin-cuenta\" }}"
+            }
+          ]
+        },
+        "returnAll": true
+      },
+      "id": "fb6b8ee7-e526-46a9-aecb-cbd293cd8884",
+      "name": "Leer Conversaciones de la Cuenta",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        688,
+        1520
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Tres listas que la extensión necesita en cada barrido:\n//\n// - pendientes: les escribimos, pasó el tiempo de espera y todavía no se les\n//   mandó el mensaje 2 (seguimiento). Se excluyen las que ya dejaron el\n//   número (objetivo cumplido, volver a escribir solo molesta).\n// - pendientesWeb: ya recibieron el mensaje 2, pasó otra espera y todavía no\n//   se les mandó el mensaje 3 (la web). Mismo criterio de exclusión.\n// - derivadas: quedaron en manos del humano. El ciclo no las toca más:\n//   escribirle de nuevo a alguien que pidió hablar con una persona es peor\n//   que no haber automatizado nada.\n//\n// El filtro se hace acá y no en la query para no depender de los operadores\n// de fecha del nodo de data table.\nconst body = $('Webhook: Pendientes').first().json.body || {};\nconst minutos = Number(body.minutos ?? 30);\nconst minutosWeb = Number(body.minutosWeb ?? 60);\nconst limite = Date.now() - minutos * 60 * 1000;\nconst limiteWeb = Date.now() - minutosWeb * 60 * 1000;\n\nconst filas = $input.all()\n  .map((item) => item.json)\n  .filter((fila) => fila && fila.idConversacion);\n\nconst pendientes = filas\n  .filter((fila) => !fila.numeroCompartido\n    && !fila.derivadaAHumano\n    && !fila.seguimientoEnviado\n    && fila.ultimoEnvio\n    && new Date(fila.ultimoEnvio).getTime() < limite)\n  .map((fila) => fila.idConversacion);\n\nconst pendientesWeb = filas\n  .filter((fila) => !fila.numeroCompartido\n    && !fila.derivadaAHumano\n    && fila.seguimientoEnviado\n    && !fila.mensajeWebEnviado\n    && fila.ultimoEnvio\n    && new Date(fila.ultimoEnvio).getTime() < limiteWeb)\n  .map((fila) => fila.idConversacion);\n\nconst derivadas = filas\n  .filter((fila) => fila.derivadaAHumano)\n  .map((fila) => fila.idConversacion);\n\nreturn [{ json: { ok: true, pendientes, pendientesWeb, derivadas, total: filas.length } }];"
+      },
+      "id": "9b96d01a-ca43-480d-90f6-6971e6118f09",
+      "name": "Filtrar Pendientes",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        912,
+        1520
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "b9GlD5oulIXpNKBV"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "cuenta",
+              "keyValue": "={{ $json.body?.cuenta ?? \"sin-cuenta\" }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "matchingColumns": [
+            "cuenta"
+          ],
+          "value": {
+            "cuenta": "={{ $json.body?.cuenta ?? \"sin-cuenta\" }}",
+            "ultimoLatido": "={{ $now.toISO() }}",
+            "avisado": false
+          }
+        },
+        "options": {}
+      },
+      "id": "9b16774e-e9b8-41b4-92e3-5fb9be86f44a",
+      "name": "Registrar Latido",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        464,
+        1520
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours"
+            }
+          ]
+        }
+      },
+      "id": "dc8f740a-e549-4c84-b78b-971343badf8d",
+      "name": "Cada Hora",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        240,
+        1744
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "b9GlD5oulIXpNKBV"
+        },
+        "returnAll": true
+      },
+      "id": "ccff0211-d0b3-40a3-8aad-4965228008f8",
+      "name": "Leer Latidos",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        464,
+        1744
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Detecta cuentas que dejaron de dar señales de vida.\n//\n// Por qué hace falta un latido propio y no alcanza con mirar ultimoEnvio de\n// las conversaciones: ese campo solo se actualiza cuando el bot MANDA algo.\n// Si no escribe ningún comprador, la tabla se ve igual de quieta con el bot\n// vivo que con el bot muerto. El latido, en cambio, lo emite la extensión en\n// cada barrido, escriba o no.\n//\n// Este chequeo corre en n8n y no en el browser a propósito: es el único\n// control que sigue funcionando justo cuando el browser no está, que es el\n// caso que queremos detectar.\n//\n// Se avisa UNA sola vez por caída (`avisado`), no en cada chequeo: una\n// alerta que se repite cada hora es una alerta que se termina silenciando, y\n// una cuenta retirada avisaría para siempre. El latido la desmarca cuando la\n// cuenta vuelve, así que la próxima caída vuelve a avisar.\nconst HORAS_PARA_ALARMA = 2;\nconst ahora = Date.now();\nconst limite = ahora - HORAS_PARA_ALARMA * 60 * 60 * 1000;\n\nconst filas = $input.all()\n  .map((item) => item.json)\n  .filter((fila) => fila && fila.cuenta && fila.ultimoLatido);\n\nconst mudas = filas.filter((fila) => !fila.avisado\n  && new Date(fila.ultimoLatido).getTime() < limite);\n\nif (mudas.length === 0) return [];\n\nconst escaparHtml = (s) => String(s || '')\n  .replace(/&/g, '&amp;')\n  .replace(/</g, '&lt;')\n  .replace(/>/g, '&gt;');\n\nconst detalle = mudas\n  .map((fila) => {\n    const horas = Math.round((ahora - new Date(fila.ultimoLatido).getTime()) / 3600000);\n    return `• <b>${escaparHtml(fila.cuenta)}</b> — ${horas} h sin actividad`;\n  })\n  .join('\\n');\n\n// Una fila por cuenta muda, para poder marcarlas todas como avisadas.\nreturn mudas.map((fila) => ({\n  json: {\n    cuenta: fila.cuenta,\n    ultimoLatido: fila.ultimoLatido,\n    cantidad: mudas.length,\n    horas: HORAS_PARA_ALARMA,\n    detalle,\n  },\n}));"
+      },
+      "id": "6cd30886-65bf-4d67-a1b5-17bf84b0bdd8",
+      "name": "¿Alguna Cuenta Muda?",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        688,
+        1744
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "7507263174",
+        "text": "=🔴 <b>El bot dejó de responder</b>\n\n{{ $json.detalle }}\n\nNo hay señales de vida hace más de {{ $json.horas }} horas. Revisá que Firefox esté abierto, que la pestaña de Messenger siga cargada y que la extensión figure activa en about:debugging.",
+        "additionalFields": {
+          "appendAttribution": false,
+          "disable_web_page_preview": true,
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "7d34bbf2-1af7-4bb8-be14-ba1ebeceea7a",
+      "name": "Avisar Bot Caído",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        912,
+        1744
+      ],
+      "webhookId": "a3bc44c2-82dd-42dd-9811-557762cffa60",
+      "credentials": {
+        "telegramApi": {
+          "id": "f3LD7RSRhhIq5QZc",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "b9GlD5oulIXpNKBV"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "cuenta",
+              "keyValue": "={{ $('¿Alguna Cuenta Muda?').item.json.cuenta }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "matchingColumns": [
+            "cuenta"
+          ],
+          "value": {
+            "avisado": true
+          }
+        },
+        "options": {}
+      },
+      "id": "3210f849-17e0-4adf-b75d-623283da9adf",
+      "name": "Marcar Como Avisada",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1136,
+        1744
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.esMensajeWeb }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "679de7e5-8649-4c05-b331-c912a09426d2",
+      "name": "¿Es mensaje web?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1360,
+        608
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "respuesta",
+              "name": "respuesta",
+              "value": "={{ (() => {\n  const variantes = [\n    'Hola, te dejo también nuestra web por si querés ver todo: scequipamientos.com.ar. Si preferís, dejános tu número y nos contactamos.',\n    'Buenas! También podés chusmear todos los modelos y combos en nuestra web: scequipamientos.com.ar. O dejanos tu número y te hablamos.',\n    'Hola! Te comparto la página web para que veas todas las opciones: scequipamientos.com.ar. Cualquier duda pasanos tu teléfono y te escribimos.',\n    'Buenas, cómo va. Te paso nuestra web oficial: scequipamientos.com.ar con todos los productos. Si querés que te asesoremos, dejanos tu contacto.',\n    'Hola! Podés entrar a scequipamientos.com.ar para ver el catálogo online completo. Si preferís atención directa, pasanos tu celu.'\n  ];\n  return variantes[Math.floor(Math.random() * variantes.length)];\n})() }}",
+              "type": "string"
+            },
+            {
+              "id": "pidioNumero",
+              "name": "pidioNumero",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "numeroRecibido",
+              "name": "numeroRecibido",
+              "value": "={{ $('Detectar Número').item.json.hayNumero }}",
+              "type": "boolean"
+            },
+            {
+              "id": "necesitaHumano",
+              "name": "necesitaHumano",
+              "value": false,
+              "type": "boolean"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "cd3d60b3-094e-4164-ae0d-e50a96e2a4d9",
+      "name": "Mensaje Web (3)",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        2160,
+        352
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.esSeguimiento }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "1f309337-673b-41c8-8215-c06f8c2200c1",
+      "name": "¿Es seguimiento?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1584,
+        720
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "respuesta",
+              "name": "respuesta",
+              "value": "={{ (() => {\n  const veces = $('Detectar Número').item.json.vecesPedidoNumero || 0;\n  const noPidieronNumeroAun = [\n    '¿Lograste ver el catálogo? Si no pudiste ingresar, dejános tu número y nos contactamos.',\n    'Hola! ¿Pudiste abrir el catálogo de WhatsApp? Si tuviste algún problema, dejanos tu teléfono y te escribimos.',\n    'Buenas! ¿Llegaste a revisar los modelos en el catálogo? Cualquier cosa pasanos tu número y te mandamos info por WhatsApp.',\n    'Hola, cómo va! ¿Pudiste chequear el link del catálogo? Si preferís, dejanos tu contacto y te hablamos directo.',\n    'Hola! ¿Pudiste ver las fotos y precios? Si no te abrió el enlace, pasanos tu número y te contactamos.'\n  ];\n  const yaPidieronNumero = [\n    'Hola! ¿Seguís interesado? Dejános tu número y te pasamos el catálogo con fotos y precios por WhatsApp.',\n    'Buenas! ¿Seguís buscando opciones? Pasame tu número de contacto y te mando todo el catálogo por WhatsApp.',\n    'Hola, cómo estás? ¿Querés que te pase las fotos y precios directo a tu WhatsApp? Dejanos tu número y te escribimos.',\n    'Hola! Si todavía te interesa ver modelos y promociones, dejanos tu celu y te enviamos el catálogo completo.',\n    'Buenas tardes! ¿Seguís buscando? Pasame un teléfono de contacto y te mandamos los modelos disponibles por WhatsApp.'\n  ];\n  const lista = veces === 0 ? noPidieronNumeroAun : yaPidieronNumero;\n  return lista[Math.floor(Math.random() * lista.length)];\n})() }}",
+              "type": "string"
+            },
+            {
+              "id": "pidioNumero",
+              "name": "pidioNumero",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "numeroRecibido",
+              "name": "numeroRecibido",
+              "value": "={{ $('Detectar Número').item.json.hayNumero }}",
+              "type": "boolean"
+            },
+            {
+              "id": "necesitaHumano",
+              "name": "necesitaHumano",
+              "value": false,
+              "type": "boolean"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "daa3e5d5-5927-416c-8e65-33c14a7c8e51",
+      "name": "Mensaje de Seguimiento (2)",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        2160,
+        848
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Primer contacto contextualizado según el producto publicado.\nconst PROBABILIDAD_PEDIR_NUMERO = 0.4;\n\nconst LINKS_WHATSAPP = [\n  'https://wa.me/c/5493625281890',\n  'https://wa.me/5493625281890',\n  'https://api.whatsapp.com/send?phone=5493625281890',\n];\nconst linkWhatsApp = LINKS_WHATSAPP[Math.floor(Math.random() * LINKS_WHATSAPP.length)];\n\nconst itemDetectado = $('Detectar Número').first().json;\nconst producto = (itemDetectado.producto || '').toLowerCase();\nconst nombreComprador = itemDetectado.nombreComprador || '';\nconst saludo = (nombreComprador && nombreComprador !== 'el comprador') ? `Hola ${nombreComprador}!` : 'Hola, buenas!';\n\nconst pidioNumero = Math.random() < PROBABILIDAD_PEDIR_NUMERO;\nlet respuesta = '';\n\nif (/escritorio|mesa|mdf|combo/i.test(producto)) {\n  const piden = [\n    `${saludo} Contamos con escritorios desde $100.000 y combos de escritorio + silla. También armamos a medida en MDF.\\nSi querés ver modelos y fotos, dejanos tu número y te lo enviamos por WhatsApp.`,\n    `Buenas! Manejamos escritorios de oficina y estudio desde $100.000, más combos con sillas.\\nPasame tu número y te comparto las fotos y medidas por WhatsApp.`,\n    `${saludo} Tenemos variedad de escritorios desde $100.000.\\n¿Me dejás un número de contacto y te paso los modelos disponibles?`\n  ];\n  const mandan = [\n    `${saludo} Sí, tenemos stock en escritorios desde $100.000 y combos con sillas. También hacemos muebles a medida en MDF.\\nAcá tenés el catálogo con fotos y medidas: ${linkWhatsApp} — consultanos por ahí y coordinamos!`,\n    `Buenas! Contamos con escritorios de oficina y estudio a partir de $100.000.\\nTe dejo el catálogo directo para ver todos los modelos: ${linkWhatsApp}`,\n    `${saludo} Podés ver todos los modelos de escritorios, medidas y stock acá: ${linkWhatsApp} y cualquier duda nos hablás por ahí.`\n  ];\n  const lista = pidioNumero ? piden : mandan;\n  respuesta = lista[Math.floor(Math.random() * lista.length)];\n} else if (/gamer/i.test(producto)) {\n  const piden = [\n    `${saludo} Contamos con sillas gamer y ergonómicas con regulación de altura y respaldo alto desde $75.000 / $100.000.\\nDejanos tu número y te mandamos las fotos y opciones por WhatsApp.`,\n    `Buenas! Manejamos modelos ergonómicos y gamer con excelente soporte lumbar.\\nPasame tu celu y te comparto los modelos disponibles con precios por WhatsApp.`\n  ];\n  const mandan = [\n    `${saludo} Sí, tenemos sillas gamer y ergonómicas desde $75.000 con regulación de altura y respaldo ergonómico.\\nMirá las fotos y modelos en el catálogo directo: ${linkWhatsApp}`,\n    `Buenas! Te comparto el catálogo completo con todas las sillas gamer y de oficina: ${linkWhatsApp} — escribinos por ahí para ver colores y coordinar envío o retiro.`\n  ];\n  const lista = pidioNumero ? piden : mandan;\n  respuesta = lista[Math.floor(Math.random() * lista.length)];\n} else if (/fija|plastico|espera|apilable/i.test(producto)) {\n  const piden = [\n    `${saludo} Contamos con sillas fijas plásticas y tapizadas desde $50.000, ideales para oficinas y salas de espera.\\nDejanos tu número de contacto y te pasamos el catálogo con fotos.`,\n    `Buenas! Manejamos sillas fijas a partir de $50.000 por unidad y precios especiales por cantidad.\\nPasame tu número y te mando las opciones por WhatsApp.`\n  ];\n  const mandan = [\n    `${saludo} Sí, contamos con variedad de sillas fijas a partir de $50.000 (también precios por cantidad).\\nAcá tenés acceso directo al catálogo: ${linkWhatsApp}`,\n    `Buenas! Te paso el link para ver todos los modelos de sillas fijas y colores disponibles: ${linkWhatsApp} — cualquier consulta avisanos!`\n  ];\n  const lista = pidioNumero ? piden : mandan;\n  respuesta = lista[Math.floor(Math.random() * lista.length)];\n} else {\n  // General / Sillas giratorias / Múltiples opciones\n  const PIDEN_NUMERO = [\n    'Hola, buenas. Te comento que contamos con sillas fijas desde $50.000, giratorias desde $75.000 y escritorios desde $100.000. También armamos combos.\\nSi querés ver el catálogo completo, dejanos tu número y te lo enviamos por WhatsApp.',\n    'Buenas! Manejamos sillas fijas desde $50.000, giratorias desde $75.000 y escritorios desde $100.000, más combos a medida.\\nPasame tu número y te mando las fotos y modelos por WhatsApp.',\n    'Hola! Tenemos sillas fijas a partir de $50.000, giratorias desde $75.000 y escritorios desde $100.000.\\n¿Me dejás un número de contacto y te comparto el catálogo con fotos?',\n    'Hola, cómo va. Las fijas arrancan en $50.000, giratorias en $75.000 y escritorios desde $100.000 (también combos).\\nDejanos tu celu y te pasamos el catálogo directo al WhatsApp.',\n    'Buenas tardes! Contamos con sillas de oficina fijas desde $50.000, giratorias desde $75.000 y escritorios desde $100.000.\\nSi te interesa ver opciones y fotos, dejanos tu número y te escribimos.',\n    'Hola! Cómo estás? Tenemos sillas fijas desde $50.000, giratorias a partir de $75.000 y escritorios desde $100.000.\\nSi querés ver todos los modelos con fotos y medidas, pasanos tu WhatsApp y te mandamos el catálogo completo.',\n    'Buenas! Qué tal? Manejamos fijas desde $50.000, giratorias desde $75.000 y escritorios desde $100.000, además de combos.\\nDejanos un celu y te pasamos el catálogo directo con stock y precios actualizados.',\n    'Hola, buenas! Contamos con variedad de opciones: fijas desde $50.000, giratorias desde $75.000 y escritorios a partir de $100.000.\\nPasame tu número de contacto y te comparto el catálogo por WhatsApp así elegís tranquilo.',\n    'Buenas! Te paso los valores de referencia: sillas fijas desde $50.000, ergonómicas giratorias desde $75.000 y escritorios desde $100.000.\\n¿Nos dejás tu número para enviarte las fotos y promos vigentes por WhatsApp?'\n  ];\n\n  const MANDAN_CATALOGO = [\n    `Hola, buenas! Contamos con sillas fijas desde $50.000, giratorias desde $75.000 y escritorios desde $100.000, más combos.\\nAcá tenés el catálogo completo con fotos y precios: ${linkWhatsApp} — escribinos por ahí y coordinamos!`,\n    `Buenas! Tenemos sillas fijas desde $50.000, giratorias desde $75.000 y escritorios a partir de $100.000.\\nTe dejo el catálogo directo para ver todos los modelos: ${linkWhatsApp}`,\n    `Hola! Sillas fijas desde $50.000, giratorias desde $75.000 y escritorios desde $100.000. También hacemos combos a medida.\\nPodés mirar todo el catálogo acá: ${linkWhatsApp} y cualquier duda nos hablás por ahí.`,\n    `Hola, cómo va. Los precios arrancan en $50.000 para fijas, $75.000 giratorias y $100.000 escritorios.\\nEn este link tenés el catálogo completo con stock y fotos: ${linkWhatsApp}`,\n    `Buenas! Te paso los valores base: fijas desde $50.000, giratorias desde $75.000 y escritorios desde $100.000.\\nEntrando a ${linkWhatsApp} podés ver todos los artículos y consultarnos por WhatsApp.`,\n    `Hola! Cómo estás? Te comento que tenemos sillas fijas desde $50.000, giratorias desde $75.000 y escritorios desde $100.000.\\nPodés ver fotos, medidas y disponibilidad en el catálogo: ${linkWhatsApp} — cualquier consulta avisanos!`,\n    `Buenas! Qué tal? Trabajamos fijas desde $50.000, giratorias desde $75.000 y escritorios a partir de $100.000.\\nTe comparto el catálogo con todos los modelos: ${linkWhatsApp} — escribinos por ahí para coordinar entrega o retiro.`,\n    `Hola, buenas! Manejamos sillas fijas desde $50.000, giratorias desde $75.000 y escritorios desde $100.000, más combos.\\nAcá tenés acceso directo al catálogo completo con fotos: ${linkWhatsApp}`,\n    `Buenas! Los precios base son: fijas $50.000, giratorias $75.000 y escritorios desde $100.000.\\nMirá todos los modelos en stock acá: ${linkWhatsApp} y nos escribís por cualquier duda.`\n  ];\n\n  const variantes = pidioNumero ? PIDEN_NUMERO : MANDAN_CATALOGO;\n  respuesta = variantes[Math.floor(Math.random() * variantes.length)];\n}\n\nreturn [{\n  json: {\n    respuesta,\n    linkWhatsApp,\n    pidioNumero,\n    numeroRecibido: $('Detectar Número').first().json.hayNumero,\n    necesitaHumano: false,\n  },\n}];"
+      },
+      "id": "8b966328-e224-4b03-b822-d7ceea7776f5",
+      "name": "Mensaje de Apertura",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2160,
+        160
+      ]
+    },
+    {
+      "id": "b7f3a9c1-2e4d-4a6b-9c8e-1f2a3b4c5d6e",
+      "name": "Variar Estilo",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1230,
+        448
+      ],
+      "parameters": {
+        "jsCode": "// Elige al azar una variación de registro para la respuesta y un enlace equivalente de WhatsApp.\n// Rotar el link evita la firma de spam por URL estática idéntica repetida.\nconst variaciones = [\n  'Hoy estás con apuro: respuestas todavía más cortas, casi telegráficas, y directo al catálogo sin vueltas.',\n  'Hoy estás distendido: un toque más suelto y amable, podés arrancar con un \"buenas!\" o \"hola, cómo va\" sin pasarte de confianza.',\n  'Hoy estás prolijo: respuestas más formales, sin abreviar, con la puntuación completa, pero seguís siendo vos.',\n  'Hoy estás seco: sin saludos ni preguntas de cortesía, respuesta directa a lo que preguntan y el link al catálogo.',\n  'Hoy estás conversador: además de responder, si la consulta da para eso, podés sumar una línea de charla antes del link.',\n];\n\nconst linksWhatsApp = [\n  'https://wa.me/c/5493625281890',\n  'https://wa.me/5493625281890',\n  'https://api.whatsapp.com/send?phone=5493625281890',\n];\n\nconst estiloExtra = variaciones[Math.floor(Math.random() * variaciones.length)];\nconst linkWhatsApp = linksWhatsApp[Math.floor(Math.random() * linksWhatsApp.length)];\n\nreturn { json: { ...$input.first().json, estiloExtra, linkWhatsApp } };"
+      }
+    },
+    {
+      "id": "filtro-precios-34856178",
+      "name": "Filtrar Precios",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1900,
+        448
+      ],
+      "parameters": {
+        "jsCode": "// Safety net: permite solo los precios preestablecidos del catálogo\n// (silla giratoria $75.000, silla fija $50.000, escritorio $115.000).\n// Cualquier otro monto detectado se reemplaza por la respuesta segura.\nconst respuesta = $input.first().json.respuesta || '';\nconst linkWhatsApp = $input.first().json.linkWhatsApp || 'https://wa.me/c/5493625281890';\n\nconst PERMITIDOS = new Set([75000, 50000, 115000, 100000, 115, 100, 75, 50]);\n\nfunction normalizar(mencion) {\n  let t = String(mencion).toLowerCase().trim();\n  let mult = 1;\n  if (t.includes('mil')) { mult = 1000; t = t.replace(/mil/g, ''); }\n  else if (t.endsWith('k')) { mult = 1000; t = t.slice(0, -1); }\n  t = t.replace(/\\$/g, '').replace(/\\./g, '').replace(/,/g, '.').replace(/[^0-9.]/g, '');\n  const n = parseFloat(t);\n  return Number.isFinite(n) ? n * mult : null;\n}\n\nconst PATRONES = [\n  /\\$\\s*\\d[\\d.,]*(?:\\s*(?:mil|k))?/gi,                      // $75.000, $50 mil\n  /\\b\\d[\\d.,]*(?:\\s*(?:mil|k))?\\s*(?:pesos?|usd|\\$)/gi,     // 75 mil pesos, 50000$\n  /\\b(?:cuesta|vale|precio|sale|sale por|desde)\\s+\\d[\\d.,]*(?:\\s*(?:mil|k))?/gi, // cuesta 75 mil\n  /\\b\\d{1,3}(?:\\.\\d{3})+\\b/gi,                              // 75.000, 115.000, 1.500\n  /\\b\\d{4,6}\\b/gi,                                          // 75000, 50000, 115000\n  /\\b\\d[\\d.,]*(?:\\s*(?:mil|k))\\b/gi                         // 75 mil, 50k, 115 mil\n];\n\nconst detectados = [];\nfor (const p of PATRONES) {\n  const matches = respuesta.match(p) || [];\n  for (const m of matches) {\n    const valor = normalizar(m);\n    if (valor !== null && !detectados.includes(valor)) detectados.push(valor);\n  }\n}\n\nconst RESPUESTA_SEGURA = `Los precios los ves en el catálogo, ahí tenés todo con fotos: ${linkWhatsApp}`;\n\nconst hayNoPermitido = detectados.some(v => !PERMITIDOS.has(v));\n\nif (hayNoPermitido) {\n  console.log(`[Filtrar Precios] Precio no permitido: ${detectados.join(', ')}. Original: ${respuesta}`);\n  return [{ json: { ...$input.first().json, respuesta: RESPUESTA_SEGURA } }];\n}\n\nreturn [$input.first()];\n"
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cond_dejo_numero",
+              "leftValue": "={{ $json.avisarNumero }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1180,
+        400
+      ],
+      "id": "7b8a9c1d-2e3f-4a5b-6c7d-8e9f0a1b2c3d",
+      "name": "¿Dejó su número?"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Cuando el comprador deja su número, ya no le mandamos el catálogo ni\n// volvemos a pedirle nada: confirmamos con naturalidad que lo agendamos\n// y que nos contactamos en breve por WhatsApp.\nconst variantes = [\n  '¡Buenísimo! A la brevedad te vamos a estar contactando por WhatsApp con toda la info.',\n  'Dale impecable, ya te agendamos y en breve te mandamos mensajito por WhatsApp.',\n  'De diez, en un ratito te escribimos por WhatsApp así te pasamos fotos y detalles.',\n  'Genial, muchas gracias! Enseguida te estamos escribiendo por WhatsApp.',\n  'Buenísimo, te hablamos al WhatsApp a la brevedad para coordinar.',\n  'Dale perfecto, ahí te mandamos un WhatsApp en breve con todos los modelos disponibles.'\n];\n\nconst respuesta = variantes[Math.floor(Math.random() * variantes.length)];\n\nreturn [{\n  json: {\n    ...$input.first().json,\n    respuesta,\n    pidioNumero: false,\n    numeroRecibido: true,\n    necesitaHumano: false,\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1420,
+        300
+      ],
+      "id": "8c9d0e1f-3a4b-5c6d-7e8f-9a0b1c2d3e4f",
+      "name": "Confirmar Número Recibido"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "marketplace-leads-recientes",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "c1d2e3f4-5a6b-7c8d-9e0f-1a2b3c4d5e6f",
+      "name": "Webhook: Leads Recientes",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        240,
+        1920
+      ],
+      "webhookId": "a8e2b1c4-7d9e-4f1a-8c5b-2e4f6a8d0b2c"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "X7KPWA15ET7huZSG"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": []
+        },
+        "returnAll": true
+      },
+      "id": "d2e3f4a5-6b7c-8d9e-0f1a-2b3c4d5e6f7a",
+      "name": "Leer Todos los Leads",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        688,
+        1920
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extrae y desduplica todas las conversaciones con número de teléfono de la tabla\nconst filas = $input.all().map(item => item.json);\n\nfunction normalizarTelefono(num) {\n  if (!num) return '';\n  let n = String(num).replace(/\\D/g, '');\n  if (n.startsWith('54')) n = n.slice(2);\n  if (n.startsWith('0')) n = n.slice(1);\n  if (n.startsWith('9')) n = n.slice(1);\n  n = n.replace(/^(\\d{2,4})15(\\d{6,8})$/, '$1$2');\n  return n;\n}\n\nfunction extraerTelefonoAvanzado(texto) {\n  if (!texto) return '';\n  let t = String(texto).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');\n\n  const DECENAS = [\n    { p: /\\bnoventa\\s+y\\s+/gi, d: '9 ' },\n    { p: /\\bochenta\\s+y\\s+/gi, d: '8 ' },\n    { p: /\\bsetenta\\s+y\\s+/gi, d: '7 ' },\n    { p: /\\bsesenta\\s+y\\s+/gi, d: '6 ' },\n    { p: /\\bcincuenta\\s+y\\s+/gi, d: '5 ' },\n    { p: /\\bcuarenta\\s+y\\s+/gi, d: '4 ' },\n    { p: /\\btreinta\\s+y\\s+/gi, d: '3 ' },\n    { p: /\\bnoventa\\b/gi, d: '90 ' },\n    { p: /\\bochenta\\b/gi, d: '80 ' },\n    { p: /\\bsetenta\\b/gi, d: '70 ' },\n    { p: /\\bsesenta\\b/gi, d: '60 ' },\n    { p: /\\bcincuenta\\b/gi, d: '50 ' },\n    { p: /\\bcuarenta\\b/gi, d: '40 ' },\n    { p: /\\btreinta\\b/gi, d: '30 ' },\n    { p: /\\bveintinueve\\b/gi, d: '29 ' },\n    { p: /\\bveintiocho\\b/gi, d: '28 ' },\n    { p: /\\bveintisiete\\b/gi, d: '27 ' },\n    { p: /\\bveintiseis\\b/gi, d: '26 ' },\n    { p: /\\bveinticinco\\b/gi, d: '25 ' },\n    { p: /\\bveinticuatro\\b/gi, d: '24 ' },\n    { p: /\\bveintitres\\b/gi, d: '23 ' },\n    { p: /\\bveintidos\\b/gi, d: '22 ' },\n    { p: /\\bveintiuno\\b|\\bveintiun\\b/gi, d: '21 ' },\n    { p: /\\bveinte\\b/gi, d: '20 ' },\n    { p: /\\bdiecinueve\\b/gi, d: '19 ' },\n    { p: /\\bdieciocho\\b/gi, d: '18 ' },\n    { p: /\\bdiecisiete\\b/gi, d: '17 ' },\n    { p: /\\bdieciseis\\b/gi, d: '16 ' },\n    { p: /\\bquince\\b/gi, d: '15 ' },\n    { p: /\\bcatorce\\b/gi, d: '14 ' },\n    { p: /\\btrece\\b/gi, d: '13 ' },\n    { p: /\\bdoce\\b/gi, d: '12 ' },\n    { p: /\\bonce\\b/gi, d: '11 ' },\n    { p: /\\bdiez\\b/gi, d: '10 ' },\n    { p: /\\bcero\\b/gi, d: '0 ' },\n    { p: /\\buno\\b|\\bun\\b|\\buna\\b/gi, d: '1 ' },\n    { p: /\\bdos\\b/gi, d: '2 ' },\n    { p: /\\btres\\b/gi, d: '3 ' },\n    { p: /\\bcuatro\\b/gi, d: '4 ' },\n    { p: /\\bcinco\\b/gi, d: '5 ' },\n    { p: /\\bseis\\b/gi, d: '6 ' },\n    { p: /\\bsiete\\b/gi, d: '7 ' },\n    { p: /\\bocho\\b/gi, d: '8 ' },\n    { p: /\\bnueve\\b/gi, d: '9 ' },\n  ];\n\n  for (const item of DECENAS) {\n    t = t.replace(item.p, item.d);\n  }\n\n  const candidatos = t.match(/\\+?\\d[\\d\\s\\-()./_*~|]{6,}\\d/g) || [];\n  const numeros = candidatos\n    .map((c) => c.replace(/\\D/g, ''))\n    .filter((n) => n.length >= 8 && n.length <= 15);\n\n  return numeros[0] || '';\n}\n\nfunction extraerTelefono(fila) {\n  if (!fila) return '';\n  if (fila.numero && String(fila.numero).replace(/\\D/g, '').length >= 6) {\n    return String(fila.numero);\n  }\n  if (fila.numeroDelComprador && String(fila.numeroDelComprador).replace(/\\D/g, '').length >= 6) {\n    return String(fila.numeroDelComprador);\n  }\n  const txt = String(fila.mensaje || fila.ultimoMensaje || '');\n  return extraerTelefonoAvanzado(txt);\n}\n\nconst porNumero = new Map();\n\nfilas.forEach(f => {\n  if (!f) return;\n  const tel = extraerTelefono(f);\n  const telNorm = normalizarTelefono(tel);\n  if (!telNorm || telNorm.length < 6) return;\n\n  const fechaActual = new Date(f.ultimoEnvio || f.fechaContacto || f.updatedAt || f.createdAt || 0).getTime();\n  const previo = porNumero.get(telNorm);\n  if (!previo || fechaActual > new Date(previo.ultimoEnvio || previo.fechaContacto || previo.updatedAt || previo.createdAt || 0).getTime()) {\n    porNumero.set(telNorm, {\n      ...f,\n      numero: tel\n    });\n  }\n});\n\nconst unicos = Array.from(porNumero.values()).sort((a, b) => new Date(b.ultimoEnvio || 0) - new Date(a.ultimoEnvio || 0));\n\nconst leads = unicos.map(l => ({\n  cuenta: l.cuenta || 'marketplace',\n  idConversacion: l.idConversacion,\n  nombreComprador: l.nombreComprador && l.nombreComprador !== 'Comprador' ? l.nombreComprador : 'Comprador',\n  numero: l.numero,\n  ultimoEnvio: l.ultimoEnvio || new Date().toISOString(),\n  derivadaAHumano: Boolean(l.derivadaAHumano),\n  contactadoEnWhatsapp: Boolean(l.contactadoEnWhatsapp)\n}));\n\nreturn [{\n  json: {\n    ok: true,\n    total: leads.length,\n    leads,\n    leadsNuevos: leads.filter(l => !l.contactadoEnWhatsapp && !l.derivadaAHumano),\n    leadsSeguimiento: leads,\n    todosUnicos: leads\n  }\n}];"
+      },
+      "id": "e3f4a5b6-7c8d-9e0f-1a2b-3c4d5e6f7a8b",
+      "name": "Filtrar Leads Recientes",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        1920
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "marketplace-marcar-lead",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "f4a5b6c7-8d9e-0f1a-2b3c-4d5e6f7a8b9c",
+      "name": "Webhook: Marcar Lead",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        240,
+        2220
+      ],
+      "webhookId": "b9f3c2d5-8e0f-5a2b-9d6c-3f5a7b9e1c3d"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { ok: true } }];"
+      },
+      "id": "a5b6c7d8-9e0f-1a2b-3c4d-5e6f7a8b9c0d",
+      "name": "Responder Marcar",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        688,
+        2220
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "X7KPWA15ET7huZSG"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "cuenta",
+              "keyValue": "={{ $json.body?.cuenta || \"firefox-default\" }}"
+            },
+            {
+              "keyName": "idConversacion",
+              "keyValue": "={{ $json.body?.idConversacion }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "matchingColumns": [
+            "cuenta",
+            "idConversacion"
+          ],
+          "value": {
+            "cuenta": "={{ $json.body?.cuenta || \"firefox-default\" }}",
+            "idConversacion": "={{ $json.body?.idConversacion }}",
+            "derivadaAHumano": true
+          }
+        },
+        "options": {}
+      },
+      "id": "b1c2d3e4-5f6a-7b8c-9d0e-1f2a3b4c5d6e",
+      "name": "Guardar Lead Contactado",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        460,
+        2220
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook: Mensaje Marketplace": {
+      "main": [
+        [
+          {
+            "node": "Normalizar Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IA: Armar Respuesta": {
+      "main": [
+        [
+          {
+            "node": "Formatear Respuesta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "IA: Armar Respuesta",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Es el primer mensaje?": {
+      "main": [
+        [
+          {
+            "node": "Mensaje de Apertura",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "¿Dejó su número?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parser de Respuesta": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "IA: Armar Respuesta",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Detectar Número": {
+      "main": [
+        [
+          {
+            "node": "¿Es el primer mensaje?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Responder al Webhook": {
+      "main": [
+        [
+          {
+            "node": "¿Compartió el número?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "¿Necesita un humano?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Guardar Estado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Compartió el número?": {
+      "main": [
+        [
+          {
+            "node": "Avisar Número por Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook: Alerta de la Extensión": {
+      "main": [
+        [
+          {
+            "node": "Sanear Alerta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sanear Alerta": {
+      "main": [
+        [
+          {
+            "node": "Avisar Problema por Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Necesita un humano?": {
+      "main": [
+        [
+          {
+            "node": "Avisar Derivación por Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook: Resumen Diario": {
+      "main": [
+        [
+          {
+            "node": "Armar Resumen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Armar Resumen": {
+      "main": [
+        [
+          {
+            "node": "Enviar Resumen por Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalizar Payload": {
+      "main": [
+        [
+          {
+            "node": "Leer Estado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leer Estado": {
+      "main": [
+        [
+          {
+            "node": "Detectar Número",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leer Conversaciones de la Cuenta": {
+      "main": [
+        [
+          {
+            "node": "Filtrar Pendientes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook: Pendientes": {
+      "main": [
+        [
+          {
+            "node": "Registrar Latido",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Registrar Latido": {
+      "main": [
+        [
+          {
+            "node": "Leer Conversaciones de la Cuenta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cada Hora": {
+      "main": [
+        [
+          {
+            "node": "Leer Latidos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leer Latidos": {
+      "main": [
+        [
+          {
+            "node": "¿Alguna Cuenta Muda?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Alguna Cuenta Muda?": {
+      "main": [
+        [
+          {
+            "node": "Avisar Bot Caído",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Avisar Bot Caído": {
+      "main": [
+        [
+          {
+            "node": "Marcar Como Avisada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Es mensaje web?": {
+      "main": [
+        [
+          {
+            "node": "Mensaje Web (3)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "¿Es seguimiento?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Es seguimiento?": {
+      "main": [
+        [
+          {
+            "node": "Mensaje de Seguimiento (2)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Variar Estilo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mensaje Web (3)": {
+      "main": [
+        [
+          {
+            "node": "Responder al Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mensaje de Seguimiento (2)": {
+      "main": [
+        [
+          {
+            "node": "Responder al Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mensaje de Apertura": {
+      "main": [
+        [
+          {
+            "node": "Responder al Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Variar Estilo": {
+      "main": [
+        [
+          {
+            "node": "IA: Armar Respuesta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formatear Respuesta": {
+      "main": [
+        [
+          {
+            "node": "Filtrar Precios",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filtrar Precios": {
+      "main": [
+        [
+          {
+            "node": "Responder al Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Dejó su número?": {
+      "main": [
+        [
+          {
+            "node": "Confirmar Número Recibido",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "¿Es mensaje web?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirmar Número Recibido": {
+      "main": [
+        [
+          {
+            "node": "Responder al Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook: Leads Recientes": {
+      "main": [
+        [
+          {
+            "node": "Leer Todos los Leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leer Todos los Leads": {
+      "main": [
+        [
+          {
+            "node": "Filtrar Leads Recientes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook: Marcar Lead": {
+      "main": [
+        [
+          {
+            "node": "Guardar Lead Contactado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Guardar Lead Contactado": {
+      "main": [
+        [
+          {
+            "node": "Responder Marcar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": true,
+    "binaryMode": "separate"
+  },
+  "staticData": {
+    "node:Cada Hora": {
+      "recurrenceRules": [
+        null
+      ],
+      "recurrenceRuleSignatures": [
+        null
+      ]
+    }
+  },
+  "meta": {
+    "aiBuilderAssisted": true,
+    "builderVariant": "mcp"
+  },
+  "nodeGroups": [],
+  "pinData": {
+    "Webhook: Mensaje Marketplace": [
+      {
+        "json": {
+          "headers": {
+            "host": "n8n.santiagowuerich.info",
+            "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:153.0) Gecko/20100101 Firefox/153.0",
+            "content-length": "235",
+            "accept": "*/*",
+            "accept-encoding": "gzip, br",
+            "accept-language": "es-ES,es;q=0.9,en-US;q=0.8,en;q=0.7",
+            "cdn-loop": "cloudflare; loops=1",
+            "cf-connecting-ip": "2803:9800:94c0:9b33:78a2:1bbd:f348:d3dc",
+            "cf-ipcountry": "AR",
+            "cf-ray": "a2cb0776280b1522-EZE",
+            "cf-visitor": "{\"scheme\":\"https\"}",
+            "content-type": "application/json",
+            "origin": "moz-extension://bc40b686-183a-4ad3-8645-7934b37ce336",
+            "priority": "u=4",
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "cross-site",
+            "x-forwarded-for": "104.23.237.12",
+            "x-forwarded-host": "n8n.santiagowuerich.info",
+            "x-forwarded-port": "443",
+            "x-forwarded-proto": "https",
+            "x-forwarded-server": "f459c3d0a697",
+            "x-real-ip": "104.23.237.12"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "cuenta": "firefox-default",
+            "mensaje": "3624227820",
+            "nombreComprador": "Pamela",
+            "idConversacion": "1968435157200680",
+            "systemPrompt": "sillas",
+            "esSeguimiento": false,
+            "esMensajeWeb": false,
+            "yaEscribimos": true,
+            "numeroDelComprador": "3624227820"
+          },
+          "webhookUrl": "https://n8n.santiagowuerich.info/webhook/marketplace-reply",
+          "executionMode": "production"
+        }
+      }
+    ]
+  },
+  "versionId": "901a485d-6151-4181-8d3c-ab6c503f53e7",
+  "activeVersionId": "901a485d-6151-4181-8d3c-ab6c503f53e7",
+  "versionCounter": 89,
+  "triggerCount": 7,
+  "sourceWorkflowId": null,
+  "shared": [
+    {
+      "updatedAt": "2026-08-11T02:40:12.922Z",
+      "createdAt": "2026-08-11T02:40:12.922Z",
+      "role": "workflow:owner",
+      "workflowId": "o1hQpxHMFMbj3Nnw",
+      "projectId": "LKWtm3pklo9NoWPo",
+      "project": {
+        "updatedAt": "2026-08-04T13:24:57.393Z",
+        "createdAt": "2026-08-04T13:22:42.622Z",
+        "id": "LKWtm3pklo9NoWPo",
+        "name": "Santiago Wuerich <santiagow142001@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "customTelemetryTags": [],
+        "creatorId": "1ea0ed00-d8d2-408d-ac05-92a742038b93"
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": {
+    "updatedAt": "2026-08-23T00:41:57.609Z",
+    "createdAt": "2026-08-23T00:41:57.609Z",
+    "versionId": "901a485d-6151-4181-8d3c-ab6c503f53e7",
+    "workflowId": "o1hQpxHMFMbj3Nnw",
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "marketplace-reply",
+          "responseMode": "responseNode",
+          "options": {}
+        },
+        "id": "e6ce034b-edd5-45ce-8375-24674008bb27",
+        "name": "Webhook: Mensaje Marketplace",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2.1,
+        "position": [
+          240,
+          512
+        ],
+        "webhookId": "c6faaf76-3d99-45f6-8fdb-cad585bf8d53"
+      },
+      {
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "id": "cuenta",
+                "name": "cuenta",
+                "value": "={{ $json.body?.cuenta ?? $json.cuenta ?? \"sin-cuenta\" }}",
+                "type": "string"
+              },
+              {
+                "id": "mensaje",
+                "name": "mensaje",
+                "value": "={{ $json.body?.mensaje ?? $json.mensaje ?? \"\" }}",
+                "type": "string"
+              },
+              {
+                "id": "nombreComprador",
+                "name": "nombreComprador",
+                "value": "={{ $json.body?.nombreComprador ?? $json.nombreComprador ?? \"el comprador\" }}",
+                "type": "string"
+              },
+              {
+                "id": "idConversacion",
+                "name": "idConversacion",
+                "value": "={{ $json.body?.idConversacion ?? $json.idConversacion ?? \"\" }}",
+                "type": "string"
+              },
+              {
+                "id": "systemPrompt",
+                "name": "systemPrompt",
+                "value": "={{ $json.body?.systemPrompt ?? $json.systemPrompt ?? \"\" }}",
+                "type": "string"
+              },
+              {
+                "id": "esSeguimiento",
+                "name": "esSeguimiento",
+                "value": "={{ $json.body?.esSeguimiento ?? $json.esSeguimiento ?? false }}",
+                "type": "boolean"
+              },
+              {
+                "id": "yaEscribimos",
+                "name": "yaEscribimos",
+                "value": "={{ $json.body?.yaEscribimos ?? $json.yaEscribimos ?? null }}",
+                "type": "boolean"
+              },
+              {
+                "id": "numeroDelComprador",
+                "name": "numeroDelComprador",
+                "value": "={{ $json.body?.numeroDelComprador ?? $json.numeroDelComprador ?? \"\" }}",
+                "type": "string"
+              },
+              {
+                "id": "esMensajeWeb",
+                "name": "esMensajeWeb",
+                "value": "={{ $json.body?.esMensajeWeb ?? $json.esMensajeWeb ?? false }}",
+                "type": "boolean"
+              },
+              {
+                "id": "producto",
+                "name": "producto",
+                "value": "={{ $json.body?.producto ?? $json.producto ?? \"\" }}",
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "e6fac2e2-5f67-43e6-91c6-e8a75f9c9a54",
+        "name": "Normalizar Payload",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.5,
+        "position": [
+          464,
+          512
+        ]
+      },
+      {
+        "parameters": {
+          "promptType": "define",
+          "text": "={{ $json.esSeguimiento ? `Pasó un rato desde tu último mensaje a ${$json.nombreComprador} y no contestó. Escribile algo corto y amable para retomar, sin reclamarle el silencio. Volvele a pasar el catálogo tal cual: ${$json.linkWhatsApp || 'https://wa.me/c/5493625281890'} — decíle que ahí ve todo con fotos y precios. NO le pidas el número.` : `${$json.nombreComprador} escribió: '${$json.mensaje}'\\n\\nContestá la consulta en una línea si podés, y pasale el catálogo para que vea los productos y te escriba él por ahí. NO le pidas el número ni le digas que vos le vas a escribir.` }}",
+          "hasOutputParser": true,
+          "options": {
+            "systemMessage": "={{ 'Sos un vendedor de SC Equipamientos respondiendo consultas de compradores en Facebook Marketplace.\\n\\nESTILO: escribí en español rioplatense, de vos: \"podés\", \"tenés\", \"dejame\", \"te paso\". Nunca uses tú ni usted. Mensajes cortos, de una o dos líneas, como escribe un vendedor por chat: sin saludos formales, sin firmas y sin sonar a folleto.\\n\\nQUÉ VENDEMOS: sillas de oficina, fijas, ergonómicas, gamer, de diseño (como Tulip) y de escritorio; escritorios y muebles a medida en MDF. NUNCA digas que no vendemos algo ni descartes modelos o productos: si preguntan por fotos, modelos o qué es un producto, pasale directamente el catálogo para que vea todos los modelos y fotos ahí.\\n\\nOBJETIVO ÚNICO: que el comprador entre al catálogo de WhatsApp y te escriba ÉL por ahí. Pasale este link tal cual, sin acortarlo ni cambiarlo: ' + ($json.linkWhatsApp || 'https://wa.me/c/5493625281890') + ' — decile que ahí ve todos los productos con fotos y precios.\\n\\nNUNCA le pidas el número de teléfono, ni el WhatsApp, ni que te lo deje, ni de manera directa ni indirecta. No lo vamos a usar. Si te lo da igual, agradecele en una línea y decile que te escriba él al catálogo. Tampoco le digas que vos le vas a escribir: el que escribe es él.\\n\\nREGLA FIJA DE PRECIOS: los únicos precios que podés mencionar son los del catálogo: silla giratoria $75.000, silla fija $50.000, escritorio $115.000. Si el comprador pregunta por el precio de uno de esos productos, decilo exactamente con esos montos. NUNCA menciones ningún otro monto ni número con $: si no es uno de esos tres, decile que en el catálogo ve todos los productos con fotos y precios y pasale el link.\\n\\nUBICACIÓN: sos de Resistencia, Chaco. Si preguntan de dónde sos o dónde estás, decilo exactamente: Resistencia, Chaco. NO digas otra ciudad ni provincia. NO AFIRMES lo que no sabés: envíos, tiempos de entrega, stock y medidas se ven por WhatsApp. Si preguntan por eso, decilo así en vez de arriesgar un dato.\\n\\nNunca digas ni des a entender que sos un bot, una IA o una respuesta automática, ni que la conversación la sigue otra persona.\\n\\nMarcá necesitaHumano en true cuando el comprador: pregunta si habla con un bot o con una persona, se molesta o te reclama, hace un reclamo por una compra anterior, pide algo que no podés resolver con el catálogo, o insiste con algo que ya no sabés cómo responder. Cuando lo marques, tu respuesta no se le va a enviar a nadie, así que escribí cualquier cosa breve y neutra. En cualquier otro caso necesitaHumano va en false.' + ($json.systemPrompt ? ('\\n\\nNOTAS DE ESTA CUENTA: ' + $json.systemPrompt) : '') + ($json.estiloExtra ? ('\\n\\n' + $json.estiloExtra) : '') }}"
+          }
+        },
+        "id": "ae19deab-c615-4e7d-923a-4e67a28041ac",
+        "name": "IA: Armar Respuesta",
+        "type": "@n8n/n8n-nodes-langchain.agent",
+        "typeVersion": 3.1,
+        "position": [
+          1808,
+          608
+        ]
+      },
+      {
+        "parameters": {
+          "model": "openai/gpt-oss-120b",
+          "options": {}
+        },
+        "id": "4c6f98b3-acd1-4787-b0ad-c16ed9047eec",
+        "name": "Groq Chat Model",
+        "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+        "typeVersion": 1,
+        "position": [
+          1816,
+          824
+        ],
+        "credentials": {
+          "groqApi": {
+            "id": "Qa47kiif6fRN0Qb8",
+            "name": "Groq account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "id": "respuesta",
+                "name": "respuesta",
+                "value": "={{ $json.output.respuesta }}",
+                "type": "string"
+              },
+              {
+                "id": "pidioNumero",
+                "name": "pidioNumero",
+                "value": "={{ Boolean($json.output.pidioNumero) && /n[úu]mero|whats ?app|wsp|celular/i.test($json.output.respuesta || '') }}",
+                "type": "boolean"
+              },
+              {
+                "id": "numeroRecibido",
+                "name": "numeroRecibido",
+                "value": "={{ $json.output.numeroRecibido || $('Detectar Número').item.json.hayNumero }}",
+                "type": "boolean"
+              },
+              {
+                "id": "necesitaHumano",
+                "name": "necesitaHumano",
+                "value": "={{ Boolean($json.output.necesitaHumano) || $('Detectar Número').item.json.pidioHumano }}",
+                "type": "boolean"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "e314fdde-87c8-4bb6-936a-fbc88b89a53d",
+        "name": "Formatear Respuesta",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.5,
+        "position": [
+          2160,
+          608
+        ]
+      },
+      {
+        "parameters": {
+          "respondWith": "json",
+          "responseBody": "={{ { \"respuesta\": $json.respuesta, \"pidioNumero\": $json.pidioNumero, \"numeroRecibido\": $json.numeroRecibido, \"necesitaHumano\": $json.necesitaHumano, \"esPrimerMensaje\": $('Detectar Número').item.json.esPrimerMensaje, \"avisarNumero\": $('Detectar Número').item.json.avisarNumero } }}",
+          "options": {}
+        },
+        "id": "e440600b-ca24-4ebb-982b-fc77cb079250",
+        "name": "Responder al Webhook",
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1.5,
+        "position": [
+          2384,
+          480
+        ]
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "combinator": "and",
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 1
+            },
+            "conditions": [
+              {
+                "leftValue": "={{ $json.esPrimerMensaje }}",
+                "rightValue": true,
+                "operator": {
+                  "type": "boolean",
+                  "operation": "equals"
+                }
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "92a841d7-8a92-4ca1-b33f-cd42df2d8747",
+        "name": "¿Es el primer mensaje?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [
+          1136,
+          512
+        ]
+      },
+      {
+        "parameters": {
+          "jsonSchemaExample": "{ \"respuesta\": \"Hola, gracias por tu mensaje\", \"pidioNumero\": true, \"numeroRecibido\": false, \"necesitaHumano\": false }"
+        },
+        "id": "c6605e6e-37dd-4c2a-8279-fbeb27a5443c",
+        "name": "Parser de Respuesta",
+        "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+        "typeVersion": 1.3,
+        "position": [
+          1944,
+          824
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "// Resuelve el estado de la conversación combinando dos fuentes:\n// - la data table (sobrevive a que se pierda el storage del browser)\n// - lo que la extensión leyó del DOM de la conversación abierta\nconst payload = $('Normalizar Payload').first().json;\nconst guardado = $input.first().json || {};\nconst tieneFila = Boolean(guardado.idConversacion);\n\nconst mensaje = payload.mensaje || '';\n\n// Detector avanzado de teléfonos: decodifica números escritos en palabras y tolera símbolos de ofuscación\nfunction extraerTelefonoAvanzado(texto) {\n  if (!texto) return '';\n  let t = String(texto).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');\n\n  const DECENAS = [\n    { p: /\\bnoventa\\s+y\\s+/gi, d: '9 ' },\n    { p: /\\bochenta\\s+y\\s+/gi, d: '8 ' },\n    { p: /\\bsetenta\\s+y\\s+/gi, d: '7 ' },\n    { p: /\\bsesenta\\s+y\\s+/gi, d: '6 ' },\n    { p: /\\bcincuenta\\s+y\\s+/gi, d: '5 ' },\n    { p: /\\bcuarenta\\s+y\\s+/gi, d: '4 ' },\n    { p: /\\btreinta\\s+y\\s+/gi, d: '3 ' },\n    { p: /\\bnoventa\\b/gi, d: '90 ' },\n    { p: /\\bochenta\\b/gi, d: '80 ' },\n    { p: /\\bsetenta\\b/gi, d: '70 ' },\n    { p: /\\bsesenta\\b/gi, d: '60 ' },\n    { p: /\\bcincuenta\\b/gi, d: '50 ' },\n    { p: /\\bcuarenta\\b/gi, d: '40 ' },\n    { p: /\\btreinta\\b/gi, d: '30 ' },\n    { p: /\\bveintinueve\\b/gi, d: '29 ' },\n    { p: /\\bveintiocho\\b/gi, d: '28 ' },\n    { p: /\\bveintisiete\\b/gi, d: '27 ' },\n    { p: /\\bveintiseis\\b/gi, d: '26 ' },\n    { p: /\\bveinticinco\\b/gi, d: '25 ' },\n    { p: /\\bveinticuatro\\b/gi, d: '24 ' },\n    { p: /\\bveintitres\\b/gi, d: '23 ' },\n    { p: /\\bveintidos\\b/gi, d: '22 ' },\n    { p: /\\bveintiuno\\b|\\bveintiun\\b/gi, d: '21 ' },\n    { p: /\\bveinte\\b/gi, d: '20 ' },\n    { p: /\\bdiecinueve\\b/gi, d: '19 ' },\n    { p: /\\bdieciocho\\b/gi, d: '18 ' },\n    { p: /\\bdiecisiete\\b/gi, d: '17 ' },\n    { p: /\\bdieciseis\\b/gi, d: '16 ' },\n    { p: /\\bquince\\b/gi, d: '15 ' },\n    { p: /\\bcatorce\\b/gi, d: '14 ' },\n    { p: /\\btrece\\b/gi, d: '13 ' },\n    { p: /\\bdoce\\b/gi, d: '12 ' },\n    { p: /\\bonce\\b/gi, d: '11 ' },\n    { p: /\\bdiez\\b/gi, d: '10 ' },\n    { p: /\\bcero\\b/gi, d: '0 ' },\n    { p: /\\buno\\b|\\bun\\b|\\buna\\b/gi, d: '1 ' },\n    { p: /\\bdos\\b/gi, d: '2 ' },\n    { p: /\\btres\\b/gi, d: '3 ' },\n    { p: /\\bcuatro\\b/gi, d: '4 ' },\n    { p: /\\bcinco\\b/gi, d: '5 ' },\n    { p: /\\bseis\\b/gi, d: '6 ' },\n    { p: /\\bsiete\\b/gi, d: '7 ' },\n    { p: /\\bocho\\b/gi, d: '8 ' },\n    { p: /\\bnueve\\b/gi, d: '9 ' },\n  ];\n\n  for (const item of DECENAS) {\n    t = t.replace(item.p, item.d);\n  }\n\n  const candidatos = t.match(/\\+?\\d[\\d\\s\\-()./_*~|]{6,}\\d/g) || [];\n  const numeros = candidatos\n    .map((c) => c.replace(/\\D/g, ''))\n    .filter((n) => n.length >= 8 && n.length <= 15);\n\n  return numeros[0] || '';\n}\n\nconst telDetectado = extraerTelefonoAvanzado(mensaje);\nconst numero = telDetectado || payload.numeroDelComprador || guardado.numero || '';\nconst numeroCompartido = Boolean(guardado.numeroCompartido) || Boolean(numero);\nconst esNumeroNuevo = !guardado.numeroCompartido && Boolean(numero);\n\nconst esPrimerMensaje = payload.yaEscribimos === null || payload.yaEscribimos === undefined\n  ? !tieneFila\n  : !payload.yaEscribimos;\n\nconst normalizado = mensaje.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');\n\nconst PATRONES_HUMANO = [\n  /\\b(sos|eres|es|son)\\s+(un[ao]?\\s+)?(bot|robot|maquina|ia)\\b/,\n  /\\bbot\\s*\\?/,\n  /habl\\w*\\s+con\\s+(un[ao]?\\s+)?(persona|humano|alguien)/,\n  /(atiende|responde|contesta)\\s+(un[ao]?\\s+)?(persona|humano)/,\n  /\\bautomatic/,\n  /\\b(estafa|estafador|chorro|ladron)\\b/,\n  /\\b(reclamo|garantia|devolucion|factura)\\b/,\n];\nconst pidioHumano = PATRONES_HUMANO.some((p) => p.test(normalizado));\n\nfunction aFormatoWhatsApp(digitos) {\n  if (!digitos) return '';\n  let n = digitos;\n  if (n.startsWith('54')) n = n.slice(2);\n  if (n.startsWith('0')) n = n.slice(1);\n  if (n.startsWith('9')) n = n.slice(1);\n  n = n.replace(/^(\\d{2,4})15(\\d{6,8})$/, '$1$2');\n  return `549${n}`;\n}\n\nconst PREFIJOS = [{\"p\":\"2221\",\"u\":\"Buenos Aires (Magdalena / Punta Indio)\"},{\"p\":\"2223\",\"u\":\"Buenos Aires (Brandsen)\"},{\"p\":\"2224\",\"u\":\"Buenos Aires (Glew / Guernica / GBA)\"},{\"p\":\"2225\",\"u\":\"Buenos Aires (San Vicente / GBA)\"},{\"p\":\"2226\",\"u\":\"Buenos Aires (Cañuelas)\"},{\"p\":\"2227\",\"u\":\"Buenos Aires (Lobos / Navarro / Roque Pérez)\"},{\"p\":\"2241\",\"u\":\"Buenos Aires (Chascomús / Lezama)\"},{\"p\":\"2242\",\"u\":\"Buenos Aires (General Belgrano)\"},{\"p\":\"2243\",\"u\":\"Buenos Aires (General Paz / Ranchos)\"},{\"p\":\"2244\",\"u\":\"Buenos Aires (Las Flores)\"},{\"p\":\"2245\",\"u\":\"Buenos Aires (Dolores / Castelli)\"},{\"p\":\"2246\",\"u\":\"Buenos Aires (Santa Teresita / La Costa)\"},{\"p\":\"2252\",\"u\":\"Buenos Aires (San Clemente del Tuyú)\"},{\"p\":\"2254\",\"u\":\"Buenos Aires (Pinamar / Cariló / Valeria del Mar)\"},{\"p\":\"2255\",\"u\":\"Buenos Aires (Villa Gesell)\"},{\"p\":\"2257\",\"u\":\"Buenos Aires (Mar de Ajó / San Bernardo)\"},{\"p\":\"2261\",\"u\":\"Buenos Aires (Lobería)\"},{\"p\":\"2262\",\"u\":\"Buenos Aires (Necochea / Quequén)\"},{\"p\":\"2264\",\"u\":\"Buenos Aires (Miramar)\"},{\"p\":\"2265\",\"u\":\"Buenos Aires (Coronel Vidal)\"},{\"p\":\"2266\",\"u\":\"Buenos Aires (Balcarce)\"},{\"p\":\"2267\",\"u\":\"Buenos Aires (General Madariaga)\"},{\"p\":\"2268\",\"u\":\"Buenos Aires (Maipú)\"},{\"p\":\"2271\",\"u\":\"Buenos Aires (San Antonio de Areco)\"},{\"p\":\"2272\",\"u\":\"Buenos Aires (Carmen de Areco)\"},{\"p\":\"2273\",\"u\":\"Buenos Aires (San Andrés de Giles)\"},{\"p\":\"2274\",\"u\":\"Buenos Aires (Saladillo / Del Carril)\"},{\"p\":\"2281\",\"u\":\"Buenos Aires (Azul)\"},{\"p\":\"2283\",\"u\":\"Buenos Aires (Tapalqué)\"},{\"p\":\"2284\",\"u\":\"Buenos Aires (Olavarría / Sierras Bayas)\"},{\"p\":\"2285\",\"u\":\"Buenos Aires (Laprida / General La Madrid)\"},{\"p\":\"2286\",\"u\":\"Buenos Aires (Benito Juárez)\"},{\"p\":\"2291\",\"u\":\"Buenos Aires (General Alvarado)\"},{\"p\":\"2292\",\"u\":\"Buenos Aires (González Chaves)\"},{\"p\":\"2296\",\"u\":\"Buenos Aires (Ayacucho)\"},{\"p\":\"2297\",\"u\":\"Buenos Aires (Rauch)\"},{\"p\":\"2314\",\"u\":\"Buenos Aires (Bolívar / Daireaux)\"},{\"p\":\"2316\",\"u\":\"Buenos Aires (General Arenales)\"},{\"p\":\"2317\",\"u\":\"Buenos Aires (Nueve de Julio)\"},{\"p\":\"2320\",\"u\":\"Buenos Aires (José C. Paz / Grand Bourg / GBA)\"},{\"p\":\"2323\",\"u\":\"Buenos Aires (Luján)\"},{\"p\":\"2324\",\"u\":\"Buenos Aires (Mercedes / Suipacha)\"},{\"p\":\"2325\",\"u\":\"Buenos Aires (San Andrés de Giles)\"},{\"p\":\"2326\",\"u\":\"Buenos Aires (San Antonio de Areco)\"},{\"p\":\"2342\",\"u\":\"Buenos Aires (Bragado)\"},{\"p\":\"2343\",\"u\":\"Buenos Aires (General Viamonte / Los Toldos)\"},{\"p\":\"2344\",\"u\":\"Buenos Aires (Saladillo)\"},{\"p\":\"2345\",\"u\":\"Buenos Aires (Veinticinco de Mayo)\"},{\"p\":\"2346\",\"u\":\"Buenos Aires (Chivilcoy / Alberti)\"},{\"p\":\"2352\",\"u\":\"Buenos Aires (Chacabuco)\"},{\"p\":\"2353\",\"u\":\"Buenos Aires (General Arenales)\"},{\"p\":\"2354\",\"u\":\"Buenos Aires (Vedia / Leandro N. Alem)\"},{\"p\":\"2355\",\"u\":\"Buenos Aires (Lincoln)\"},{\"p\":\"2356\",\"u\":\"Buenos Aires (General Pinto)\"},{\"p\":\"2357\",\"u\":\"Buenos Aires (Carlos Tejedor)\"},{\"p\":\"2358\",\"u\":\"Buenos Aires (Los Toldos)\"},{\"p\":\"2392\",\"u\":\"Buenos Aires (Trenque Lauquen / Pellegrini)\"},{\"p\":\"2393\",\"u\":\"Buenos Aires (Salliqueló)\"},{\"p\":\"2394\",\"u\":\"Buenos Aires (Tres Lomas)\"},{\"p\":\"2395\",\"u\":\"Buenos Aires (Carlos Casares)\"},{\"p\":\"2396\",\"u\":\"Buenos Aires (Pehuajó)\"},{\"p\":\"2473\",\"u\":\"Buenos Aires (Colón)\"},{\"p\":\"2474\",\"u\":\"Buenos Aires (Rojas / Carabelas)\"},{\"p\":\"2475\",\"u\":\"Buenos Aires (Salto)\"},{\"p\":\"2477\",\"u\":\"Buenos Aires (Pergamino)\"},{\"p\":\"2478\",\"u\":\"Buenos Aires (Arrecifes / Capitán Sarmiento)\"},{\"p\":\"2921\",\"u\":\"Buenos Aires (Coronel Dorrego / Monte Hermoso)\"},{\"p\":\"2922\",\"u\":\"Buenos Aires (Coronel Pringles)\"},{\"p\":\"2923\",\"u\":\"Buenos Aires (Pigüé / Coronel Suárez)\"},{\"p\":\"2924\",\"u\":\"Buenos Aires (Darregueira)\"},{\"p\":\"2925\",\"u\":\"Buenos Aires (Médanos / Villarino)\"},{\"p\":\"2926\",\"u\":\"Buenos Aires (Coronel Suárez)\"},{\"p\":\"2927\",\"u\":\"Buenos Aires (Monte Hermoso)\"},{\"p\":\"2928\",\"u\":\"Buenos Aires (Tres Arroyos)\"},{\"p\":\"2929\",\"u\":\"Buenos Aires (Carhué / Guaminí)\"},{\"p\":\"2931\",\"u\":\"Buenos Aires (Carmen de Patagones)\"},{\"p\":\"2932\",\"u\":\"Buenos Aires (Punta Alta / Puerto Belgrano)\"},{\"p\":\"2933\",\"u\":\"Buenos Aires (Tornquist)\"},{\"p\":\"2934\",\"u\":\"Buenos Aires (Pellegrini)\"},{\"p\":\"2935\",\"u\":\"Buenos Aires (Puan)\"},{\"p\":\"2936\",\"u\":\"Buenos Aires (Casbas / Guaminí)\"},{\"p\":\"2982\",\"u\":\"Buenos Aires (Claromecó)\"},{\"p\":\"2983\",\"u\":\"Buenos Aires (Tres Arroyos / Gonzales Chaves)\"},{\"p\":\"3327\",\"u\":\"Buenos Aires (Benavídez / Garín / GBA)\"},{\"p\":\"3329\",\"u\":\"Buenos Aires (San Pedro / Baradero)\"},{\"p\":\"3388\",\"u\":\"Buenos Aires (General Villegas)\"},{\"p\":\"3487\",\"u\":\"Buenos Aires (Zárate / Lima)\"},{\"p\":\"3489\",\"u\":\"Buenos Aires (Campana)\"},{\"p\":\"3832\",\"u\":\"Catamarca (Recreo / La Paz)\"},{\"p\":\"3835\",\"u\":\"Catamarca (Andalgalá / Belén / Santa María / Tinogasta)\"},{\"p\":\"3837\",\"u\":\"Catamarca (Tinogasta / Fiambalá)\"},{\"p\":\"3732\",\"u\":\"Chaco (Sáenz Peña / Quitilipi / Machagai)\"},{\"p\":\"3735\",\"u\":\"Chaco (Villa Ángela / Du Graty / Santa Sylvina)\"},{\"p\":\"3731\",\"u\":\"Chaco (Charata / Las Breñas / Pinedo)\"},{\"p\":\"3734\",\"u\":\"Chaco (Gral. San Martín / Pampa del Indio)\"},{\"p\":\"3725\",\"u\":\"Chaco (Gral. San Martín / Las Garcitas / Pres. de la Plaza)\"},{\"p\":\"3741\",\"u\":\"Chaco (Juan José Castelli)\"},{\"p\":\"3745\",\"u\":\"Chaco (Tres Isletas)\"},{\"p\":\"2945\",\"u\":\"Chubut (Esquel / Trevelin)\"},{\"p\":\"2972\",\"u\":\"Chubut (Sarmiento)\"},{\"p\":\"3521\",\"u\":\"Córdoba (Deán Funes / Ischilín)\"},{\"p\":\"3522\",\"u\":\"Córdoba (Cruz del Eje)\"},{\"p\":\"3524\",\"u\":\"Córdoba (Villa del Totoral)\"},{\"p\":\"3525\",\"u\":\"Córdoba (Jesús María / Colonia Caroya)\"},{\"p\":\"3532\",\"u\":\"Córdoba (Oliva / Hernando)\"},{\"p\":\"3533\",\"u\":\"Córdoba (Las Varillas)\"},{\"p\":\"3537\",\"u\":\"Córdoba (Bell Ville)\"},{\"p\":\"3541\",\"u\":\"Córdoba (Villa Carlos Paz / Cosquín / La Falda)\"},{\"p\":\"3542\",\"u\":\"Córdoba (Salsacate)\"},{\"p\":\"3543\",\"u\":\"Córdoba (Río Ceballos / Unquillo / Villa Allende)\"},{\"p\":\"3544\",\"u\":\"Córdoba (Villa Dolores / Mina Clavero)\"},{\"p\":\"3546\",\"u\":\"Córdoba (Santa Rosa de Calamuchita / V. Gral. Belgrano)\"},{\"p\":\"3547\",\"u\":\"Córdoba (Alta Gracia)\"},{\"p\":\"3548\",\"u\":\"Córdoba (La Falda / Capilla del Monte / La Cumbre)\"},{\"p\":\"3549\",\"u\":\"Córdoba (Cruz del Eje)\"},{\"p\":\"3562\",\"u\":\"Córdoba (Morteros / Brinkmann)\"},{\"p\":\"3563\",\"u\":\"Córdoba (Balnearia)\"},{\"p\":\"3564\",\"u\":\"Córdoba (San Francisco / Devoto)\"},{\"p\":\"3571\",\"u\":\"Córdoba (Río Tercero / Almafuerte)\"},{\"p\":\"3572\",\"u\":\"Córdoba (Oncativo / Río Segundo / Pilar)\"},{\"p\":\"3573\",\"u\":\"Córdoba (Villa del Rosario)\"},{\"p\":\"3574\",\"u\":\"Córdoba (Río Primero / Monte Cristo)\"},{\"p\":\"3575\",\"u\":\"Córdoba (Santa Rosa de Río Primero)\"},{\"p\":\"3576\",\"u\":\"Córdoba (Arroyito)\"},{\"p\":\"3582\",\"u\":\"Córdoba (Sampacho)\"},{\"p\":\"3583\",\"u\":\"Córdoba (Vicuña Mackenna)\"},{\"p\":\"3584\",\"u\":\"Córdoba (La Carlota)\"},{\"p\":\"3585\",\"u\":\"Córdoba (Canals)\"},{\"p\":\"3385\",\"u\":\"Córdoba (Laboulaye)\"},{\"p\":\"3387\",\"u\":\"Córdoba (General Levalle)\"},{\"p\":\"3383\",\"u\":\"Córdoba (Huinca Renancó)\"},{\"p\":\"3777\",\"u\":\"Corrientes (Goya / Santa Lucía / Lavalle)\"},{\"p\":\"3772\",\"u\":\"Corrientes (Paso de los Libres)\"},{\"p\":\"3773\",\"u\":\"Corrientes (Mercedes)\"},{\"p\":\"3774\",\"u\":\"Corrientes (Curuzú Cuatiá)\"},{\"p\":\"3775\",\"u\":\"Corrientes (Monte Caseros)\"},{\"p\":\"3756\",\"u\":\"Corrientes (Santo Tomé / Gobernador Virasoro)\"},{\"p\":\"3781\",\"u\":\"Corrientes (Caá Catí)\"},{\"p\":\"3782\",\"u\":\"Corrientes (Saladas / Bella Vista)\"},{\"p\":\"3786\",\"u\":\"Corrientes (Ituzaingó)\"},{\"p\":\"3435\",\"u\":\"Entre Ríos (Nogoyá)\"},{\"p\":\"3436\",\"u\":\"Entre Ríos (Victoria)\"},{\"p\":\"3437\",\"u\":\"Entre Ríos (La Paz)\"},{\"p\":\"3438\",\"u\":\"Entre Ríos (Bovril / Federal)\"},{\"p\":\"3442\",\"u\":\"Entre Ríos (Concepción del Uruguay)\"},{\"p\":\"3444\",\"u\":\"Entre Ríos (Gualeguay)\"},{\"p\":\"3445\",\"u\":\"Entre Ríos (Rosario del Tala / Basavilbaso)\"},{\"p\":\"3446\",\"u\":\"Entre Ríos (Gualeguaychú)\"},{\"p\":\"3447\",\"u\":\"Entre Ríos (Colón / San José / Villa Elisa)\"},{\"p\":\"3454\",\"u\":\"Entre Ríos (Federal)\"},{\"p\":\"3455\",\"u\":\"Entre Ríos (Villaguay)\"},{\"p\":\"3456\",\"u\":\"Entre Ríos (Chajarí / Federación)\"},{\"p\":\"3711\",\"u\":\"Formosa (El Colorado)\"},{\"p\":\"3715\",\"u\":\"Formosa (Las Lomitas)\"},{\"p\":\"3716\",\"u\":\"Formosa (Ingeniero Juárez)\"},{\"p\":\"3718\",\"u\":\"Formosa (Clorinda)\"},{\"p\":\"3885\",\"u\":\"Jujuy (La Quiaca / Humahuaca)\"},{\"p\":\"3886\",\"u\":\"Jujuy (Libertador Gral. San Martín / Ledesma)\"},{\"p\":\"3887\",\"u\":\"Jujuy (Tilcara / Maimará)\"},{\"p\":\"3888\",\"u\":\"Jujuy (San Pedro de Jujuy)\"},{\"p\":\"2952\",\"u\":\"La Pampa (General Acha)\"},{\"p\":\"2953\",\"u\":\"La Pampa (Macachín)\"},{\"p\":\"2954\",\"u\":\"La Pampa (Santa Rosa / Toay)\"},{\"p\":\"2302\",\"u\":\"La Pampa (General Pico / Intendente Alvear)\"},{\"p\":\"2331\",\"u\":\"La Pampa (Realicó)\"},{\"p\":\"2333\",\"u\":\"La Pampa (Quemú Quemú)\"},{\"p\":\"2334\",\"u\":\"La Pampa (Eduardo Castex)\"},{\"p\":\"2335\",\"u\":\"La Pampa (Caleufú)\"},{\"p\":\"2336\",\"u\":\"La Pampa (Victorica)\"},{\"p\":\"2337\",\"u\":\"La Pampa (Guatraché)\"},{\"p\":\"2338\",\"u\":\"La Pampa (Bernasconi)\"},{\"p\":\"3821\",\"u\":\"La Rioja (Chepes)\"},{\"p\":\"3825\",\"u\":\"La Rioja (Chilecito / Famatina)\"},{\"p\":\"3826\",\"u\":\"La Rioja (Chamical)\"},{\"p\":\"3827\",\"u\":\"La Rioja (Aimogasta / Arauco)\"},{\"p\":\"2622\",\"u\":\"Mendoza (Tunuyán / Tupungato / San Carlos / Valle de Uco)\"},{\"p\":\"2624\",\"u\":\"Mendoza (Uspallata)\"},{\"p\":\"2625\",\"u\":\"Mendoza (General Alvear)\"},{\"p\":\"2626\",\"u\":\"Mendoza (La Paz)\"},{\"p\":\"3751\",\"u\":\"Misiones (Eldorado / Montecarlo)\"},{\"p\":\"3754\",\"u\":\"Misiones (Leandro N. Alem / San Javier)\"},{\"p\":\"3755\",\"u\":\"Misiones (Oberá / San Vicente / Aristóbulo del Valle)\"},{\"p\":\"3756\",\"u\":\"Misiones (San José)\"},{\"p\":\"3757\",\"u\":\"Misiones (Puerto Iguazú / Wanda / Esperanza)\"},{\"p\":\"3758\",\"u\":\"Misiones (Apóstoles / Concepción de la Sierra)\"},{\"p\":\"2942\",\"u\":\"Neuquén (Zapala / Las Lajas / Loncopué)\"},{\"p\":\"2948\",\"u\":\"Neuquén (Chos Malal / Andacollo)\"},{\"p\":\"2972\",\"u\":\"Neuquén (San Martín de los Andes / Junín de los Andes)\"},{\"p\":\"2920\",\"u\":\"Río Negro (Viedma)\"},{\"p\":\"2934\",\"u\":\"Río Negro (San Antonio Oeste / Las Grutas)\"},{\"p\":\"2944\",\"u\":\"Río Negro (Ingeniero Jacobacci / Los Menucos)\"},{\"p\":\"2946\",\"u\":\"Río Negro (Choele Choel / Río Colorado)\"},{\"p\":\"3868\",\"u\":\"Salta (Cafayate)\"},{\"p\":\"3873\",\"u\":\"Salta (Tartagal)\"},{\"p\":\"3876\",\"u\":\"Salta (Metán / Rosario de la Frontera)\"},{\"p\":\"3877\",\"u\":\"Salta (Joaquín V. González)\"},{\"p\":\"3878\",\"u\":\"Salta (San Ramón de la Nueva Orán / Pichanal)\"},{\"p\":\"2646\",\"u\":\"San Juan (San Agustín de Valle Fértil)\"},{\"p\":\"2647\",\"u\":\"San Juan (Jáchal / Iglesia)\"},{\"p\":\"2648\",\"u\":\"San Juan (Calingasta / Barreal)\"},{\"p\":\"2651\",\"u\":\"San Luis (San Francisco del Monte de Oro)\"},{\"p\":\"2652\",\"u\":\"San Luis\"},{\"p\":\"2655\",\"u\":\"San Luis (La Toma)\"},{\"p\":\"2656\",\"u\":\"San Luis (Merlo / Santa Rosa de Conlara)\"},{\"p\":\"2657\",\"u\":\"San Luis (Villa Mercedes / Justo Daract)\"},{\"p\":\"2962\",\"u\":\"Santa Cruz (Puerto San Julián / Luis Piedrabuena)\"},{\"p\":\"2963\",\"u\":\"Santa Cruz (Perito Moreno / Los Antiguos)\"},{\"p\":\"2964\",\"u\":\"Tierra del Fuego (Río Grande)\"},{\"p\":\"2966\",\"u\":\"Santa Cruz (Río Gallegos / El Calafate / Río Turbio)\"},{\"p\":\"3401\",\"u\":\"Santa Fe (San Jorge / El Trébol / Sastre)\"},{\"p\":\"3402\",\"u\":\"Santa Fe (Arroyo Seco)\"},{\"p\":\"3404\",\"u\":\"Santa Fe (Gálvez / San Carlos Centro)\"},{\"p\":\"3405\",\"u\":\"Santa Fe (Helvecia / San Javier)\"},{\"p\":\"3406\",\"u\":\"Santa Fe (Coronda)\"},{\"p\":\"3407\",\"u\":\"Santa Fe (Ramallo)\"},{\"p\":\"3408\",\"u\":\"Santa Fe (San Cristóbal)\"},{\"p\":\"3409\",\"u\":\"Santa Fe (Ceres)\"},{\"p\":\"3462\",\"u\":\"Santa Fe (Venado Tuerto / Firmat / Rufino)\"},{\"p\":\"3464\",\"u\":\"Santa Fe (Casilda)\"},{\"p\":\"3465\",\"u\":\"Santa Fe (Firmat)\"},{\"p\":\"3466\",\"u\":\"Santa Fe (Barrancas)\"},{\"p\":\"3471\",\"u\":\"Santa Fe (Cañada de Gómez / Las Parejas / Armstrong)\"},{\"p\":\"3472\",\"u\":\"Santa Fe / Córdoba (Marcos Juárez / Armstrong)\"},{\"p\":\"3476\",\"u\":\"Santa Fe (San Lorenzo / Capitán Bermúdez)\"},{\"p\":\"3482\",\"u\":\"Santa Fe (Reconquista / Avellaneda / Villa Ocampo)\"},{\"p\":\"3483\",\"u\":\"Santa Fe (Vera / Calchaquí)\"},{\"p\":\"3491\",\"u\":\"Santa Fe (Ceres / Tostado)\"},{\"p\":\"3492\",\"u\":\"Santa Fe (Rafaela / Sunchales)\"},{\"p\":\"3493\",\"u\":\"Santa Fe (Sunchales)\"},{\"p\":\"3496\",\"u\":\"Santa Fe (Esperanza / Humboldt)\"},{\"p\":\"3497\",\"u\":\"Santa Fe (Llambi Campbell)\"},{\"p\":\"3498\",\"u\":\"Santa Fe (San Justo / Gobernador Crespo)\"},{\"p\":\"3841\",\"u\":\"Santiago del Estero (Monte Quemado)\"},{\"p\":\"3843\",\"u\":\"Santiago del Estero (Quimilí)\"},{\"p\":\"3844\",\"u\":\"Santiago del Estero (Loreto)\"},{\"p\":\"3845\",\"u\":\"Santiago del Estero (Bandera / Malbrán)\"},{\"p\":\"3846\",\"u\":\"Santiago del Estero (Tintina / Campo Gallo)\"},{\"p\":\"3854\",\"u\":\"Santiago del Estero (Añatuya)\"},{\"p\":\"3856\",\"u\":\"Santiago del Estero (Fernández / Suncho Corral)\"},{\"p\":\"3857\",\"u\":\"Santiago del Estero (Frías)\"},{\"p\":\"3858\",\"u\":\"Santiago del Estero (Termas de Río Hondo)\"},{\"p\":\"2901\",\"u\":\"Tierra del Fuego (Ushuaia / Tolhuin)\"},{\"p\":\"3863\",\"u\":\"Tucumán (Monteros / Famaillá / Tafí del Valle)\"},{\"p\":\"3865\",\"u\":\"Tucumán (Concepción / Aguilares)\"},{\"p\":\"3867\",\"u\":\"Tucumán (Trancas)\"},{\"p\":\"3869\",\"u\":\"Tucumán (Graneros / Simoca / Alberdi)\"},{\"p\":\"221\",\"u\":\"Buenos Aires (La Plata / Berisso / Ensenada)\"},{\"p\":\"223\",\"u\":\"Buenos Aires (Mar del Plata / Batán)\"},{\"p\":\"236\",\"u\":\"Buenos Aires (Junín)\"},{\"p\":\"237\",\"u\":\"Buenos Aires (Moreno / Gral. Rodríguez / GBA)\"},{\"p\":\"220\",\"u\":\"Buenos Aires (Merlo / Pontevedra / GBA)\"},{\"p\":\"230\",\"u\":\"Buenos Aires (Pilar / Fátima / GBA)\"},{\"p\":\"249\",\"u\":\"Buenos Aires (Tandil)\"},{\"p\":\"260\",\"u\":\"Mendoza (San Rafael / Malargüe / Gral. Alvear)\"},{\"p\":\"261\",\"u\":\"Mendoza (Gran Mendoza / Guaymallén / Godoy Cruz)\"},{\"p\":\"263\",\"u\":\"Mendoza (San Martín / Rivadavia / Junín)\"},{\"p\":\"264\",\"u\":\"San Juan (San Juan Capital / Rawson / Rivadavia)\"},{\"p\":\"266\",\"u\":\"San Luis (San Luis Capital / Juana Koslay / La Punta)\"},{\"p\":\"280\",\"u\":\"Chubut (Trelew / Puerto Madryn / Rawson)\"},{\"p\":\"291\",\"u\":\"Buenos Aires (Bahía Blanca / Punta Alta)\"},{\"p\":\"294\",\"u\":\"Río Negro / Neuquén (Bariloche / V. La Angostura / El Bolsón)\"},{\"p\":\"297\",\"u\":\"Chubut / Santa Cruz (Comodoro Rivadavia / Caleta Olivia)\"},{\"p\":\"298\",\"u\":\"Río Negro (General Roca / Villa Regina / Allen)\"},{\"p\":\"299\",\"u\":\"Neuquén / Río Negro (Neuquén Capital / Cipolletti / Plottier)\"},{\"p\":\"341\",\"u\":\"Santa Fe (Rosario / Gran Rosario / San Lorenzo)\"},{\"p\":\"342\",\"u\":\"Santa Fe (Santa Fe Capital / Santo Tomé)\"},{\"p\":\"343\",\"u\":\"Entre Ríos (Paraná / Crespo / Diamante)\"},{\"p\":\"345\",\"u\":\"Entre Ríos (Concordia / San Salvador)\"},{\"p\":\"348\",\"u\":\"Buenos Aires (Escobar / Belén de Escobar / GBA)\"},{\"p\":\"351\",\"u\":\"Córdoba (Córdoba Capital)\"},{\"p\":\"353\",\"u\":\"Córdoba (Villa María / Villa Nueva)\"},{\"p\":\"358\",\"u\":\"Córdoba (Río Cuarto / Holmberg)\"},{\"p\":\"362\",\"u\":\"Chaco (Resistencia / Barranqueras / Fontana / Vilelas)\"},{\"p\":\"364\",\"u\":\"Chaco (Presidencia Roque Sáenz Peña)\"},{\"p\":\"370\",\"u\":\"Formosa (Formosa Capital / Pirané)\"},{\"p\":\"376\",\"u\":\"Misiones (Posadas / Garupá / Candelaria)\"},{\"p\":\"379\",\"u\":\"Corrientes (Corrientes Capital)\"},{\"p\":\"380\",\"u\":\"La Rioja (La Rioja Capital / Sanagasta)\"},{\"p\":\"381\",\"u\":\"Tucumán (San Miguel de Tucumán / Yerba Buena / Tafí Viejo)\"},{\"p\":\"383\",\"u\":\"Catamarca (San Fernando del Valle de Catamarca / Valle Viejo)\"},{\"p\":\"385\",\"u\":\"Santiago del Estero (Santiago del Estero Capital / La Banda)\"},{\"p\":\"387\",\"u\":\"Salta (Salta Capital / Cerrillos / Rosario de Lerma)\"},{\"p\":\"388\",\"u\":\"Jujuy (San Salvador de Jujuy / Palpalá)\"},{\"p\":\"11\",\"u\":\"Buenos Aires (CABA / AMBA / Gran Buenos Aires)\"}];\n\nfunction detectarUbicacion(digitos) {\n  if (!digitos) return 'Desconocida';\n  let n = digitos.replace(/\\D/g, '');\n  if (n.startsWith('54')) n = n.slice(2);\n  if (n.startsWith('0')) n = n.slice(1);\n  if (n.startsWith('9')) n = n.slice(1);\n  n = n.replace(/^(\\d{2,4})15(\\d{6,8})$/, '$1$2');\n\n  for (const item of PREFIJOS) {\n    if (n.startsWith(item.p)) return item.u;\n  }\n  return 'Argentina (Otra zona)';\n}\n\nconst escaparHtml = (s) => String(s || '')\n  .replace(/&/g, '&amp;')\n  .replace(/</g, '&lt;')\n  .replace(/>/g, '&gt;');\n\nconst producto = payload.producto || '';\nconst ubicacion = detectarUbicacion(numero);\n\nreturn [{\n  json: {\n    ...payload,\n    esPrimerMensaje,\n    vecesPedidoNumero: Number(guardado.vecesPedidoNumero || 0),\n    seguimientoEnviado: Boolean(guardado.seguimientoEnviado),\n    mensajeWebEnviado: Boolean(guardado.mensajeWebEnviado),\n    derivadaAHumano: Boolean(guardado.derivadaAHumano),\n    numeroCompartido,\n    hayNumero: Boolean(numero),\n    avisarNumero: esNumeroNuevo,\n    pidioHumano,\n    numero,\n    ubicacion,\n    numeroWhatsApp: aFormatoWhatsApp(numero),\n    mensajeHtml: escaparHtml(mensaje),\n    nombreHtml: escaparHtml(payload.nombreComprador),\n    producto,\n    productoHtml: escaparHtml(producto),\n    productoUrl: encodeURIComponent(producto || 'Marketplace'),\n    nombreUrl: encodeURIComponent(payload.nombreComprador || 'Buenas'),\n  },\n}];"
+        },
+        "id": "aa4a3b6d-9fa8-4fa1-bd16-f28f22f45e78",
+        "name": "Detectar Número",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          912,
+          512
+        ]
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "combinator": "and",
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 1
+            },
+            "conditions": [
+              {
+                "leftValue": "={{ $('Detectar Número').item.json.avisarNumero }}",
+                "rightValue": true,
+                "operator": {
+                  "type": "boolean",
+                  "operation": "equals"
+                }
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "4bdd76d1-0f8e-4917-9bfd-b0e3ee7f0d85",
+        "name": "¿Compartió el número?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [
+          2608,
+          288
+        ]
+      },
+      {
+        "parameters": {
+          "chatId": "7507263174",
+          "text": "=📞 <b>¡Lead nuevo de Marketplace!</b>\n\n<b>Comprador:</b> {{ $('Detectar Número').item.json.nombreHtml }}\n<b>Producto:</b> {{ $('Detectar Número').item.json.productoHtml || 'Marketplace' }}\n<b>Número:</b> <code>{{ $('Detectar Número').item.json.numero }}</code>\n<b>Ubicación:</b> 📍 {{ $('Detectar Número').item.json.ubicacion }}\n\n<b>Escribió:</b> {{ $('Detectar Número').item.json.mensajeHtml }}",
+          "replyMarkup": "inlineKeyboard",
+          "inlineKeyboard": {
+            "rows": [
+              {
+                "row": {
+                  "buttons": [
+                    {
+                      "text": "💬 Abrir WhatsApp",
+                      "additionalFields": {
+                        "url": "=https://wa.me/{{ $('Detectar Número').item.json.numeroWhatsApp }}?text=Hola%20{{ $('Detectar Número').item.json.nombreUrl }}!%20Te%20escribo%20de%20SC%20Equipamientos%20por%20tu%20consulta%20de%20{{ $('Detectar Número').item.json.productoUrl }}"
+                      }
+                    },
+                    {
+                      "text": "💬 Ver en Messenger",
+                      "additionalFields": {
+                        "url": "=https://www.messenger.com/t/{{ $('Detectar Número').item.json.idConversacion }}/"
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "additionalFields": {
+            "appendAttribution": false,
+            "disable_web_page_preview": true,
+            "parse_mode": "HTML"
+          }
+        },
+        "id": "656e7970-4711-4274-a8a1-ecf139619f6d",
+        "name": "Avisar Número por Telegram",
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1.2,
+        "position": [
+          2832,
+          288
+        ],
+        "webhookId": "90c1e139-3baa-438b-9f0e-f082cda71cbf",
+        "credentials": {
+          "telegramApi": {
+            "id": "f3LD7RSRhhIq5QZc",
+            "name": "Telegram account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "marketplace-alerta",
+          "options": {}
+        },
+        "id": "27c3fff6-8864-4670-9855-5ccbb2a05412",
+        "name": "Webhook: Alerta de la Extensión",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2.1,
+        "position": [
+          240,
+          1072
+        ],
+        "webhookId": "e1057667-6829-422a-bcf4-b348c4ce05b0"
+      },
+      {
+        "parameters": {
+          "jsCode": "// El aviso va con parse_mode HTML y el detalle suele traer texto de error\n// crudo. Un '<' sin escapar rompe el mensaje entero y no llega ninguna\n// alerta — justo cuando más falta hace.\nconst cuerpo = $input.first().json.body || $input.first().json || {};\n\nconst escaparHtml = (s) => String(s ?? '')\n  .replace(/&/g, '&amp;')\n  .replace(/</g, '&lt;')\n  .replace(/>/g, '&gt;');\n\nreturn [{\n  json: {\n    tipo: escaparHtml(cuerpo.tipo || 'desconocido'),\n    detalle: escaparHtml(cuerpo.detalle || 'sin detalle'),\n    nombreCuenta: escaparHtml(cuerpo.nombreCuenta || 'sin identificar'),\n    fecha: new Date().toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' }),\n  },\n}];"
+        },
+        "id": "37a4bf50-ee03-495b-b00d-7bf8f96cc86d",
+        "name": "Sanear Alerta",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          464,
+          1072
+        ]
+      },
+      {
+        "parameters": {
+          "chatId": "7507263174",
+          "text": "=⚠️ <b>Marketplace Auto-Reply con problemas</b>\n\n<b>Cuenta:</b> {{ $json.nombreCuenta }}\n<b>Problema:</b> {{ $json.tipo }}\n<b>Detalle:</b> {{ $json.detalle }}\n<b>Cuándo:</b> {{ $json.fecha }}",
+          "additionalFields": {
+            "appendAttribution": false,
+            "disable_web_page_preview": true,
+            "parse_mode": "HTML"
+          }
+        },
+        "id": "1ee6ad73-8e94-4b4b-a716-82d119342e54",
+        "name": "Avisar Problema por Telegram",
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1.2,
+        "position": [
+          688,
+          1072
+        ],
+        "webhookId": "2e70faa7-aa54-4d2c-8a9e-cc538a79acb6",
+        "credentials": {
+          "telegramApi": {
+            "id": "f3LD7RSRhhIq5QZc",
+            "name": "Telegram account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "combinator": "and",
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 1
+            },
+            "conditions": [
+              {
+                "leftValue": "={{ $json.necesitaHumano }}",
+                "rightValue": true,
+                "operator": {
+                  "type": "boolean",
+                  "operation": "equals"
+                }
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "4f9b0a3e-3283-461f-b57f-d74956625125",
+        "name": "¿Necesita un humano?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [
+          2608,
+          480
+        ]
+      },
+      {
+        "parameters": {
+          "chatId": "7507263174",
+          "text": "=🙋 <b>Esta conversación te necesita a vos</b>\n\n<b>Comprador:</b> {{ $('Detectar Número').item.json.nombreHtml }}\n<b>Escribió:</b> {{ $('Detectar Número').item.json.mensajeHtml }}\n\nNo se le contestó nada y el bot no le va a volver a escribir en esta conversación. Queda esperando tu respuesta.",
+          "replyMarkup": "inlineKeyboard",
+          "inlineKeyboard": {
+            "rows": [
+              {
+                "row": {
+                  "buttons": [
+                    {
+                      "text": "💬 Abrir la conversación",
+                      "additionalFields": {
+                        "url": "=https://www.messenger.com/t/{{ $('Detectar Número').item.json.idConversacion }}/"
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "additionalFields": {
+            "appendAttribution": false,
+            "disable_web_page_preview": true,
+            "parse_mode": "HTML"
+          }
+        },
+        "id": "03d8ed11-e336-41d6-96fe-712e3a9130d5",
+        "name": "Avisar Derivación por Telegram",
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1.2,
+        "position": [
+          2832,
+          480
+        ],
+        "webhookId": "a8419065-d7e3-4df2-9647-f3f701f52148",
+        "credentials": {
+          "telegramApi": {
+            "id": "f3LD7RSRhhIq5QZc",
+            "name": "Telegram account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "marketplace-resumen",
+          "options": {}
+        },
+        "id": "ddcddfc9-db35-4ac9-a538-5059a5c04222",
+        "name": "Webhook: Resumen Diario",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2.1,
+        "position": [
+          240,
+          1296
+        ],
+        "webhookId": "1fd477ce-2b18-48c5-b3bd-29ee876c3fa4"
+      },
+      {
+        "parameters": {
+          "jsCode": "// Arma el texto del resumen del día. Los números los cuenta la extensión,\n// que es la que sabe qué pasó en cada conversación; acá solo se formatea.\nconst cuerpo = $input.first().json.body || $input.first().json || {};\n\nconst n = (v) => Number(v || 0);\nconst contactados = n(cuerpo.contactados);\nconst respuestas = n(cuerpo.respuestas);\nconst numeros = n(cuerpo.numeros);\nconst seguimientos = n(cuerpo.seguimientos);\nconst derivadas = n(cuerpo.derivadas);\n\nconst escaparHtml = (s) => String(s ?? '')\n  .replace(/&/g, '&amp;')\n  .replace(/</g, '&lt;')\n  .replace(/>/g, '&gt;');\n\n// La conversión es el número que importa: de cada 100 personas contactadas,\n// cuántas dejaron el WhatsApp.\nconst conversion = contactados > 0\n  ? `${Math.round((numeros / contactados) * 100)}%`\n  : 'sin datos';\n\nconst sinResponder = Math.max(0, contactados - respuestas);\n\nreturn [{\n  json: {\n    nombreCuenta: escaparHtml(cuerpo.nombreCuenta || 'sin identificar'),\n    fecha: escaparHtml(cuerpo.fecha || ''),\n    contactados,\n    respuestas,\n    numeros,\n    seguimientos,\n    derivadas,\n    sinResponder,\n    conversion,\n  },\n}];"
+        },
+        "id": "ee769e99-bc3e-47c0-b676-676b5c906d55",
+        "name": "Armar Resumen",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          464,
+          1296
+        ]
+      },
+      {
+        "parameters": {
+          "chatId": "7507263174",
+          "text": "=📊 <b>Resumen del día — {{ $json.fecha }}</b>\n<i>{{ $json.nombreCuenta }}</i>\n\n💬 Contactados: <b>{{ $json.contactados }}</b>\n↩️ Contestaron: <b>{{ $json.respuestas }}</b>\n📞 Números conseguidos: <b>{{ $json.numeros }}</b>\n\n🔁 Seguimientos enviados: {{ $json.seguimientos }}\n🙋 Derivadas a vos: {{ $json.derivadas }}\n🔕 Sin responder: {{ $json.sinResponder }}\n\n🎯 Conversión: <b>{{ $json.conversion }}</b>",
+          "additionalFields": {
+            "appendAttribution": false,
+            "disable_web_page_preview": true,
+            "parse_mode": "HTML"
+          }
+        },
+        "id": "42dd3604-bb06-4604-8c6f-db3486f19b9f",
+        "name": "Enviar Resumen por Telegram",
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1.2,
+        "position": [
+          688,
+          1296
+        ],
+        "webhookId": "53bf632a-31bc-4962-ab78-eb1c5d8c1d17",
+        "credentials": {
+          "telegramApi": {
+            "id": "f3LD7RSRhhIq5QZc",
+            "name": "Telegram account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "operation": "get",
+          "dataTableId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "X7KPWA15ET7huZSG"
+          },
+          "matchType": "allConditions",
+          "filters": {
+            "conditions": [
+              {
+                "keyName": "cuenta",
+                "keyValue": "={{ $json.cuenta }}"
+              },
+              {
+                "keyName": "idConversacion",
+                "keyValue": "={{ $json.idConversacion }}"
+              }
+            ]
+          },
+          "limit": 1
+        },
+        "id": "81d309c1-f9a8-4747-9f31-88c913d5b2a8",
+        "name": "Leer Estado",
+        "type": "n8n-nodes-base.dataTable",
+        "typeVersion": 1.1,
+        "position": [
+          688,
+          512
+        ],
+        "alwaysOutputData": true
+      },
+      {
+        "parameters": {
+          "operation": "upsert",
+          "dataTableId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "X7KPWA15ET7huZSG"
+          },
+          "matchType": "allConditions",
+          "filters": {
+            "conditions": [
+              {
+                "keyName": "cuenta",
+                "keyValue": "={{ $('Detectar Número').item.json.cuenta }}"
+              },
+              {
+                "keyName": "idConversacion",
+                "keyValue": "={{ $('Detectar Número').item.json.idConversacion }}"
+              }
+            ]
+          },
+          "columns": {
+            "mappingMode": "defineBelow",
+            "matchingColumns": [
+              "cuenta",
+              "idConversacion"
+            ],
+            "value": {
+              "cuenta": "={{ $('Detectar Número').item.json.cuenta }}",
+              "idConversacion": "={{ $('Detectar Número').item.json.idConversacion }}",
+              "nombreComprador": "={{ $('Detectar Número').item.json.nombreComprador }}",
+              "numero": "={{ $('Detectar Número').item.json.numero }}",
+              "numeroCompartido": "={{ $('Detectar Número').item.json.numeroCompartido }}",
+              "vecesPedidoNumero": "={{ $('Detectar Número').item.json.numeroCompartido ? $('Detectar Número').item.json.vecesPedidoNumero : $('Detectar Número').item.json.vecesPedidoNumero + ($json.pidioNumero ? 1 : 0) }}",
+              "seguimientoEnviado": "={{ $('Detectar Número').item.json.seguimientoEnviado || $('Detectar Número').item.json.esSeguimiento }}",
+              "derivadaAHumano": "={{ $('Detectar Número').item.json.derivadaAHumano || $json.necesitaHumano }}",
+              "ultimoEnvio": "={{ $now.toISO() }}",
+              "mensajeWebEnviado": "={{ $('Detectar Número').item.json.mensajeWebEnviado || $('Detectar Número').item.json.esMensajeWeb }}"
+            }
+          },
+          "options": {}
+        },
+        "id": "fd97124d-697e-4af8-8ac2-37785909d937",
+        "name": "Guardar Estado",
+        "type": "n8n-nodes-base.dataTable",
+        "typeVersion": 1.1,
+        "position": [
+          2608,
+          672
+        ]
+      },
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "marketplace-pendientes",
+          "responseMode": "lastNode",
+          "options": {}
+        },
+        "id": "ba1ebbb1-d964-46b1-b84a-88bca6b0d1a9",
+        "name": "Webhook: Pendientes",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2.1,
+        "position": [
+          240,
+          1520
+        ],
+        "webhookId": "9ce1d4b7-2a0e-496b-8049-ae23713859aa"
+      },
+      {
+        "parameters": {
+          "operation": "get",
+          "dataTableId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "X7KPWA15ET7huZSG"
+          },
+          "matchType": "allConditions",
+          "filters": {
+            "conditions": [
+              {
+                "keyName": "cuenta",
+                "keyValue": "={{ $('Webhook: Pendientes').first().json.body?.cuenta ?? \"sin-cuenta\" }}"
+              }
+            ]
+          },
+          "returnAll": true
+        },
+        "id": "fb6b8ee7-e526-46a9-aecb-cbd293cd8884",
+        "name": "Leer Conversaciones de la Cuenta",
+        "type": "n8n-nodes-base.dataTable",
+        "typeVersion": 1.1,
+        "position": [
+          688,
+          1520
+        ],
+        "alwaysOutputData": true
+      },
+      {
+        "parameters": {
+          "jsCode": "// Tres listas que la extensión necesita en cada barrido:\n//\n// - pendientes: les escribimos, pasó el tiempo de espera y todavía no se les\n//   mandó el mensaje 2 (seguimiento). Se excluyen las que ya dejaron el\n//   número (objetivo cumplido, volver a escribir solo molesta).\n// - pendientesWeb: ya recibieron el mensaje 2, pasó otra espera y todavía no\n//   se les mandó el mensaje 3 (la web). Mismo criterio de exclusión.\n// - derivadas: quedaron en manos del humano. El ciclo no las toca más:\n//   escribirle de nuevo a alguien que pidió hablar con una persona es peor\n//   que no haber automatizado nada.\n//\n// El filtro se hace acá y no en la query para no depender de los operadores\n// de fecha del nodo de data table.\nconst body = $('Webhook: Pendientes').first().json.body || {};\nconst minutos = Number(body.minutos ?? 30);\nconst minutosWeb = Number(body.minutosWeb ?? 60);\nconst limite = Date.now() - minutos * 60 * 1000;\nconst limiteWeb = Date.now() - minutosWeb * 60 * 1000;\n\nconst filas = $input.all()\n  .map((item) => item.json)\n  .filter((fila) => fila && fila.idConversacion);\n\nconst pendientes = filas\n  .filter((fila) => !fila.numeroCompartido\n    && !fila.derivadaAHumano\n    && !fila.seguimientoEnviado\n    && fila.ultimoEnvio\n    && new Date(fila.ultimoEnvio).getTime() < limite)\n  .map((fila) => fila.idConversacion);\n\nconst pendientesWeb = filas\n  .filter((fila) => !fila.numeroCompartido\n    && !fila.derivadaAHumano\n    && fila.seguimientoEnviado\n    && !fila.mensajeWebEnviado\n    && fila.ultimoEnvio\n    && new Date(fila.ultimoEnvio).getTime() < limiteWeb)\n  .map((fila) => fila.idConversacion);\n\nconst derivadas = filas\n  .filter((fila) => fila.derivadaAHumano)\n  .map((fila) => fila.idConversacion);\n\nreturn [{ json: { ok: true, pendientes, pendientesWeb, derivadas, total: filas.length } }];"
+        },
+        "id": "9b96d01a-ca43-480d-90f6-6971e6118f09",
+        "name": "Filtrar Pendientes",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          912,
+          1520
+        ]
+      },
+      {
+        "parameters": {
+          "operation": "upsert",
+          "dataTableId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "b9GlD5oulIXpNKBV"
+          },
+          "matchType": "allConditions",
+          "filters": {
+            "conditions": [
+              {
+                "keyName": "cuenta",
+                "keyValue": "={{ $json.body?.cuenta ?? \"sin-cuenta\" }}"
+              }
+            ]
+          },
+          "columns": {
+            "mappingMode": "defineBelow",
+            "matchingColumns": [
+              "cuenta"
+            ],
+            "value": {
+              "cuenta": "={{ $json.body?.cuenta ?? \"sin-cuenta\" }}",
+              "ultimoLatido": "={{ $now.toISO() }}",
+              "avisado": false
+            }
+          },
+          "options": {}
+        },
+        "id": "9b16774e-e9b8-41b4-92e3-5fb9be86f44a",
+        "name": "Registrar Latido",
+        "type": "n8n-nodes-base.dataTable",
+        "typeVersion": 1.1,
+        "position": [
+          464,
+          1520
+        ]
+      },
+      {
+        "parameters": {
+          "rule": {
+            "interval": [
+              {
+                "field": "hours"
+              }
+            ]
+          }
+        },
+        "id": "dc8f740a-e549-4c84-b78b-971343badf8d",
+        "name": "Cada Hora",
+        "type": "n8n-nodes-base.scheduleTrigger",
+        "typeVersion": 1.2,
+        "position": [
+          240,
+          1744
+        ]
+      },
+      {
+        "parameters": {
+          "operation": "get",
+          "dataTableId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "b9GlD5oulIXpNKBV"
+          },
+          "returnAll": true
+        },
+        "id": "ccff0211-d0b3-40a3-8aad-4965228008f8",
+        "name": "Leer Latidos",
+        "type": "n8n-nodes-base.dataTable",
+        "typeVersion": 1.1,
+        "position": [
+          464,
+          1744
+        ],
+        "alwaysOutputData": true
+      },
+      {
+        "parameters": {
+          "jsCode": "// Detecta cuentas que dejaron de dar señales de vida.\n//\n// Por qué hace falta un latido propio y no alcanza con mirar ultimoEnvio de\n// las conversaciones: ese campo solo se actualiza cuando el bot MANDA algo.\n// Si no escribe ningún comprador, la tabla se ve igual de quieta con el bot\n// vivo que con el bot muerto. El latido, en cambio, lo emite la extensión en\n// cada barrido, escriba o no.\n//\n// Este chequeo corre en n8n y no en el browser a propósito: es el único\n// control que sigue funcionando justo cuando el browser no está, que es el\n// caso que queremos detectar.\n//\n// Se avisa UNA sola vez por caída (`avisado`), no en cada chequeo: una\n// alerta que se repite cada hora es una alerta que se termina silenciando, y\n// una cuenta retirada avisaría para siempre. El latido la desmarca cuando la\n// cuenta vuelve, así que la próxima caída vuelve a avisar.\nconst HORAS_PARA_ALARMA = 2;\nconst ahora = Date.now();\nconst limite = ahora - HORAS_PARA_ALARMA * 60 * 60 * 1000;\n\nconst filas = $input.all()\n  .map((item) => item.json)\n  .filter((fila) => fila && fila.cuenta && fila.ultimoLatido);\n\nconst mudas = filas.filter((fila) => !fila.avisado\n  && new Date(fila.ultimoLatido).getTime() < limite);\n\nif (mudas.length === 0) return [];\n\nconst escaparHtml = (s) => String(s || '')\n  .replace(/&/g, '&amp;')\n  .replace(/</g, '&lt;')\n  .replace(/>/g, '&gt;');\n\nconst detalle = mudas\n  .map((fila) => {\n    const horas = Math.round((ahora - new Date(fila.ultimoLatido).getTime()) / 3600000);\n    return `• <b>${escaparHtml(fila.cuenta)}</b> — ${horas} h sin actividad`;\n  })\n  .join('\\n');\n\n// Una fila por cuenta muda, para poder marcarlas todas como avisadas.\nreturn mudas.map((fila) => ({\n  json: {\n    cuenta: fila.cuenta,\n    ultimoLatido: fila.ultimoLatido,\n    cantidad: mudas.length,\n    horas: HORAS_PARA_ALARMA,\n    detalle,\n  },\n}));"
+        },
+        "id": "6cd30886-65bf-4d67-a1b5-17bf84b0bdd8",
+        "name": "¿Alguna Cuenta Muda?",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          688,
+          1744
+        ]
+      },
+      {
+        "parameters": {
+          "chatId": "7507263174",
+          "text": "=🔴 <b>El bot dejó de responder</b>\n\n{{ $json.detalle }}\n\nNo hay señales de vida hace más de {{ $json.horas }} horas. Revisá que Firefox esté abierto, que la pestaña de Messenger siga cargada y que la extensión figure activa en about:debugging.",
+          "additionalFields": {
+            "appendAttribution": false,
+            "disable_web_page_preview": true,
+            "parse_mode": "HTML"
+          }
+        },
+        "id": "7d34bbf2-1af7-4bb8-be14-ba1ebeceea7a",
+        "name": "Avisar Bot Caído",
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1.2,
+        "position": [
+          912,
+          1744
+        ],
+        "webhookId": "a3bc44c2-82dd-42dd-9811-557762cffa60",
+        "credentials": {
+          "telegramApi": {
+            "id": "f3LD7RSRhhIq5QZc",
+            "name": "Telegram account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "operation": "update",
+          "dataTableId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "b9GlD5oulIXpNKBV"
+          },
+          "matchType": "allConditions",
+          "filters": {
+            "conditions": [
+              {
+                "keyName": "cuenta",
+                "keyValue": "={{ $('¿Alguna Cuenta Muda?').item.json.cuenta }}"
+              }
+            ]
+          },
+          "columns": {
+            "mappingMode": "defineBelow",
+            "matchingColumns": [
+              "cuenta"
+            ],
+            "value": {
+              "avisado": true
+            }
+          },
+          "options": {}
+        },
+        "id": "3210f849-17e0-4adf-b75d-623283da9adf",
+        "name": "Marcar Como Avisada",
+        "type": "n8n-nodes-base.dataTable",
+        "typeVersion": 1.1,
+        "position": [
+          1136,
+          1744
+        ]
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "combinator": "and",
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 1
+            },
+            "conditions": [
+              {
+                "leftValue": "={{ $json.esMensajeWeb }}",
+                "rightValue": true,
+                "operator": {
+                  "type": "boolean",
+                  "operation": "equals"
+                }
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "679de7e5-8649-4c05-b331-c912a09426d2",
+        "name": "¿Es mensaje web?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [
+          1360,
+          608
+        ]
+      },
+      {
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "id": "respuesta",
+                "name": "respuesta",
+                "value": "={{ (() => {\n  const variantes = [\n    'Hola, te dejo también nuestra web por si querés ver todo: scequipamientos.com.ar. Si preferís, dejános tu número y nos contactamos.',\n    'Buenas! También podés chusmear todos los modelos y combos en nuestra web: scequipamientos.com.ar. O dejanos tu número y te hablamos.',\n    'Hola! Te comparto la página web para que veas todas las opciones: scequipamientos.com.ar. Cualquier duda pasanos tu teléfono y te escribimos.',\n    'Buenas, cómo va. Te paso nuestra web oficial: scequipamientos.com.ar con todos los productos. Si querés que te asesoremos, dejanos tu contacto.',\n    'Hola! Podés entrar a scequipamientos.com.ar para ver el catálogo online completo. Si preferís atención directa, pasanos tu celu.'\n  ];\n  return variantes[Math.floor(Math.random() * variantes.length)];\n})() }}",
+                "type": "string"
+              },
+              {
+                "id": "pidioNumero",
+                "name": "pidioNumero",
+                "value": true,
+                "type": "boolean"
+              },
+              {
+                "id": "numeroRecibido",
+                "name": "numeroRecibido",
+                "value": "={{ $('Detectar Número').item.json.hayNumero }}",
+                "type": "boolean"
+              },
+              {
+                "id": "necesitaHumano",
+                "name": "necesitaHumano",
+                "value": false,
+                "type": "boolean"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "cd3d60b3-094e-4164-ae0d-e50a96e2a4d9",
+        "name": "Mensaje Web (3)",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.5,
+        "position": [
+          2160,
+          352
+        ]
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "combinator": "and",
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 1
+            },
+            "conditions": [
+              {
+                "leftValue": "={{ $json.esSeguimiento }}",
+                "rightValue": true,
+                "operator": {
+                  "type": "boolean",
+                  "operation": "equals"
+                }
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "1f309337-673b-41c8-8215-c06f8c2200c1",
+        "name": "¿Es seguimiento?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [
+          1584,
+          720
+        ]
+      },
+      {
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "id": "respuesta",
+                "name": "respuesta",
+                "value": "={{ (() => {\n  const veces = $('Detectar Número').item.json.vecesPedidoNumero || 0;\n  const noPidieronNumeroAun = [\n    '¿Lograste ver el catálogo? Si no pudiste ingresar, dejános tu número y nos contactamos.',\n    'Hola! ¿Pudiste abrir el catálogo de WhatsApp? Si tuviste algún problema, dejanos tu teléfono y te escribimos.',\n    'Buenas! ¿Llegaste a revisar los modelos en el catálogo? Cualquier cosa pasanos tu número y te mandamos info por WhatsApp.',\n    'Hola, cómo va! ¿Pudiste chequear el link del catálogo? Si preferís, dejanos tu contacto y te hablamos directo.',\n    'Hola! ¿Pudiste ver las fotos y precios? Si no te abrió el enlace, pasanos tu número y te contactamos.'\n  ];\n  const yaPidieronNumero = [\n    'Hola! ¿Seguís interesado? Dejános tu número y te pasamos el catálogo con fotos y precios por WhatsApp.',\n    'Buenas! ¿Seguís buscando opciones? Pasame tu número de contacto y te mando todo el catálogo por WhatsApp.',\n    'Hola, cómo estás? ¿Querés que te pase las fotos y precios directo a tu WhatsApp? Dejanos tu número y te escribimos.',\n    'Hola! Si todavía te interesa ver modelos y promociones, dejanos tu celu y te enviamos el catálogo completo.',\n    'Buenas tardes! ¿Seguís buscando? Pasame un teléfono de contacto y te mandamos los modelos disponibles por WhatsApp.'\n  ];\n  const lista = veces === 0 ? noPidieronNumeroAun : yaPidieronNumero;\n  return lista[Math.floor(Math.random() * lista.length)];\n})() }}",
+                "type": "string"
+              },
+              {
+                "id": "pidioNumero",
+                "name": "pidioNumero",
+                "value": true,
+                "type": "boolean"
+              },
+              {
+                "id": "numeroRecibido",
+                "name": "numeroRecibido",
+                "value": "={{ $('Detectar Número').item.json.hayNumero }}",
+                "type": "boolean"
+              },
+              {
+                "id": "necesitaHumano",
+                "name": "necesitaHumano",
+                "value": false,
+                "type": "boolean"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "daa3e5d5-5927-416c-8e65-33c14a7c8e51",
+        "name": "Mensaje de Seguimiento (2)",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.5,
+        "position": [
+          2160,
+          848
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "// Primer contacto contextualizado según el producto publicado.\nconst PROBABILIDAD_PEDIR_NUMERO = 0.4;\n\nconst LINKS_WHATSAPP = [\n  'https://wa.me/c/5493625281890',\n  'https://wa.me/5493625281890',\n  'https://api.whatsapp.com/send?phone=5493625281890',\n];\nconst linkWhatsApp = LINKS_WHATSAPP[Math.floor(Math.random() * LINKS_WHATSAPP.length)];\n\nconst itemDetectado = $('Detectar Número').first().json;\nconst producto = (itemDetectado.producto || '').toLowerCase();\nconst nombreComprador = itemDetectado.nombreComprador || '';\nconst saludo = (nombreComprador && nombreComprador !== 'el comprador') ? `Hola ${nombreComprador}!` : 'Hola, buenas!';\n\nconst pidioNumero = Math.random() < PROBABILIDAD_PEDIR_NUMERO;\nlet respuesta = '';\n\nif (/escritorio|mesa|mdf|combo/i.test(producto)) {\n  const piden = [\n    `${saludo} Contamos con escritorios desde $100.000 y combos de escritorio + silla. También armamos a medida en MDF.\\nSi querés ver modelos y fotos, dejanos tu número y te lo enviamos por WhatsApp.`,\n    `Buenas! Manejamos escritorios de oficina y estudio desde $100.000, más combos con sillas.\\nPasame tu número y te comparto las fotos y medidas por WhatsApp.`,\n    `${saludo} Tenemos variedad de escritorios desde $100.000.\\n¿Me dejás un número de contacto y te paso los modelos disponibles?`\n  ];\n  const mandan = [\n    `${saludo} Sí, tenemos stock en escritorios desde $100.000 y combos con sillas. También hacemos muebles a medida en MDF.\\nAcá tenés el catálogo con fotos y medidas: ${linkWhatsApp} — consultanos por ahí y coordinamos!`,\n    `Buenas! Contamos con escritorios de oficina y estudio a partir de $100.000.\\nTe dejo el catálogo directo para ver todos los modelos: ${linkWhatsApp}`,\n    `${saludo} Podés ver todos los modelos de escritorios, medidas y stock acá: ${linkWhatsApp} y cualquier duda nos hablás por ahí.`\n  ];\n  const lista = pidioNumero ? piden : mandan;\n  respuesta = lista[Math.floor(Math.random() * lista.length)];\n} else if (/gamer/i.test(producto)) {\n  const piden = [\n    `${saludo} Contamos con sillas gamer y ergonómicas con regulación de altura y respaldo alto desde $75.000 / $100.000.\\nDejanos tu número y te mandamos las fotos y opciones por WhatsApp.`,\n    `Buenas! Manejamos modelos ergonómicos y gamer con excelente soporte lumbar.\\nPasame tu celu y te comparto los modelos disponibles con precios por WhatsApp.`\n  ];\n  const mandan = [\n    `${saludo} Sí, tenemos sillas gamer y ergonómicas desde $75.000 con regulación de altura y respaldo ergonómico.\\nMirá las fotos y modelos en el catálogo directo: ${linkWhatsApp}`,\n    `Buenas! Te comparto el catálogo completo con todas las sillas gamer y de oficina: ${linkWhatsApp} — escribinos por ahí para ver colores y coordinar envío o retiro.`\n  ];\n  const lista = pidioNumero ? piden : mandan;\n  respuesta = lista[Math.floor(Math.random() * lista.length)];\n} else if (/fija|plastico|espera|apilable/i.test(producto)) {\n  const piden = [\n    `${saludo} Contamos con sillas fijas plásticas y tapizadas desde $50.000, ideales para oficinas y salas de espera.\\nDejanos tu número de contacto y te pasamos el catálogo con fotos.`,\n    `Buenas! Manejamos sillas fijas a partir de $50.000 por unidad y precios especiales por cantidad.\\nPasame tu número y te mando las opciones por WhatsApp.`\n  ];\n  const mandan = [\n    `${saludo} Sí, contamos con variedad de sillas fijas a partir de $50.000 (también precios por cantidad).\\nAcá tenés acceso directo al catálogo: ${linkWhatsApp}`,\n    `Buenas! Te paso el link para ver todos los modelos de sillas fijas y colores disponibles: ${linkWhatsApp} — cualquier consulta avisanos!`\n  ];\n  const lista = pidioNumero ? piden : mandan;\n  respuesta = lista[Math.floor(Math.random() * lista.length)];\n} else {\n  // General / Sillas giratorias / Múltiples opciones\n  const PIDEN_NUMERO = [\n    'Hola, buenas. Te comento que contamos con sillas fijas desde $50.000, giratorias desde $75.000 y escritorios desde $100.000. También armamos combos.\\nSi querés ver el catálogo completo, dejanos tu número y te lo enviamos por WhatsApp.',\n    'Buenas! Manejamos sillas fijas desde $50.000, giratorias desde $75.000 y escritorios desde $100.000, más combos a medida.\\nPasame tu número y te mando las fotos y modelos por WhatsApp.',\n    'Hola! Tenemos sillas fijas a partir de $50.000, giratorias desde $75.000 y escritorios desde $100.000.\\n¿Me dejás un número de contacto y te comparto el catálogo con fotos?',\n    'Hola, cómo va. Las fijas arrancan en $50.000, giratorias en $75.000 y escritorios desde $100.000 (también combos).\\nDejanos tu celu y te pasamos el catálogo directo al WhatsApp.',\n    'Buenas tardes! Contamos con sillas de oficina fijas desde $50.000, giratorias desde $75.000 y escritorios desde $100.000.\\nSi te interesa ver opciones y fotos, dejanos tu número y te escribimos.',\n    'Hola! Cómo estás? Tenemos sillas fijas desde $50.000, giratorias a partir de $75.000 y escritorios desde $100.000.\\nSi querés ver todos los modelos con fotos y medidas, pasanos tu WhatsApp y te mandamos el catálogo completo.',\n    'Buenas! Qué tal? Manejamos fijas desde $50.000, giratorias desde $75.000 y escritorios desde $100.000, además de combos.\\nDejanos un celu y te pasamos el catálogo directo con stock y precios actualizados.',\n    'Hola, buenas! Contamos con variedad de opciones: fijas desde $50.000, giratorias desde $75.000 y escritorios a partir de $100.000.\\nPasame tu número de contacto y te comparto el catálogo por WhatsApp así elegís tranquilo.',\n    'Buenas! Te paso los valores de referencia: sillas fijas desde $50.000, ergonómicas giratorias desde $75.000 y escritorios desde $100.000.\\n¿Nos dejás tu número para enviarte las fotos y promos vigentes por WhatsApp?'\n  ];\n\n  const MANDAN_CATALOGO = [\n    `Hola, buenas! Contamos con sillas fijas desde $50.000, giratorias desde $75.000 y escritorios desde $100.000, más combos.\\nAcá tenés el catálogo completo con fotos y precios: ${linkWhatsApp} — escribinos por ahí y coordinamos!`,\n    `Buenas! Tenemos sillas fijas desde $50.000, giratorias desde $75.000 y escritorios a partir de $100.000.\\nTe dejo el catálogo directo para ver todos los modelos: ${linkWhatsApp}`,\n    `Hola! Sillas fijas desde $50.000, giratorias desde $75.000 y escritorios desde $100.000. También hacemos combos a medida.\\nPodés mirar todo el catálogo acá: ${linkWhatsApp} y cualquier duda nos hablás por ahí.`,\n    `Hola, cómo va. Los precios arrancan en $50.000 para fijas, $75.000 giratorias y $100.000 escritorios.\\nEn este link tenés el catálogo completo con stock y fotos: ${linkWhatsApp}`,\n    `Buenas! Te paso los valores base: fijas desde $50.000, giratorias desde $75.000 y escritorios desde $100.000.\\nEntrando a ${linkWhatsApp} podés ver todos los artículos y consultarnos por WhatsApp.`,\n    `Hola! Cómo estás? Te comento que tenemos sillas fijas desde $50.000, giratorias desde $75.000 y escritorios desde $100.000.\\nPodés ver fotos, medidas y disponibilidad en el catálogo: ${linkWhatsApp} — cualquier consulta avisanos!`,\n    `Buenas! Qué tal? Trabajamos fijas desde $50.000, giratorias desde $75.000 y escritorios a partir de $100.000.\\nTe comparto el catálogo con todos los modelos: ${linkWhatsApp} — escribinos por ahí para coordinar entrega o retiro.`,\n    `Hola, buenas! Manejamos sillas fijas desde $50.000, giratorias desde $75.000 y escritorios desde $100.000, más combos.\\nAcá tenés acceso directo al catálogo completo con fotos: ${linkWhatsApp}`,\n    `Buenas! Los precios base son: fijas $50.000, giratorias $75.000 y escritorios desde $100.000.\\nMirá todos los modelos en stock acá: ${linkWhatsApp} y nos escribís por cualquier duda.`\n  ];\n\n  const variantes = pidioNumero ? PIDEN_NUMERO : MANDAN_CATALOGO;\n  respuesta = variantes[Math.floor(Math.random() * variantes.length)];\n}\n\nreturn [{\n  json: {\n    respuesta,\n    linkWhatsApp,\n    pidioNumero,\n    numeroRecibido: $('Detectar Número').first().json.hayNumero,\n    necesitaHumano: false,\n  },\n}];"
+        },
+        "id": "8b966328-e224-4b03-b822-d7ceea7776f5",
+        "name": "Mensaje de Apertura",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          2160,
+          160
+        ]
+      },
+      {
+        "id": "b7f3a9c1-2e4d-4a6b-9c8e-1f2a3b4c5d6e",
+        "name": "Variar Estilo",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1230,
+          448
+        ],
+        "parameters": {
+          "jsCode": "// Elige al azar una variación de registro para la respuesta y un enlace equivalente de WhatsApp.\n// Rotar el link evita la firma de spam por URL estática idéntica repetida.\nconst variaciones = [\n  'Hoy estás con apuro: respuestas todavía más cortas, casi telegráficas, y directo al catálogo sin vueltas.',\n  'Hoy estás distendido: un toque más suelto y amable, podés arrancar con un \"buenas!\" o \"hola, cómo va\" sin pasarte de confianza.',\n  'Hoy estás prolijo: respuestas más formales, sin abreviar, con la puntuación completa, pero seguís siendo vos.',\n  'Hoy estás seco: sin saludos ni preguntas de cortesía, respuesta directa a lo que preguntan y el link al catálogo.',\n  'Hoy estás conversador: además de responder, si la consulta da para eso, podés sumar una línea de charla antes del link.',\n];\n\nconst linksWhatsApp = [\n  'https://wa.me/c/5493625281890',\n  'https://wa.me/5493625281890',\n  'https://api.whatsapp.com/send?phone=5493625281890',\n];\n\nconst estiloExtra = variaciones[Math.floor(Math.random() * variaciones.length)];\nconst linkWhatsApp = linksWhatsApp[Math.floor(Math.random() * linksWhatsApp.length)];\n\nreturn { json: { ...$input.first().json, estiloExtra, linkWhatsApp } };"
+        }
+      },
+      {
+        "id": "filtro-precios-34856178",
+        "name": "Filtrar Precios",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1900,
+          448
+        ],
+        "parameters": {
+          "jsCode": "// Safety net: permite solo los precios preestablecidos del catálogo\n// (silla giratoria $75.000, silla fija $50.000, escritorio $115.000).\n// Cualquier otro monto detectado se reemplaza por la respuesta segura.\nconst respuesta = $input.first().json.respuesta || '';\nconst linkWhatsApp = $input.first().json.linkWhatsApp || 'https://wa.me/c/5493625281890';\n\nconst PERMITIDOS = new Set([75000, 50000, 115000, 100000, 115, 100, 75, 50]);\n\nfunction normalizar(mencion) {\n  let t = String(mencion).toLowerCase().trim();\n  let mult = 1;\n  if (t.includes('mil')) { mult = 1000; t = t.replace(/mil/g, ''); }\n  else if (t.endsWith('k')) { mult = 1000; t = t.slice(0, -1); }\n  t = t.replace(/\\$/g, '').replace(/\\./g, '').replace(/,/g, '.').replace(/[^0-9.]/g, '');\n  const n = parseFloat(t);\n  return Number.isFinite(n) ? n * mult : null;\n}\n\nconst PATRONES = [\n  /\\$\\s*\\d[\\d.,]*(?:\\s*(?:mil|k))?/gi,                      // $75.000, $50 mil\n  /\\b\\d[\\d.,]*(?:\\s*(?:mil|k))?\\s*(?:pesos?|usd|\\$)/gi,     // 75 mil pesos, 50000$\n  /\\b(?:cuesta|vale|precio|sale|sale por|desde)\\s+\\d[\\d.,]*(?:\\s*(?:mil|k))?/gi, // cuesta 75 mil\n  /\\b\\d{1,3}(?:\\.\\d{3})+\\b/gi,                              // 75.000, 115.000, 1.500\n  /\\b\\d{4,6}\\b/gi,                                          // 75000, 50000, 115000\n  /\\b\\d[\\d.,]*(?:\\s*(?:mil|k))\\b/gi                         // 75 mil, 50k, 115 mil\n];\n\nconst detectados = [];\nfor (const p of PATRONES) {\n  const matches = respuesta.match(p) || [];\n  for (const m of matches) {\n    const valor = normalizar(m);\n    if (valor !== null && !detectados.includes(valor)) detectados.push(valor);\n  }\n}\n\nconst RESPUESTA_SEGURA = `Los precios los ves en el catálogo, ahí tenés todo con fotos: ${linkWhatsApp}`;\n\nconst hayNoPermitido = detectados.some(v => !PERMITIDOS.has(v));\n\nif (hayNoPermitido) {\n  console.log(`[Filtrar Precios] Precio no permitido: ${detectados.join(', ')}. Original: ${respuesta}`);\n  return [{ json: { ...$input.first().json, respuesta: RESPUESTA_SEGURA } }];\n}\n\nreturn [$input.first()];\n"
+        }
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 2
+            },
+            "conditions": [
+              {
+                "id": "cond_dejo_numero",
+                "leftValue": "={{ $json.avisarNumero }}",
+                "rightValue": true,
+                "operator": {
+                  "type": "boolean",
+                  "operation": "equals"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.2,
+        "position": [
+          1180,
+          400
+        ],
+        "id": "7b8a9c1d-2e3f-4a5b-6c7d-8e9f0a1b2c3d",
+        "name": "¿Dejó su número?"
+      },
+      {
+        "parameters": {
+          "jsCode": "// Cuando el comprador deja su número, ya no le mandamos el catálogo ni\n// volvemos a pedirle nada: confirmamos con naturalidad que lo agendamos\n// y que nos contactamos en breve por WhatsApp.\nconst variantes = [\n  '¡Buenísimo! A la brevedad te vamos a estar contactando por WhatsApp con toda la info.',\n  'Dale impecable, ya te agendamos y en breve te mandamos mensajito por WhatsApp.',\n  'De diez, en un ratito te escribimos por WhatsApp así te pasamos fotos y detalles.',\n  'Genial, muchas gracias! Enseguida te estamos escribiendo por WhatsApp.',\n  'Buenísimo, te hablamos al WhatsApp a la brevedad para coordinar.',\n  'Dale perfecto, ahí te mandamos un WhatsApp en breve con todos los modelos disponibles.'\n];\n\nconst respuesta = variantes[Math.floor(Math.random() * variantes.length)];\n\nreturn [{\n  json: {\n    ...$input.first().json,\n    respuesta,\n    pidioNumero: false,\n    numeroRecibido: true,\n    necesitaHumano: false,\n  }\n}];"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1420,
+          300
+        ],
+        "id": "8c9d0e1f-3a4b-5c6d-7e8f-9a0b1c2d3e4f",
+        "name": "Confirmar Número Recibido"
+      },
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "marketplace-leads-recientes",
+          "responseMode": "lastNode",
+          "options": {}
+        },
+        "id": "c1d2e3f4-5a6b-7c8d-9e0f-1a2b3c4d5e6f",
+        "name": "Webhook: Leads Recientes",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2.1,
+        "position": [
+          240,
+          1920
+        ],
+        "webhookId": "a8e2b1c4-7d9e-4f1a-8c5b-2e4f6a8d0b2c"
+      },
+      {
+        "parameters": {
+          "operation": "get",
+          "dataTableId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "X7KPWA15ET7huZSG"
+          },
+          "matchType": "allConditions",
+          "filters": {
+            "conditions": []
+          },
+          "returnAll": true
+        },
+        "id": "d2e3f4a5-6b7c-8d9e-0f1a-2b3c4d5e6f7a",
+        "name": "Leer Todos los Leads",
+        "type": "n8n-nodes-base.dataTable",
+        "typeVersion": 1.1,
+        "position": [
+          688,
+          1920
+        ],
+        "alwaysOutputData": true
+      },
+      {
+        "parameters": {
+          "jsCode": "// Extrae y desduplica todas las conversaciones con número de teléfono de la tabla\nconst filas = $input.all().map(item => item.json);\n\nfunction normalizarTelefono(num) {\n  if (!num) return '';\n  let n = String(num).replace(/\\D/g, '');\n  if (n.startsWith('54')) n = n.slice(2);\n  if (n.startsWith('0')) n = n.slice(1);\n  if (n.startsWith('9')) n = n.slice(1);\n  n = n.replace(/^(\\d{2,4})15(\\d{6,8})$/, '$1$2');\n  return n;\n}\n\nfunction extraerTelefonoAvanzado(texto) {\n  if (!texto) return '';\n  let t = String(texto).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');\n\n  const DECENAS = [\n    { p: /\\bnoventa\\s+y\\s+/gi, d: '9 ' },\n    { p: /\\bochenta\\s+y\\s+/gi, d: '8 ' },\n    { p: /\\bsetenta\\s+y\\s+/gi, d: '7 ' },\n    { p: /\\bsesenta\\s+y\\s+/gi, d: '6 ' },\n    { p: /\\bcincuenta\\s+y\\s+/gi, d: '5 ' },\n    { p: /\\bcuarenta\\s+y\\s+/gi, d: '4 ' },\n    { p: /\\btreinta\\s+y\\s+/gi, d: '3 ' },\n    { p: /\\bnoventa\\b/gi, d: '90 ' },\n    { p: /\\bochenta\\b/gi, d: '80 ' },\n    { p: /\\bsetenta\\b/gi, d: '70 ' },\n    { p: /\\bsesenta\\b/gi, d: '60 ' },\n    { p: /\\bcincuenta\\b/gi, d: '50 ' },\n    { p: /\\bcuarenta\\b/gi, d: '40 ' },\n    { p: /\\btreinta\\b/gi, d: '30 ' },\n    { p: /\\bveintinueve\\b/gi, d: '29 ' },\n    { p: /\\bveintiocho\\b/gi, d: '28 ' },\n    { p: /\\bveintisiete\\b/gi, d: '27 ' },\n    { p: /\\bveintiseis\\b/gi, d: '26 ' },\n    { p: /\\bveinticinco\\b/gi, d: '25 ' },\n    { p: /\\bveinticuatro\\b/gi, d: '24 ' },\n    { p: /\\bveintitres\\b/gi, d: '23 ' },\n    { p: /\\bveintidos\\b/gi, d: '22 ' },\n    { p: /\\bveintiuno\\b|\\bveintiun\\b/gi, d: '21 ' },\n    { p: /\\bveinte\\b/gi, d: '20 ' },\n    { p: /\\bdiecinueve\\b/gi, d: '19 ' },\n    { p: /\\bdieciocho\\b/gi, d: '18 ' },\n    { p: /\\bdiecisiete\\b/gi, d: '17 ' },\n    { p: /\\bdieciseis\\b/gi, d: '16 ' },\n    { p: /\\bquince\\b/gi, d: '15 ' },\n    { p: /\\bcatorce\\b/gi, d: '14 ' },\n    { p: /\\btrece\\b/gi, d: '13 ' },\n    { p: /\\bdoce\\b/gi, d: '12 ' },\n    { p: /\\bonce\\b/gi, d: '11 ' },\n    { p: /\\bdiez\\b/gi, d: '10 ' },\n    { p: /\\bcero\\b/gi, d: '0 ' },\n    { p: /\\buno\\b|\\bun\\b|\\buna\\b/gi, d: '1 ' },\n    { p: /\\bdos\\b/gi, d: '2 ' },\n    { p: /\\btres\\b/gi, d: '3 ' },\n    { p: /\\bcuatro\\b/gi, d: '4 ' },\n    { p: /\\bcinco\\b/gi, d: '5 ' },\n    { p: /\\bseis\\b/gi, d: '6 ' },\n    { p: /\\bsiete\\b/gi, d: '7 ' },\n    { p: /\\bocho\\b/gi, d: '8 ' },\n    { p: /\\bnueve\\b/gi, d: '9 ' },\n  ];\n\n  for (const item of DECENAS) {\n    t = t.replace(item.p, item.d);\n  }\n\n  const candidatos = t.match(/\\+?\\d[\\d\\s\\-()./_*~|]{6,}\\d/g) || [];\n  const numeros = candidatos\n    .map((c) => c.replace(/\\D/g, ''))\n    .filter((n) => n.length >= 8 && n.length <= 15);\n\n  return numeros[0] || '';\n}\n\nfunction extraerTelefono(fila) {\n  if (!fila) return '';\n  if (fila.numero && String(fila.numero).replace(/\\D/g, '').length >= 6) {\n    return String(fila.numero);\n  }\n  if (fila.numeroDelComprador && String(fila.numeroDelComprador).replace(/\\D/g, '').length >= 6) {\n    return String(fila.numeroDelComprador);\n  }\n  const txt = String(fila.mensaje || fila.ultimoMensaje || '');\n  return extraerTelefonoAvanzado(txt);\n}\n\nconst porNumero = new Map();\n\nfilas.forEach(f => {\n  if (!f) return;\n  const tel = extraerTelefono(f);\n  const telNorm = normalizarTelefono(tel);\n  if (!telNorm || telNorm.length < 6) return;\n\n  const fechaActual = new Date(f.ultimoEnvio || f.fechaContacto || f.updatedAt || f.createdAt || 0).getTime();\n  const previo = porNumero.get(telNorm);\n  if (!previo || fechaActual > new Date(previo.ultimoEnvio || previo.fechaContacto || previo.updatedAt || previo.createdAt || 0).getTime()) {\n    porNumero.set(telNorm, {\n      ...f,\n      numero: tel\n    });\n  }\n});\n\nconst unicos = Array.from(porNumero.values()).sort((a, b) => new Date(b.ultimoEnvio || 0) - new Date(a.ultimoEnvio || 0));\n\nconst leads = unicos.map(l => ({\n  cuenta: l.cuenta || 'marketplace',\n  idConversacion: l.idConversacion,\n  nombreComprador: l.nombreComprador && l.nombreComprador !== 'Comprador' ? l.nombreComprador : 'Comprador',\n  numero: l.numero,\n  ultimoEnvio: l.ultimoEnvio || new Date().toISOString(),\n  derivadaAHumano: Boolean(l.derivadaAHumano),\n  contactadoEnWhatsapp: Boolean(l.contactadoEnWhatsapp)\n}));\n\nreturn [{\n  json: {\n    ok: true,\n    total: leads.length,\n    leads,\n    leadsNuevos: leads.filter(l => !l.contactadoEnWhatsapp && !l.derivadaAHumano),\n    leadsSeguimiento: leads,\n    todosUnicos: leads\n  }\n}];"
+        },
+        "id": "e3f4a5b6-7c8d-9e0f-1a2b-3c4d5e6f7a8b",
+        "name": "Filtrar Leads Recientes",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1100,
+          1920
+        ]
+      },
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "marketplace-marcar-lead",
+          "responseMode": "lastNode",
+          "options": {}
+        },
+        "id": "f4a5b6c7-8d9e-0f1a-2b3c-4d5e6f7a8b9c",
+        "name": "Webhook: Marcar Lead",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2.1,
+        "position": [
+          240,
+          2220
+        ],
+        "webhookId": "b9f3c2d5-8e0f-5a2b-9d6c-3f5a7b9e1c3d"
+      },
+      {
+        "parameters": {
+          "jsCode": "return [{ json: { ok: true } }];"
+        },
+        "id": "a5b6c7d8-9e0f-1a2b-3c4d-5e6f7a8b9c0d",
+        "name": "Responder Marcar",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          688,
+          2220
+        ]
+      },
+      {
+        "parameters": {
+          "operation": "upsert",
+          "dataTableId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "X7KPWA15ET7huZSG"
+          },
+          "matchType": "allConditions",
+          "filters": {
+            "conditions": [
+              {
+                "keyName": "cuenta",
+                "keyValue": "={{ $json.body?.cuenta || \"firefox-default\" }}"
+              },
+              {
+                "keyName": "idConversacion",
+                "keyValue": "={{ $json.body?.idConversacion }}"
+              }
+            ]
+          },
+          "columns": {
+            "mappingMode": "defineBelow",
+            "matchingColumns": [
+              "cuenta",
+              "idConversacion"
+            ],
+            "value": {
+              "cuenta": "={{ $json.body?.cuenta || \"firefox-default\" }}",
+              "idConversacion": "={{ $json.body?.idConversacion }}",
+              "derivadaAHumano": true
+            }
+          },
+          "options": {}
+        },
+        "id": "b1c2d3e4-5f6a-7b8c-9d0e-1f2a3b4c5d6e",
+        "name": "Guardar Lead Contactado",
+        "type": "n8n-nodes-base.dataTable",
+        "typeVersion": 1.1,
+        "position": [
+          460,
+          2220
+        ]
+      }
+    ],
+    "connections": {
+      "Webhook: Mensaje Marketplace": {
+        "main": [
+          [
+            {
+              "node": "Normalizar Payload",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "IA: Armar Respuesta": {
+        "main": [
+          [
+            {
+              "node": "Formatear Respuesta",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Groq Chat Model": {
+        "ai_languageModel": [
+          [
+            {
+              "node": "IA: Armar Respuesta",
+              "type": "ai_languageModel",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "¿Es el primer mensaje?": {
+        "main": [
+          [
+            {
+              "node": "Mensaje de Apertura",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "¿Dejó su número?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Parser de Respuesta": {
+        "ai_outputParser": [
+          [
+            {
+              "node": "IA: Armar Respuesta",
+              "type": "ai_outputParser",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Detectar Número": {
+        "main": [
+          [
+            {
+              "node": "¿Es el primer mensaje?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Responder al Webhook": {
+        "main": [
+          [
+            {
+              "node": "¿Compartió el número?",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "¿Necesita un humano?",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Guardar Estado",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "¿Compartió el número?": {
+        "main": [
+          [
+            {
+              "node": "Avisar Número por Telegram",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Webhook: Alerta de la Extensión": {
+        "main": [
+          [
+            {
+              "node": "Sanear Alerta",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Sanear Alerta": {
+        "main": [
+          [
+            {
+              "node": "Avisar Problema por Telegram",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "¿Necesita un humano?": {
+        "main": [
+          [
+            {
+              "node": "Avisar Derivación por Telegram",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Webhook: Resumen Diario": {
+        "main": [
+          [
+            {
+              "node": "Armar Resumen",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Armar Resumen": {
+        "main": [
+          [
+            {
+              "node": "Enviar Resumen por Telegram",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Normalizar Payload": {
+        "main": [
+          [
+            {
+              "node": "Leer Estado",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Leer Estado": {
+        "main": [
+          [
+            {
+              "node": "Detectar Número",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Leer Conversaciones de la Cuenta": {
+        "main": [
+          [
+            {
+              "node": "Filtrar Pendientes",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Webhook: Pendientes": {
+        "main": [
+          [
+            {
+              "node": "Registrar Latido",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Registrar Latido": {
+        "main": [
+          [
+            {
+              "node": "Leer Conversaciones de la Cuenta",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Cada Hora": {
+        "main": [
+          [
+            {
+              "node": "Leer Latidos",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Leer Latidos": {
+        "main": [
+          [
+            {
+              "node": "¿Alguna Cuenta Muda?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "¿Alguna Cuenta Muda?": {
+        "main": [
+          [
+            {
+              "node": "Avisar Bot Caído",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Avisar Bot Caído": {
+        "main": [
+          [
+            {
+              "node": "Marcar Como Avisada",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "¿Es mensaje web?": {
+        "main": [
+          [
+            {
+              "node": "Mensaje Web (3)",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "¿Es seguimiento?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "¿Es seguimiento?": {
+        "main": [
+          [
+            {
+              "node": "Mensaje de Seguimiento (2)",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Variar Estilo",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Mensaje Web (3)": {
+        "main": [
+          [
+            {
+              "node": "Responder al Webhook",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Mensaje de Seguimiento (2)": {
+        "main": [
+          [
+            {
+              "node": "Responder al Webhook",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Mensaje de Apertura": {
+        "main": [
+          [
+            {
+              "node": "Responder al Webhook",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Variar Estilo": {
+        "main": [
+          [
+            {
+              "node": "IA: Armar Respuesta",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Formatear Respuesta": {
+        "main": [
+          [
+            {
+              "node": "Filtrar Precios",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Filtrar Precios": {
+        "main": [
+          [
+            {
+              "node": "Responder al Webhook",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "¿Dejó su número?": {
+        "main": [
+          [
+            {
+              "node": "Confirmar Número Recibido",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "¿Es mensaje web?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Confirmar Número Recibido": {
+        "main": [
+          [
+            {
+              "node": "Responder al Webhook",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Webhook: Leads Recientes": {
+        "main": [
+          [
+            {
+              "node": "Leer Todos los Leads",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Leer Todos los Leads": {
+        "main": [
+          [
+            {
+              "node": "Filtrar Leads Recientes",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Webhook: Marcar Lead": {
+        "main": [
+          [
+            {
+              "node": "Guardar Lead Contactado",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Guardar Lead Contactado": {
+        "main": [
+          [
+            {
+              "node": "Responder Marcar",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "nodeGroups": [],
+    "authors": "Santiago Wuerich",
+    "name": null,
+    "description": null,
+    "autosaved": false,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-08-23T00:41:57.709Z",
+        "id": 175,
+        "workflowId": "o1hQpxHMFMbj3Nnw",
+        "versionId": "901a485d-6151-4181-8d3c-ab6c503f53e7",
+        "event": "activated",
+        "userId": "1ea0ed00-d8d2-408d-ac05-92a742038b93"
+      },
+      {
+        "createdAt": "2026-08-23T00:41:57.670Z",
+        "id": 174,
+        "workflowId": "o1hQpxHMFMbj3Nnw",
+        "versionId": "901a485d-6151-4181-8d3c-ab6c503f53e7",
+        "event": "deactivated",
+        "userId": "1ea0ed00-d8d2-408d-ac05-92a742038b93"
+      }
+    ]
+  }
+}

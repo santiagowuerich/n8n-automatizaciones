@@ -31,6 +31,9 @@ Este protocolo define el ciclo de verificación autónoma que ejecuta el Second 
     └───────────┬────────────────────┘
                 │
                 ▼
+[Limpieza de artefactos temporales]
+                │
+                ▼
 [Generación de Reporte de Prueba + Diff]
                 │
                 ▼
@@ -41,13 +44,63 @@ Este protocolo define el ciclo de verificación autónoma que ejecuta el Second 
 
 ## 1. Reglas de Ejecución de Pruebas
 
-1. **Aislamiento en DEV:** Todas las pruebas de estrés o ejecución se realizan exclusivamente contra la instancia de desarrollo.
-2. **Uso de Mocks:**
+1. **Aislamiento en DEV:** Todas las pruebas de estrés o ejecución de proyectos de Xtract se realizan exclusivamente contra `n8n.santiagowuerich.info`.
+2. **🔴 Esa instancia también es producción propia.** Aloja los sistemas de `personal/` con tráfico real y monitoreo propio ([lista de workflows protegidos](sistemas.md#workflows-propios-en-producción-no-tocar-sin-intención-explícita)). Antes de activar, desactivar, re-disparar, renombrar o borrar cualquier workflow que el agente no haya creado en esta sesión:
+   - Confirmar de quién es el proyecto (`clientes/` vs `personal/`).
+   - Si es propio y está activo, **no se toca** como efecto colateral de un trabajo de Xtract. Se pide confirmación explícita.
+   - Los proyectos propios **no tienen staging**: probar contra ellos es probar en producción. Usar payloads mock y webhooks de test, nunca el trigger productivo.
+3. **Uso de Mocks:**
    - Si el nodo escribe en una base de datos o envía mensajes a personas reales, se deben usar identificadores de prueba o tablas de staging (mock).
    - Para webhooks, el agente genera un JSON sintético representativo de casos felices y casos de borde (ej: teléfono sin formato internacional, campo nulo).
-3. **Validación de Salida:**
+4. **Validación de Salida:**
    - No basta con que n8n devuelva `finished: true`.
    - Se debe verificar que la estructura de datos emitida por el último nodo contenga las claves y tipos esperados.
-4. **Criterio de Auto-corrección:**
+5. **Criterio de Auto-corrección:**
    - Errores de sintaxis en nodos `Code` (JavaScript), mapeo de expresiones JSON (`{{ $json.field }}`) o tipos de datos deben corregirse automáticamente hasta lograr una ejecución limpia (máximo 3 reintentos).
    - Errores de credenciales, conectividad o permisos se escalan inmediatamente al usuario.
+
+---
+
+## 2. Credenciales durante el testing
+
+Un workflow importado desde el repositorio trae **IDs de credenciales de PROD** (ver
+[credenciales.md §3](credenciales.md#3-convención-de-exports-en-el-repositorio)). Antes de la
+primera ejecución de prueba en DEV hay que remapearlos a los IDs de la tabla DEV.
+
+Síntoma típico de omitir este paso: todos los nodos de servicio fallan a la vez con error de
+credencial. No es un bug del diseño — es el remapeo faltante.
+
+---
+
+## 3. Limpieza del entorno de desarrollo
+
+Todo artefacto creado para diagnosticar o inspeccionar es **basura con fecha de vencimiento**.
+Sin una regla explícita se acumula y termina siendo indistinguible del trabajo real.
+
+1. **Nomenclatura obligatoria:** todo workflow desechable se crea con el prefijo `TEMP - `
+   y una `description` que indique **para qué se creó y cuándo se borra**.
+2. **Borrado en la misma sesión:** el workflow temporal se elimina apenas se obtuvo el dato
+   que se buscaba. No se deja "por las dudas".
+3. **Barrido periódico:** al iniciar un trabajo en DEV, listar los workflows y reportar al
+   usuario los `TEMP - ` sobrevivientes de sesiones anteriores para confirmar su borrado.
+   No borrar sin confirmación aquello que el agente no creó.
+4. **Scripts locales:** cualquier script de diagnóstico de un solo uso va a `scratch/`
+   (ignorado por git), nunca a la raíz del repo ni a `docs/brain/`.
+5. **PROD también acumula.** La instancia de Xtract tiene restos sin dueño
+   (`My workflow 8`, `AI agent chat`, `enviar leads 2`, y un
+   `Xtract Demo — Simulador WhatsApp` **activo** desde 2026-08-05 más su duplicado inactivo).
+   Un workflow de demo activo en la instancia del cliente es superficie expuesta: reportarlo
+   al usuario y proponer su baja, nunca borrarlo por cuenta propia.
+
+---
+
+## 4. Reporte de prueba
+
+El reporte que cierra el ciclo debe incluir, como mínimo:
+
+- Workflow y entorno (nombre + ID + instancia).
+- Payloads de entrada usados (feliz y de borde).
+- Resultado por caso: `finished`, nodos ejecutados, y el schema de salida validado.
+- Errores encontrados y qué se corrigió.
+- Artefactos temporales creados **y si fueron borrados**.
+- Veredicto explícito: listo para pase a PROD, o qué falta.

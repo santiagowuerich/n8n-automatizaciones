@@ -37,7 +37,7 @@ graph TD
 ---
 
 ## Fase 2: Búsqueda de Patrones y Plantillas de n8n
-Antes de inventar un flujo de cero, contrastar contra los patrones probados en [`docs/brain/catalogo-patrones.md`](../../docs/brain/catalogo-patrones.md):
+Antes de inventar un flujo de cero, contrastar contra los patrones probados en [`docs/brain/catalogo-patrones.md`](../../../docs/brain/catalogo-patrones.md):
 - **Event-Driven Webhook:** Procesamiento reactivo en tiempo real con buffer de ráfagas.
 - **Asynchronous Polling Cron:** Desacople de procesos largos en tareas programadas periódicas.
 - **AI Agent with Tools:** Modelos LLM que ejecutan function calling con fallback de modelos y red de seguridad.
@@ -46,7 +46,7 @@ Antes de inventar un flujo de cero, contrastar contra los patrones probados en [
 ---
 
 ## Fase 3: Crítica Adversarial (Design Critic Gate)
-Someter el diseño al checklist riguroso de [`docs/brain/criterios-critica.md`](../../docs/brain/criterios-critica.md):
+Someter el diseño al checklist riguroso de [`docs/brain/criterios-critica.md`](../../../docs/brain/criterios-critica.md):
 1. **¿Qué pasa si la API externa cae o responde 500?** (Manejo de errores y reintentos).
 2. **¿Qué pasa si hay ráfagas de 50 peticiones simultáneas?** (Rate limits y colas).
 3. **¿El flujo se puede colgar en `waiting`?** (Prohibir nodos `wait` largos dentro de loops).

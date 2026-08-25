@@ -9,8 +9,8 @@
 
 ## 1. Instancia Santiago (`n8n.santiagowuerich.info`)
 
-<!-- Verificado el 2026-08-24 vía list_credentials (11/11 credenciales) -->
-**Última verificación:** 2026-08-24 — completa (11 de 11).
+<!-- Verificado el 2026-08-24 vía list_credentials (12/12 credenciales) -->
+**Última verificación:** 2026-08-24 — completa (12 de 12).
 
 ⚠️ Estas credenciales sirven **dos roles a la vez**: el staging de Xtract y la producción de los
 [proyectos propios](../../personal/README.md). Rotar o borrar una de acá puede tirar abajo un
@@ -37,7 +37,8 @@ sistema propio en producción — no son credenciales descartables de laboratori
 
 **Última verificación:** 2026-08-24 — las 14 confirmadas contra la instancia vía `n8n_prod`,
 leyendo los `credentials` de los nodos de los workflows productivos `HIYvqfItsrPk4CGc` (04-WF2)
-y `bAh0FYSFTM0UeXSc` (05).
+y `bAh0FYSFTM0UeXSc` (05). Re-chequeado más tarde el mismo día tras el agregado de la
+transcripción de audio: `HIYvqfItsrPk4CGc` pasó de 43 a 44 nodos y sigue `active: true`.
 
 | Servicio | Tipo de Credencial en n8n | Nombre en n8n | Credential ID | Confirmado en workflow |
 | :--- | :--- | :--- | :--- | :--- |
@@ -54,7 +55,7 @@ y `bAh0FYSFTM0UeXSc` (05).
 | Calendly | `calendlyOAuth2Api` | `Calendly micaela.marcos` | `VJnAlINTOaMmBHc6` | 04-WF2 |
 | DeepSeek | `deepSeekApi` | `SantiagoApikey` | `H5fC2aZoNphCCole` | 05 |
 | Groq | `groqApi` | `Groq Xtract` | `eBM64OF1E854MM7I` | 04-WF2 |
-| OpenRouter | `openRouterApi` | `OpenRouter Xtract` | `OpenRouter Xtract` | 04-WF2 |
+| OpenRouter | `openRouterApi` | `OpenRouter Xtract` | `LW8I48MvSQglFqrJ` | 04-WF2 (transcripción de audio) |
 
 **✅ Discrepancia cerrada — `LOGlZWLcdTggazKj`:** el catálogo decía `Slack account 3`; la
 instancia dice **`Slack personal Santi`**. El nombre viejo era el del catálogo, ya corregido.
@@ -65,6 +66,11 @@ algún día se cambia por una del workspace del cliente, hay que actualizar el I
 ningún entorno — los workflows que la usan (demos del 04, proyecto 02) llevan placeholders
 `REEMPLAZAR_*`. Tampoco hay credencial de Meta / WhatsApp Cloud API: el envío de WhatsApp del
 proyecto 04 se hace **a través de Chatwoot**, no contra Meta directamente.
+
+**Nota sobre OpenRouter y Gemini:** el modelo `google/gemini-2.0-flash-001` que transcribe el
+audio en 04-WF2 (`Transcribir Audio con OpenRouter`) no se llama vía credencial nativa de
+Google — se accede **a través de OpenRouter como gateway**. Por eso no hace falta una
+credencial `googlePalmApi` para esa función puntual; sigue faltando para lo que la use directo.
 
 ---
 

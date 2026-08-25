@@ -76,32 +76,81 @@ y monitoreo propio.
 
 ## 2. Fuentes de verdad de la configuración MCP
 
-| Archivo | Host que lo consume | Servidores n8n definidos |
+⚠️ **"Antigravity" no es una sola app.** En esta máquina conviven al menos tres binarios
+distintos (`Antigravity IDE.app`, un `antigravity-cli`, y una instalación "Antigravity" a secas),
+cada uno con su **propio** `mcp_config.json` bajo `~/.gemini/<variante>/`. La documentación
+interna de Antigravity llama a `~/.gemini/config/mcp_config.json` el **"Global Configuration"**
+("applies to all sessions") — pero eso no es cierto en la práctica en este equipo: cada variante
+lee su propio archivo, no el "global" documentado.
+
+**Verificado el 2026-08-24** inspeccionando el proceso real (`ps aux`, buscando `--app_data_dir`):
+esta sesión de Claude Code corre como extensión **dentro de `Antigravity IDE.app`**, cuyo
+`app_data_dir` es `antigravity-ide`. Su config vive en `~/.gemini/antigravity-ide/mcp_config.json`
+— **no** en `~/.gemini/config/mcp_config.json`.
+
+| Archivo | Variante que lo consume | Servidores n8n definidos |
 | :--- | :--- | :--- |
-| `~/.gemini/config/mcp_config.json` | Antigravity (config principal) | `n8n` → Santiago · `n8n_prod` → Xtract |
-| `~/.claude.json` | Claude Code | `n8n-mcp` → Santiago · `n8n_prod` → Xtract |
-| `~/.gemini/antigravity/mcp_config.json` | Antigravity (perfil legacy) | `n8n` → `https://157.151.13.179` (⚠️ ver abajo) |
+| `~/.gemini/antigravity-ide/mcp_config.json` | **Antigravity IDE** (la app de escritorio, confirmado por proceso) | `n8n` → Santiago · `n8n_prod` → Xtract *(agregados 2026-08-24, ver deuda 3)* |
+| `~/.gemini/config/mcp_config.json` | Variante(s) sin identificar — es el "global" según la doc de Antigravity, pero no lo que usa la IDE | `n8n` → Santiago · `n8n_prod` → Xtract |
+| `~/.claude.json` | Claude Code (standalone o como extensión) | `n8n-mcp` → Santiago · `n8n_prod` → Xtract |
+| `~/.gemini/antigravity/mcp_config.json` | "Antigravity" sin `-ide` (proceso no visto corriendo hoy) | `n8n` → `https://157.151.13.179` (⚠️ ver deuda 1) |
+| `~/.gemini/antigravity-cli/mcp_config.json` | `antigravity-cli` | sin `n8n` |
 
 **Deudas conocidas de configuración:**
-1. El perfil legacy apunta a DEV **por IP cruda** con certificado no válido. Es una definición
-   duplicada y divergente: si se edita la credencial de DEV, hay que tocar dos archivos.
-   Unificar o borrar esa entrada.
-2. Las tres definiciones usan `NODE_TLS_REJECT_UNAUTHORIZED=0`, lo que desactiva la validación
-   TLS **de todo el proceso** del servidor MCP, no solo de n8n. Aceptable mientras el endpoint
-   por IP siga en uso; al unificar sobre los dominios con TLS válido, quitarlo.
+1. El perfil `antigravity` (sin `-ide`) apunta a DEV **por IP cruda** con certificado no válido.
+   Es una definición duplicada y divergente: si se edita la credencial de DEV, hay que tocar
+   varios archivos. Unificar o borrar esa entrada — pendiente, no se tocó (proceso no visto
+   corriendo, menor riesgo inmediato).
+2. Todas las definiciones legacy usan `NODE_TLS_REJECT_UNAUTHORIZED=0`, lo que desactiva la
+   validación TLS **de todo el proceso** del servidor MCP, no solo de n8n. Aceptable mientras el
+   endpoint por IP siga en uso; al unificar sobre los dominios con TLS válido, quitarlo.
+3. **Corregido el 2026-08-24:** `~/.gemini/antigravity-ide/mcp_config.json` no tenía `n8n` ni
+   `n8n_prod` (solo `context7`, `engram`, `apify`) — la IDE que el usuario tiene abierta hoy
+   **no tenía acceso a n8n en absoluto**. Se copiaron las entradas `n8n` y `n8n_prod` desde
+   `~/.gemini/config/mcp_config.json`. Backup del archivo previo en `scratch/` (no versionado).
+   **Requiere reiniciar Antigravity IDE** (o recargar desde *Additional Options (...) → MCP
+   Servers*) para que tome el cambio — no verificado en vivo porque este agente no puede
+   reiniciar la IDE que lo hospeda.
+4. No hay forma de confirmar desde acá cuál variante lee `~/.gemini/config/mcp_config.json`
+   realmente — quedó como sospecha razonable (coincide con lo que documenta Antigravity como
+   "global"), no como hecho verificado por proceso como sí se hizo con `antigravity-ide`.
 
 ---
 
 ## 3. Matriz de acceso por host
 
-**Estado al 2026-08-24:** ambos hosts tienen los dos entornos.
+**Estado al 2026-08-24:** los dos entornos, en ambos hosts — para Antigravity IDE, recién
+después del fix de la deuda 3 de arriba y **pendiente de reinicio para confirmar en vivo**.
 
 | Host | Santiago (lectura) | Santiago (escritura) | Xtract (lectura) | Xtract (escritura) |
 | :--- | :---: | :---: | :---: | :---: |
-| **Antigravity** | ✅ `n8n` | ✅ `n8n` | ✅ `n8n_prod` | ⚠️ solo tras gate humano |
+| **Antigravity IDE** | ✅ `n8n`* | ✅ `n8n`* | ✅ `n8n_prod`* | ⚠️ solo tras gate humano |
 | **Claude Code** | ✅ `n8n-mcp` | ✅ `n8n-mcp` | ✅ `n8n_prod` | ⚠️ solo tras gate humano |
 
+\* Config corregida el 2026-08-24, no confirmada en vivo — requiere reiniciar la IDE. Antes de
+confiar en esta fila, re-verificar (§ protocolo de verificación abajo).
+
 La matriz se verifica, no se asume: un host nuevo o una config borrada la cambian sin aviso.
+
+---
+
+## 3.1 Instrucciones y skills: qué lee cada host
+
+Verificado el 2026-08-24 contra la documentación interna de Antigravity
+(`agy-customizations/docs/{rules,skills}.md`, instalada localmente):
+
+| Elemento | Claude Code | Antigravity IDE |
+| :--- | :---: | :---: |
+| `CLAUDE.md` | ✅ lo carga siempre | ❌ no lo lee |
+| `AGENTS.md` | ✅ (convención de este repo) | ✅ nativo — camina de la carpeta actual hacia la raíz buscando `AGENTS.md` / `GEMINI.md` |
+| `.agents/skills/<nombre>/SKILL.md` | ✅ vía el symlink `.claude/skills` | ✅ **nativo, sin symlink** — `.agents/skills/` es justo el ejemplo que da la propia doc de "customization root" |
+
+**Consecuencia práctica, ya correcta en este repo:** la separación entre `CLAUDE.md`
+(instrucciones solo para Claude Code) y `AGENTS.md` (leído por los dos hosts) no es cosmética,
+es la única forma en que Antigravity ve algo de contexto del repo. No hace falta un `GEMINI.md`
+aparte mientras `AGENTS.md` exista — sería contenido duplicado. Las 4 skills del repo
+(`n8n-architect`, `n8n-orchestrator`, `n8n-testing`, `n8n-deploy-prod`) ya eran descubribles por
+Antigravity IDE sin ningún cambio adicional.
 
 ### Protocolo de verificación antes de escribir
 1. Listar las herramientas MCP disponibles en la sesión actual.

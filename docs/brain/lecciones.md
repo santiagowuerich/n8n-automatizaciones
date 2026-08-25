@@ -8,6 +8,40 @@ guarda el *por qué* y el *cuándo*.
 
 ---
 
+## 2026-08-24 · "Config global" de Antigravity, según su propia doc, no es la que corre
+
+- **Síntoma:** `~/.gemini/antigravity-ide/mcp_config.json` (la config real de la IDE abierta)
+  no tenía `n8n` ni `n8n_prod`, aunque `~/.gemini/config/mcp_config.json` sí — y la doc interna
+  de Antigravity dice textualmente que ese segundo archivo es el **"Global Configuration
+  (applies to all sessions)"**.
+- **Causa:** hay más de un binario de Antigravity instalado en la máquina
+  (`Antigravity IDE.app`, `antigravity-cli`, y una versión "Antigravity" sin `-ide`), y cada
+  uno resultó tener su **propio** `mcp_config.json` bajo `~/.gemini/<variante>/` — la doc
+  describe el caso de un solo binario, no esta instalación con varios.
+- **Cómo se confirmó cuál corre de verdad:** no por la doc, sino leyendo `ps aux` y buscando el
+  flag `--app_data_dir` del proceso activo. Coincidió con el nombre de una de las carpetas
+  (`antigravity-ide`), no con la que la doc llama "global".
+- **Regla:** [`sistemas.md §2`](sistemas.md#2-fuentes-de-verdad-de-la-configuración-mcp) — ante
+  cualquier duda sobre qué config lee un host con varias instalaciones, verificar por proceso
+  corriendo, nunca confiar en la doc del producto a ciegas cuando hay múltiples variantes en
+  la misma máquina.
+
+---
+
+## 2026-08-24 · Un dato mal cargado en el catálogo pasó como si estuviera verificado
+
+- **Síntoma:** `credenciales.md` tenía el ID de la credencial OpenRouter de PROD escrito como
+  el literal `"OpenRouter Xtract"` — el **nombre**, copiado en la columna del **ID**.
+- **Causa:** alguien (probablemente otra sesión trabajando en paralelo sobre el mismo workflow)
+  cargó la fila a mano sin copiar el ID real (`LW8I48MvSQglFqrJ`), y quedó sin marcar como
+  pendiente de verificar.
+- **Regla:** un ID con la forma de un nombre legible (espacios, mayúsculas) es sospechoso por
+  definición — los IDs de n8n son strings alfanuméricos cortos sin espacios. Cuando algo así
+  aparece en una tabla ya "verificada", volver a chequear esa fila puntual antes de confiar en
+  la fecha de verificación general del documento.
+
+---
+
 ## 2026-08-24 · Los `workflow.json` del repo son exports de PROD
 
 - **Síntoma:** los IDs de credenciales de los workflows versionados no existen en la instancia DEV.

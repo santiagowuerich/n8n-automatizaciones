@@ -4,22 +4,17 @@ Registro de decisiones arquitectónicas y técnicas tomadas en la construcción 
 
 ---
 
-## 1. Bifurcación One-Shot vs Fallback por Formulario
+## 1. Bifurcación Inteligente: One-Shot Automático vs Notificación por Falta de Facturas (2026-08-25)
 
-- **Contexto:** Inicialmente el flujo siempre enviaba un DM por Slack pidiendo cargar el `One-Shot` y el `Fee Mensual` mediante un formulario interactivo de n8n antes de generar el Google Doc de ROI.
-- **Evidencia observada:** En la mayoría de los casos donde el comercial ya cotizó la oportunidad en Notion, los campos `property_one_shot` y `property_mrr` vienen cargados en el payload inicial del webhook.
-- **Decisión:** Implementar un nodo condicional `Tiene precio?`. Si ambos valores (o alguno > 0) están presentes, el flujo genera la página 4 y el Google Doc en paralelo sin intermediación humana. Si faltan, mantiene el envío del formulario a Slack como fallback.
-
----
-
-## 2. Aislamiento de Ramas en Notificaciones Slack
-
-- **Problema encontrado:** El nodo `Completar pagina 4` estaba conectado directamente al pipeline de notificación inicial de Slack, causando que al correr la rama OneShot se enviara el mensaje intermedio pidiendo el precio antes de terminar el documento ROI.
-- **Decisión:** Separar la ejecución de la página 4 en dos nodos/rutas: `Completar pagina 4 (OneShot)` que apunta exclusivamente al `Merge (waitForAll)` con el Doc ROI, y `Completar pagina 4` que alimenta el fallback interactivo.
+- **Contexto:** Si el lead ya cuenta con la cantidad de facturas (en Notion o dicha en la llamada), el sistema debe generar todo de punta a punta sin intervención humana. Sin embargo, si ese dato no existe, el ROI no puede inventarse en base a números arbitrarios.
+- **Decisión:** 
+  1. Si `facturasMes` está presente $\to$ El flujo corre en **One-Shot directo**, generando la Página 4 de Slides y el Google Doc de ROI en paralelo.
+  2. Si `facturasMes` falta $\to$ Se activa la rama de notificación que le envía un **Slack DM al owner del lead** avisando que las Slides (Páginas 1 a 3) están listas pero falta la cantidad de facturas para calcular el impacto y el ROI, con un link interactivo al formulario de n8n prellenado con los datos del deal.
+  3. Cuando el owner envía el formulario, este genera la Página 4 y el Documento ROI, converge en el `Merge (waitForAll)` y emite el aviso final de Slack y el comentario en Notion con ambos enlaces listos.
 
 ---
 
-## 3. Configuración de Autenticación en Nodos Slack n8n
+## 2. Configuración de Autenticación en Nodos Slack n8n
 
 - **Problema encontrado:** En n8n v2.5+, al usar credenciales `slackOAuth2Api`, n8n requiere explícitamente el parámetro `"authentication": "oAuth2"`. Si se omite, el motor asume `slackApi` (bot token) y bloquea la publicación con error de credencial faltante.
 - **Decisión:** Fijar `"authentication": "oAuth2"` en todos los nodos de Slack del repositorio.

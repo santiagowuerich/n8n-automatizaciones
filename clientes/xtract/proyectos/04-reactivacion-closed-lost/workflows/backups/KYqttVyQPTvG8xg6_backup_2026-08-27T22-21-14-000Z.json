@@ -1,0 +1,509 @@
+{
+ "id": "KYqttVyQPTvG8xg6",
+ "name": "Closed Lost WhatsApp — 3. Seguimiento automático vía Cron",
+ "capturado": "2026-08-27T22-21-14-000Z (WF3 vivo antes del saneo de texto)",
+ "nodes": [
+  {
+   "parameters": {
+    "rule": {
+     "interval": [
+      {
+       "field": "cronExpression",
+       "expression": "*/30 9-19 * * 1-5"
+      }
+     ]
+    }
+   },
+   "name": "Cron de Seguimiento (cada 30 min)",
+   "type": "n8n-nodes-base.scheduleTrigger",
+   "typeVersion": 1.2,
+   "position": [
+    -896,
+    272
+   ],
+   "id": "2efb1291-f90c-49b1-8c7c-dc237bc2a299"
+  },
+  {
+   "parameters": {
+    "jsCode": "// Configuración centralizada de Seguimiento\nreturn [{ json: {\n  CHATWOOT_URL: 'https://chatwoot.xtract.app',\n  CHATWOOT_ACCOUNT_ID: '1',\n  WA_SHEET_URL: 'https://docs.google.com/spreadsheets/d/1w6wVAuYmHjI8Fk4b3S1VLxAcgSSQkUjHOTrE1enmaP8/edit',\n  WA_SEGUIMIENTO_ESPERA_MIN: 180, // 3 horas\n  WA_SEGUIMIENTO_NAME: 'reactivacion_closed_lost_seguimiento',\n  WA_SEGUIMIENTO_LANG: 'es_AR',\n  WA_SEGUIMIENTO_PREVIEW: 'Nos juntamos hace un tiempo cuando en {{1}} estaban buscando automatizar el ingreso de facturas en {{2}}. Quería saber cómo vienen con ese proceso, si ya encontraron alguna forma de automatizarlo o si lo siguen haciendo de forma manual.'\n} }];"
+   },
+   "name": "Config",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    -672,
+    272
+   ],
+   "id": "fd65c30a-7f98-4419-a5c7-bc707d50b251"
+  },
+  {
+   "parameters": {
+    "documentId": {
+     "__rl": true,
+     "mode": "url",
+     "value": "={{ $('Config').first().json.WA_SHEET_URL }}"
+    },
+    "sheetName": {
+     "__rl": true,
+     "mode": "name",
+     "value": "Enviados WA"
+    },
+    "options": {}
+   },
+   "name": "Leer enviados WA",
+   "type": "n8n-nodes-base.googleSheets",
+   "typeVersion": 4.5,
+   "position": [
+    -464,
+    272
+   ],
+   "id": "9a40c2ea-7c53-4f34-a264-b4ec8813f5db",
+   "retryOnFail": true,
+   "maxTries": 3,
+   "waitBetweenTries": 2000,
+   "notesInFlow": false,
+   "credentials": {
+    "googleSheetsOAuth2Api": {
+     "id": "sgEH8OTRXcjJiTTc",
+     "name": "SheetCuentaSantiago"
+    }
+   },
+   "notes": "\nReintenta 3 veces (2s): fallaba con 'resource not found' y 'Service unavailable' (transitorios de Google)."
+  },
+  {
+   "parameters": {
+    "jsCode": "// Filtrar leads que ya cumplieron las 2hs y no tienen seguimiento enviado ni respondido\nconst cfg = $('Config').first().json;\nconst esperaMs = (cfg.WA_SEGUIMIENTO_ESPERA_MIN || 120) * 60 * 1000;\nconst ahora = Date.now();\nconst MAX_ANTIGUEDAD_MS = 7 * 24 * 60 * 60 * 1000; // 7 días max para cubrir fines de semana\n\nconst elegibles = [];\nfor (const item of $input.all()) {\n  const row = item.json || {};\n  const estado = String(row.estado || \"\").toLowerCase().trim();\n  const convId = row.chatwoot_conversation_id;\n  const seg = String(row.seguimiento || \"\").toLowerCase().trim();\n  const fechaEnvioStr = row.fecha_envio;\n\n  // Solo enviados con conversación\n  if (estado !== \"enviado\" || !convId) continue;\n  // Si ya se mandó seguimiento o ya respondió o cancelado, saltear\n  if (seg === \"enviado\" || seg === \"respondio\" || seg === \"cancelado\") continue;\n  if (!fechaEnvioStr) continue;\n\n  const fechaEnvio = new Date(fechaEnvioStr).getTime();\n  if (isNaN(fechaEnvio)) continue;\n\n  // =====================================================================\n  // PISO: SOLO LA TANDA DE HOY.\n  //\n  // Antes la unica cota era MAX_ANTIGUEDAD (7 dias), y eso arrastraba\n  // leads viejos en cada corrida. Liliana Graciano (enviada el 25/08)\n  // recibio el seguimiento TRES veces: seguia entrando en el rango\n  // mientras 'Marcar seguimiento enviado' fallaba y nunca la sacaba de\n  // la lista de pendientes.\n  //\n  // Con el piso en la medianoche de hoy, una corrida solo puede tocar\n  // leads de la tanda del dia. Si manana hay que recuperar a alguien\n  // viejo, se hace a mano o se vacia su celda 'seguimiento' -- pero el\n  // cron no puede volver atras solo.\n  // =====================================================================\n  const inicioDeHoy = new Date();\n  inicioDeHoy.setHours(0, 0, 0, 0);\n  if (fechaEnvio < inicioDeHoy.getTime()) continue;\n\n  const antiguedad = ahora - fechaEnvio;\n  // Ventana: entre esperaMs (2hs) y 7 días\n  if (antiguedad >= esperaMs && antiguedad <= MAX_ANTIGUEDAD_MS) {\n    const rawSis = String(row.sistema || \"\").trim();\n    const sistemaLimpio = (!rawSis || rawSis.toLowerCase() === \"otro\" || rawSis.toLowerCase() === \"sistema propio\")\n      ? \"su sistema\"\n      : rawSis;\n\n    elegibles.push({ json: {\n      row_number: row.row_number,\n      telefono: row.telefono,\n      nombre: row.nombre,\n      primer_nombre: row.primer_nombre || row.nombre,\n      empresa: row.empresa || \"tu empresa\",\n      sistema: sistemaLimpio,\n      conversation_id: convId,\n      fecha_envio: row.fecha_envio,\n      owner: \"Nicolás González\"\n    } });\n  }\n}\n\nreturn elegibles;"
+   },
+   "name": "Filtrar pendientes de seguimiento",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    -240,
+    272
+   ],
+   "id": "9c843297-c995-4fe7-81a5-03d3fcf5e530"
+  },
+  {
+   "parameters": {
+    "options": {}
+   },
+   "name": "Loop de seguimiento",
+   "type": "n8n-nodes-base.splitInBatches",
+   "typeVersion": 3,
+   "position": [
+    -16,
+    272
+   ],
+   "id": "bcb12f2b-e5b3-4e7f-a621-57f6213f9606"
+  },
+  {
+   "parameters": {
+    "url": "={{ $('Config').first().json.CHATWOOT_URL }}/api/v1/accounts/{{ $('Config').first().json.CHATWOOT_ACCOUNT_ID }}/conversations/{{ $json.conversation_id }}/messages",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "options": {
+     "response": {
+      "response": {
+       "neverError": true
+      }
+     },
+     "timeout": 30000
+    }
+   },
+   "name": "Chatwoot - Traer mensajes",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    208,
+    272
+   ],
+   "id": "c867379e-7329-4d7a-931b-d2f78651bca1",
+   "credentials": {
+    "httpHeaderAuth": {
+     "id": "BjYt68eHeT61ihqb",
+     "name": "Chatwoot API"
+    }
+   }
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "loose",
+      "version": 2
+     },
+     "conditions": [
+      {
+       "leftValue": "={{ ($json.payload || []).some(m => m && m.private !== true && (m.message_type === 0 || m.message_type === 'incoming')) }}",
+       "rightValue": "",
+       "operator": {
+        "type": "boolean",
+        "operation": "true",
+        "singleValue": true
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "name": "Hubo respuesta del cliente?",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    416,
+    272
+   ],
+   "id": "cbcb71cb-a326-41c2-a82c-8ce855f4e036"
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "={{ $('Config').first().json.CHATWOOT_URL }}/api/v1/accounts/{{ $('Config').first().json.CHATWOOT_ACCOUNT_ID }}/conversations/{{ $('Loop de seguimiento').item.json.conversation_id }}/messages",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={{ JSON.stringify({\n  content: \"Nos juntamos hace un tiempo cuando en \" + ($('Loop de seguimiento').item.json.empresa || \"tu empresa\") + \" estaban buscando automatizar el ingreso de facturas en \" + ($('Loop de seguimiento').item.json.sistema || \"el sistema que usan\") + \". Quería saber cómo vienen con ese proceso, si ya encontraron alguna forma de automatizarlo o si lo siguen haciendo de forma manual.\",\n  message_type: \"outgoing\",\n  template_params: {\n    name: $('Config').first().json.WA_SEGUIMIENTO_NAME || \"reactivacion_closed_lost_seguimiento\",\n    category: \"marketing\",\n    language: $('Config').first().json.WA_SEGUIMIENTO_LANG || \"es_AR\",\n    processed_params: {\n      \"1\": $('Loop de seguimiento').item.json.empresa || \"tu empresa\",\n      \"2\": $('Loop de seguimiento').item.json.sistema || \"el sistema que usan\"\n    }\n  }\n}) }}",
+    "options": {
+     "response": {
+      "response": {
+       "neverError": true
+      }
+     },
+     "timeout": 30000
+    }
+   },
+   "name": "Chatwoot - Enviar plantilla seguimiento",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    656,
+    176
+   ],
+   "id": "8dedd0db-4d22-4d0a-b525-ef3c10dcd762",
+   "credentials": {
+    "httpHeaderAuth": {
+     "id": "BjYt68eHeT61ihqb",
+     "name": "Chatwoot API"
+    }
+   }
+  },
+  {
+   "parameters": {
+    "operation": "update",
+    "documentId": {
+     "__rl": true,
+     "mode": "url",
+     "value": "={{ $('Config').first().json.WA_SHEET_URL }}"
+    },
+    "sheetName": {
+     "__rl": true,
+     "mode": "name",
+     "value": "Enviados WA"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "row_number": "={{ $('Loop de seguimiento').item.json.row_number }}",
+      "chatwoot_conversation_id": "={{ $('Loop de seguimiento').item.json.conversation_id }}",
+      "seguimiento": "enviado",
+      "fecha_seguimiento": "={{ $now.toISO() }}"
+     },
+     "matchingColumns": [
+      "row_number"
+     ],
+     "schema": [
+      {
+       "id": "row_number",
+       "displayName": "row_number",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "string",
+       "canBeUsedToMatch": true,
+       "removed": false
+      },
+      {
+       "id": "chatwoot_conversation_id",
+       "displayName": "chatwoot_conversation_id",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "string",
+       "canBeUsedToMatch": false
+      },
+      {
+       "id": "seguimiento",
+       "displayName": "seguimiento",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "string",
+       "canBeUsedToMatch": false
+      },
+      {
+       "id": "fecha_seguimiento",
+       "displayName": "fecha_seguimiento",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "string",
+       "canBeUsedToMatch": false
+      }
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {}
+   },
+   "name": "Marcar seguimiento enviado",
+   "type": "n8n-nodes-base.googleSheets",
+   "typeVersion": 4.5,
+   "position": [
+    880,
+    176
+   ],
+   "id": "d080d61b-69b6-4360-86d2-d7768ceb4518",
+   "retryOnFail": true,
+   "maxTries": 3,
+   "waitBetweenTries": 2000,
+   "notesInFlow": false,
+   "credentials": {
+    "googleSheetsOAuth2Api": {
+     "id": "sgEH8OTRXcjJiTTc",
+     "name": "SheetCuentaSantiago"
+    }
+   },
+   "notes": "\nReintenta 3 veces (2s): si falla, el mensaje YA salio y no queda registrado -> reenvio en la corrida siguiente."
+  },
+  {
+   "parameters": {
+    "operation": "update",
+    "documentId": {
+     "__rl": true,
+     "mode": "url",
+     "value": "={{ $('Config').first().json.WA_SHEET_URL }}"
+    },
+    "sheetName": {
+     "__rl": true,
+     "mode": "name",
+     "value": "Enviados WA"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "row_number": "={{ $('Loop de seguimiento').item.json.row_number }}",
+      "chatwoot_conversation_id": "={{ $('Loop de seguimiento').item.json.conversation_id }}",
+      "seguimiento": "respondio",
+      "fecha_seguimiento": "={{ $now.toISO() }}"
+     },
+     "matchingColumns": [
+      "row_number"
+     ],
+     "schema": [
+      {
+       "id": "row_number",
+       "displayName": "row_number",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "string",
+       "canBeUsedToMatch": true,
+       "removed": false
+      },
+      {
+       "id": "chatwoot_conversation_id",
+       "displayName": "chatwoot_conversation_id",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "string",
+       "canBeUsedToMatch": false
+      },
+      {
+       "id": "seguimiento",
+       "displayName": "seguimiento",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "string",
+       "canBeUsedToMatch": false
+      },
+      {
+       "id": "fecha_seguimiento",
+       "displayName": "fecha_seguimiento",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "string",
+       "canBeUsedToMatch": false
+      }
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {}
+   },
+   "name": "Marcar respondio",
+   "type": "n8n-nodes-base.googleSheets",
+   "typeVersion": 4.5,
+   "position": [
+    656,
+    400
+   ],
+   "id": "cb6a0035-510f-4878-9fcc-8ea4cab06419",
+   "credentials": {
+    "googleSheetsOAuth2Api": {
+     "id": "sgEH8OTRXcjJiTTc",
+     "name": "SheetCuentaSantiago"
+    }
+   }
+  },
+  {
+   "parameters": {},
+   "name": "Esperar entre seguimientos",
+   "type": "n8n-nodes-base.wait",
+   "typeVersion": 1.1,
+   "position": [
+    1104,
+    272
+   ],
+   "id": "9f51b7e4-69e9-46db-92fa-4d9356674d8c",
+   "webhookId": "7038f0c7-aee3-406a-8b8a-ee5c6d6d8663"
+  }
+ ],
+ "connections": {
+  "Cron de Seguimiento (cada 30 min)": {
+   "main": [
+    [
+     {
+      "node": "Config",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Config": {
+   "main": [
+    [
+     {
+      "node": "Leer enviados WA",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Leer enviados WA": {
+   "main": [
+    [
+     {
+      "node": "Filtrar pendientes de seguimiento",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Filtrar pendientes de seguimiento": {
+   "main": [
+    [
+     {
+      "node": "Loop de seguimiento",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Loop de seguimiento": {
+   "main": [
+    [],
+    [
+     {
+      "node": "Chatwoot - Traer mensajes",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Chatwoot - Traer mensajes": {
+   "main": [
+    [
+     {
+      "node": "Hubo respuesta del cliente?",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Hubo respuesta del cliente?": {
+   "main": [
+    [
+     {
+      "node": "Marcar respondio",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Chatwoot - Enviar plantilla seguimiento",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Chatwoot - Enviar plantilla seguimiento": {
+   "main": [
+    [
+     {
+      "node": "Marcar seguimiento enviado",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Marcar seguimiento enviado": {
+   "main": [
+    [
+     {
+      "node": "Esperar entre seguimientos",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Marcar respondio": {
+   "main": [
+    [
+     {
+      "node": "Esperar entre seguimientos",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Esperar entre seguimientos": {
+   "main": [
+    [
+     {
+      "node": "Loop de seguimiento",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ }
+}

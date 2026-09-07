@@ -26,3 +26,7 @@ scratch/*
 
 # Claude Code: config local del usuario (el symlink .claude/skills sí se versiona)
 .claude/settings.local.json
+
+# Remotion renders
+**/remotion-video/out/
+

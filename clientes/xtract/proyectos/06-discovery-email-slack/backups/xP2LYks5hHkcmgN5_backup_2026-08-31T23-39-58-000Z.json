@@ -1,0 +1,379 @@
+{
+ "id": "xP2LYks5hHkcmgN5",
+ "name": "Xtract - 06 Resumen Discovery Call a Slack (Borrador de Email)",
+ "capturado": "2026-08-31T23-39-58-000Z (antes de conectar Notion)",
+ "nodes": [
+  {
+   "parameters": {
+    "httpMethod": "POST",
+    "path": "discovery-email-slack",
+    "responseMode": "onReceived",
+    "responseData": "allEntries",
+    "options": {}
+   },
+   "id": "node-webhook-trigger",
+   "name": "Link a discovery cargado",
+   "type": "n8n-nodes-base.webhook",
+   "typeVersion": 2,
+   "position": [
+    -600,
+    200
+   ],
+   "webhookId": "discovery-email-slack"
+  },
+  {
+   "parameters": {
+    "jsCode": "let raw = $input.first().json;\nwhile (raw.body && typeof raw.body === 'object') {\n  raw = raw.body;\n}\n\nconst props = raw.properties || {};\n\nlet linkDiscovery = \"\";\nconst getPropValue = (p) => {\n  if (!p) return \"\";\n  if (typeof p === 'string') return p;\n  if (p.url) return p.url;\n  if (p.email) return p.email;\n  if (p.rich_text && p.rich_text[0]) return p.rich_text[0].plain_text || p.rich_text[0].text?.content || \"\";\n  if (p.title && p.title[0]) return p.title[0].plain_text || p.title[0].text?.content || \"\";\n  return \"\";\n};\n\nconst notionEmails = [];\nfor (const [k, v] of Object.entries(props)) {\n  if (v.email) notionEmails.push(v.email);\n  if (v.people) {\n    v.people.forEach(p => {\n      if (p.person && p.person.email && !p.person.email.includes('@xtract.app')) {\n        notionEmails.push(p.person.email);\n      }\n    });\n  }\n  if (k.toLowerCase().includes('mail') || k.toLowerCase().includes('correo') || k.toLowerCase().includes('email')) {\n    const val = getPropValue(v);\n    if (val && val.includes('@') && !val.includes('@xtract.app')) notionEmails.push(val);\n  }\n}\n\n// Buscar link de discovery en props\nfor (const [k, v] of Object.entries(props)) {\n  if (k.toLowerCase().includes('discovery') || k.toLowerCase().includes('transcrip') || k.toLowerCase().includes('drive') || k.toLowerCase().includes('doc')) {\n    const val = getPropValue(v);\n    if (val && (val.includes('drive.google.com') || val.includes('docs.google.com'))) {\n      linkDiscovery = val;\n      break;\n    }\n  }\n}\n\n// Buscar link de discovery en campos planos de raw\nif (!linkDiscovery) {\n  for (const [k, v] of Object.entries(raw)) {\n    if (typeof v === 'string' && (v.includes('drive.google.com') || v.includes('docs.google.com'))) {\n      linkDiscovery = v;\n      break;\n    }\n  }\n}\n\nlet fileId = \"\";\nconst match = (linkDiscovery || \"\").match(/\\/d\\/([a-zA-Z0-9_-]+)/);\nif (match) {\n  fileId = match[1];\n} else {\n  const matchId = (linkDiscovery || \"\").match(/id=([a-zA-Z0-9_-]+)/);\n  if (matchId) fileId = matchId[1];\n}\n\nlet empresa = \"\";\nfor (const [k, v] of Object.entries(props)) {\n  if (k.toLowerCase().includes('empresa') || k.toLowerCase().includes('name') || k.toLowerCase().includes('title') || k.toLowerCase().includes('cliente')) {\n    empresa = getPropValue(v);\n    if (empresa) break;\n  }\n}\nif (!empresa) empresa = raw.property_nombre_oportunidad || raw.empresa || raw.name || \"Cliente\";\n\nlet ownerEmail = raw.owner || raw.ownerEmail || \"nicolas.gonzalez@xtract.app\";\nfor (const [k, v] of Object.entries(props)) {\n  if (k.toLowerCase().includes('owner') || k.toLowerCase().includes('responsable')) {\n    if (v.people && v.people[0] && v.people[0].person && v.people[0].person.email) {\n      ownerEmail = v.people[0].person.email;\n      break;\n    }\n  }\n}\n\nlet interlocutor = \"\";\nfor (const [k, v] of Object.entries(props)) {\n  if (k.toLowerCase().includes('contacto') || k.toLowerCase().includes('persona') || k.toLowerCase().includes('asistente')) {\n    interlocutor = getPropValue(v);\n    if (interlocutor) break;\n  }\n}\n\nconst rawId = (raw.id || raw.page_id || \"\").replace(/-/g, \"\");\nconst notionUrl = raw.url || (rawId ? (\"https://www.notion.so/\" + rawId) : \"\");\n\nreturn [{ json: {\n  fileId,\n  linkDiscovery,\n  empresa,\n  interlocutor,\n  ownerEmail,\n  notionUrl,\n  notionEmails,\n  raw\n} }];"
+   },
+   "id": "node-extraer-datos",
+   "name": "Code - Extraer Datos",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    -380,
+    200
+   ]
+  },
+  {
+   "parameters": {
+    "useJson": true,
+    "claimsJson": "={\n  \"iss\": \"transcript-docs-reader@transcripts-reader.iam.gserviceaccount.com\",\n  \"sub\": \"{{ $json.ownerEmail }}\",\n  \"scope\": \"https://www.googleapis.com/auth/drive.readonly\",\n  \"aud\": \"https://oauth2.googleapis.com/token\",\n  \"exp\": {{ Math.floor(Date.now() / 1000) + 3600 }},\n  \"iat\": {{ Math.floor(Date.now() / 1000) }}\n}",
+    "options": {}
+   },
+   "id": "node-jwt",
+   "name": "JWT",
+   "type": "n8n-nodes-base.jwt",
+   "typeVersion": 1,
+   "position": [
+    -160,
+    200
+   ],
+   "credentials": {
+    "jwtAuth": {
+     "id": "B3KwxGmlrCCTgAHk",
+     "name": "Service Account Xtract transcripts-reader"
+    }
+   }
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "https://oauth2.googleapis.com/token",
+    "sendBody": true,
+    "contentType": "form-urlencoded",
+    "bodyParameters": {
+     "parameters": [
+      {
+       "name": "grant_type",
+       "value": "urn:ietf:params:oauth:grant-type:jwt-bearer"
+      },
+      {
+       "name": "assertion",
+       "value": "={{ $json.token }}"
+      }
+     ]
+    },
+    "options": {}
+   },
+   "id": "node-access-token",
+   "name": "HTTP - Generar Access Token",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    60,
+    200
+   ],
+   "retryOnFail": true,
+   "maxTries": 3,
+   "waitBetweenTries": 2000,
+   "notes": "\nReintenta 3 veces: el token de Google es transitorio.",
+   "notesInFlow": false
+  },
+  {
+   "parameters": {
+    "method": "GET",
+    "url": "=https://www.googleapis.com/drive/v3/files/{{ $('Code - Extraer Datos').first().json.fileId }}/export",
+    "sendQuery": true,
+    "queryParameters": {
+     "parameters": [
+      {
+       "name": "mimeType",
+       "value": "text/plain"
+      },
+      {
+       "name": "supportsAllDrives",
+       "value": "true"
+      }
+     ]
+    },
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Authorization",
+       "value": "=Bearer {{ $json.access_token }}"
+      }
+     ]
+    },
+    "options": {
+     "response": {
+      "response": {
+       "responseFormat": "text",
+       "outputPropertyName": "data"
+      }
+     }
+    }
+   },
+   "id": "node-drive-export",
+   "name": "Drive - export texto",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    280,
+    200
+   ],
+   "retryOnFail": true,
+   "maxTries": 3,
+   "waitBetweenTries": 2000,
+   "notes": "\nReintenta 3 veces: fallo 2 veces el 28/08 con \"resource could not be found\".",
+   "notesInFlow": false
+  },
+  {
+   "parameters": {
+    "jsCode": "// =====================================================================\n// PREPARAR TRANSCRIPCION -- limpieza, guardas y control de largo.\n// =====================================================================\nconst notion = $('Code - Extraer Datos').first().json || {};\nlet txt = String($input.first().json.data || '').replace(/\\r/g, '').trim();\n\n// ---------------------------------------------------------------------\n// GUARDA 1: TRANSCRIPCION VACIA.\n// Sin esto el fallo es SILENCIOSO: el modelo no recibe nada, igual\n// devuelve un mail creible y generico, y sale al comercial listo para\n// enviar. Causa mas comun: /export de Drive solo exporta Docs NATIVOS de\n// Google; si el link de Notion apunta a un PDF o a un .docx subido,\n// contesta 403 y aca llega vacio.\n// ---------------------------------------------------------------------\nif (!txt) {\n  throw new Error(\n    'La transcripcion llego vacia. Revisa que \"Link a discovery\" de la card ' +\n    (notion.notionUrl || '') + ' apunte a un Google Doc NATIVO: /export no exporta PDFs ni archivos subidos.'\n  );\n}\n\n// ---------------------------------------------------------------------\n// LIMPIEZA DEL FORMATO.\n// El transcript repite el nombre del hablante en CADA linea y parte las\n// frases en fragmentos (\"Hola,\" / \"como estas,\" / \"Nicolas?\"). Medido en\n// una llamada real: 416 lineas, 30% de los caracteres gastados en repetir\n// nombres, 53% de las lineas con menos de 25 chars de contenido.\n// Agrupando por hablante y usando etiquetas cortas se reduce ~25%.\n// ---------------------------------------------------------------------\nconst norm = (s) => String(s == null ? '' : s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9 ]/g, ' ').replace(/\\s+/g, ' ').trim();\nconst comercialNorm = norm(String(notion.ownerEmail || '').split('@')[0].replace(/[._]/g, ' '));\nconst PREF = /^([^:]{1,60}):\\s*(.*)$/;\n\nconst lineas = txt.split('\\n').map((l) => l.trim()).filter(Boolean);\nconst bloques = [];\nlet etqActual = null;\nlet buffer = [];\nfor (const l of lineas) {\n  const m = PREF.exec(l);\n  if (m) {\n    const hablante = norm(m[1]);\n    const contenido = m[2].trim();\n    // El comercial se identifica por el owner de la card; todo lo demas es cliente.\n    const etq = (comercialNorm && hablante.indexOf(comercialNorm.split(' ')[0]) !== -1) ? 'XTRACT' : 'CLIENTE';\n    if (etq === etqActual) { if (contenido) buffer.push(contenido); }\n    else {\n      if (etqActual && buffer.length) bloques.push(etqActual + ': ' + buffer.join(' '));\n      etqActual = etq; buffer = contenido ? [contenido] : [];\n    }\n  } else if (etqActual) { buffer.push(l); }\n}\nif (etqActual && buffer.length) bloques.push(etqActual + ': ' + buffer.join(' '));\n\n// Pie automatico del transcriptor: no es dialogo, es ruido.\nlet limpio = bloques\n  .filter((b) => !/transcripci[oó]n editable se gener[oó] autom[aá]ticamente|la reuni[oó]n finaliz[oó] despu[eé]s de/i.test(b))\n  .join('\\n')\n  .trim();\nif (!limpio) limpio = txt;   // si el formato no era el esperado, se usa el crudo\n\n// ---------------------------------------------------------------------\n// GUARDA 2: ¿LA LLAMADA ES DE ESTA EMPRESA?\n// La card de Notion trae el nombre autoritativo. Si ese nombre no aparece\n// en la transcripcion, la card tiene enlazado el Doc de OTRA empresa.\n// Caso real: la card \"Comercializadora Andina\" apuntaba al discovery de\n// CRETA DISEGNO, y salio un borrador con las dos empresas adentro, listo\n// para enviar.\n// Se compara por tokens: alcanza con que UNO aparezca, porque los\n// transcriptores deforman los nombres (\"Cretadisegn\" por \"CRETA DISEGNO\").\n// ---------------------------------------------------------------------\nconst GENERICAS = ['comercializadora','distribuidora','grupo','empresa','compania','company','sa','srl','sas','spa','ltda','ltd','inc','corp','cia','holding','servicios','soluciones','group'];\n// Proveedores gratuitos y TLDs: no dicen nada de la empresa.\nconst FREEMAIL = ['gmail','hotmail','outlook','yahoo','live','icloud','aol','protonmail','msn','terra','fibertel','speedy'];\nconst TLD = ['com','net','org','ar','co','mx','cl','pe','uy','br','es','io','app','info','biz'];\n\n// ---------------------------------------------------------------------\n// DE DONDE SALEN LOS TOKENS QUE IDENTIFICAN A LA EMPRESA.\n//\n// Medido sobre la base real: de 12 cards con discovery cargado, OCHO\n// tienen un EMAIL como nombre de oportunidad en vez del nombre de la\n// empresa (\"crossettiroberto@gmail.com\", \"valcara@christianhansen.com.ar\").\n// Validar contra la parte local del correo rechazaria cards legitimas:\n// \"crossettiroberto\" no va a aparecer nunca en una transcripcion.\n//\n// Por eso: si el nombre es un email, lo unico aprovechable es el DOMINIO,\n// y solo cuando no es un proveedor gratuito. Si no queda ningun token\n// util, NO se valida y se deja pasar -- la guarda existe para atajar un\n// doc cruzado, no para bloquear por como esta cargada la card.\n// ---------------------------------------------------------------------\nconst nombreEmpresa = String(notion.empresa || '').trim();\nlet tokens;\nif (nombreEmpresa.indexOf('@') !== -1) {\n  const dominio = nombreEmpresa.split('@')[1] || '';\n  tokens = norm(dominio).split(' ').filter((t) => t.length >= 4 && TLD.indexOf(t) === -1 && FREEMAIL.indexOf(t) === -1 && GENERICAS.indexOf(t) === -1);\n} else {\n  tokens = norm(nombreEmpresa).split(' ').filter((t) => t.length >= 4 && GENERICAS.indexOf(t) === -1);\n}\n// OJO: se valida contra el texto ORIGINAL, no contra el limpio. La limpieza\n// reemplaza los nombres de hablante por CLIENTE:/XTRACT:, y en estos\n// transcripts la empresa suele venir JUSTO ahi (\"Noelia Sierra - CRETA\n// DISEGNO:\"). Validando contra el limpio se rechazaban llamadas correctas.\nconst crudoNorm = norm(txt);\nif (tokens.length && !tokens.some((t) => crudoNorm.indexOf(t) !== -1)) {\n  throw new Error(\n    'La transcripcion no corresponde a \"' + notion.empresa + '\": ninguno de [' + tokens.join(', ') +\n    '] aparece en la llamada. Revisa el \"Link a discovery\" de ' + (notion.notionUrl || 'la card') +\n    ' -- probablemente tenga adjunto el Doc de otra empresa.'\n  );\n}\n\n// ---------------------------------------------------------------------\n// LARGO. El tope anterior era 22.000 y cortaba por el FINAL, que es donde\n// se hablan proximos pasos y compromisos: en una llamada real se perdian\n// 9.180 caracteres. El modelo tiene 64k de contexto, asi que el tope sube.\n// Si aun asi hay que cortar, se corta el MEDIO y se conservan las dos\n// puntas: el arranque tiene el contexto y el cierre los acuerdos.\n// ---------------------------------------------------------------------\n// 120.000 chars ~ 35k tokens: una discovery de dos horas entra completa y\n// sigue sobrando contexto. En la practica esto ya no trunca nunca; el corte\n// queda solo como red por si llega un archivo raro.\nconst MAX = 120000;\nif (limpio.length > MAX) {\n  const mitad = Math.floor(MAX / 2);\n  limpio = limpio.slice(0, mitad) + '\\n\\n[...tramo intermedio omitido por longitud...]\\n\\n' + limpio.slice(-mitad);\n}\n\nreturn [{ json: {\n  transcripcion: limpio,\n  chars_originales: txt.length,\n  chars_finales: limpio.length,\n  empresa_validada: notion.empresa || ''\n} }];\n"
+   },
+   "id": "node-preparar-transcripcion",
+   "name": "Preparar transcripcion",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    500,
+    200
+   ]
+  },
+  {
+   "parameters": {
+    "model": "deepseek-chat",
+    "options": {
+     "temperature": 0.2
+    }
+   },
+   "id": "node-deepseek-model",
+   "name": "DeepSeek Chat Model",
+   "type": "@n8n/n8n-nodes-langchain.lmChatDeepSeek",
+   "typeVersion": 1,
+   "position": [
+    720,
+    380
+   ],
+   "credentials": {
+    "deepSeekApi": {
+     "id": "H5fC2aZoNphCCole",
+     "name": "SantiagoApikey"
+    }
+   }
+  },
+  {
+   "parameters": {
+    "text": "={{ $json.transcripcion }}",
+    "schemaType": "manual",
+    "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"interlocutores\": {\n      \"type\": \"string\",\n      \"description\": \"Nombres de las personas del cliente (ej: Paula y equipo, Pedro y Emily, Freddy y equipo, Noe)\"\n    },\n    \"emails_destinatarios\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\"\n      },\n      \"description\": \"Emails de los interlocutores del cliente mencionados en la llamada. Si no se mencionaron explícitamente, devolver array vacío [] — no inventar correos.\"\n    },\n    \"saludo_intro\": {\n      \"type\": \"string\",\n      \"description\": \"Frase de saludo inicial y agradecimiento por la reunión adaptada al tono de la charla.\"\n    },\n    \"desafios_puntos\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\"\n      },\n      \"description\": \"De 3 a 7 bullets con los dolores relevados, en las PALABRAS DEL CLIENTE. Maximo 20 palabras por bullet. NO dejes afuera un dolor real por acortar: es preferible un mail algo mas largo que uno que se olvide algo que el cliente dijo. Solo hechos dichos en la llamada; sin interpretaciones ni soluciones.\"\n    },\n    \"solucion_encaje\": {\n      \"type\": \"string\",\n      \"description\": \"UNA sola oracion, maximo 35 palabras, que conecte el diagnostico con lo que hace Xtract. Es un puente, NO un pitch: nada de plazos, precios, modulos, conectores nativos ni propuesta comercial. Si no se puede decir en una oracion sin inventar, devolver string vacio.\"\n    },\n    \"menciono_validacion_tecnica\": {\n      \"type\": \"boolean\",\n      \"description\": \"true si en la llamada se habló de integraciones por API, validar viabilidad con el equipo técnico o conectar con proveedores de ERP (Fénix, SAP, NetSuite, etc.).\"\n    },\n    \"cierre_despedida\": {\n      \"type\": \"string\",\n      \"description\": \"Una linea de cierre cordial, maximo 12 palabras. Sin ofrecer reuniones ni proximos pasos.\"\n    },\n    \"erp_detectado\": {\n      \"type\": \"string\",\n      \"description\": \"Nombre EXACTO del ERP o sistema de gestion que el cliente dijo que usa hoy (ej: SAP, SAP B1, SAP ECC, NetSuite, Oracle, Siigo, Tango, Odoo, Finnegans, Intec). Devolver string vacio \\\"\\\" si no se menciono ninguno o si no quedo claro. PROHIBIDO inventarlo o deducirlo: se usa para decidir si mostrarle un caso de exito de su mismo sistema, y equivocarse ahi es peor que no mostrar nada.\"\n    }\n  },\n  \"required\": [\n    \"interlocutores\",\n    \"saludo_intro\",\n    \"desafios_puntos\",\n    \"solucion_encaje\"\n  ],\n  \"description\": \"Mail POST-DISCOVERY unicamente. Objetivo: demostrar entendimiento y construir confianza. Tono cercano, empatico y reflexivo, de consultor que escucha. SIN VENTA NI URGENCIA. Apunta a 140-180 palabras, pero PRIMERO cubri todo lo que se hablo: si hacen falta 200 para no dejar afuera un dolor real, usalas. Hay UN SOLO CTA y lo agrega el sistema. NO propongas propuestas comerciales, referencias ni plazos de implementacion.\"\n}",
+    "options": {
+     "systemPromptTemplate": "Sos un director comercial senior de Xtract (plataforma B2B SaaS de automatización de Cuentas a Pagar y procesamiento inteligente de facturas para medianas y grandes empresas).\n\nTu tarea es analizar la transcripción de la Discovery Call y redactar el borrador del correo ejecutivo de seguimiento que el comercial enviará al cliente.\n\n=== CASOS DE REFERENCIA REALES DE XTRACT ===\n\n[CASO 1: DIAGNÓSTICO CON BULLETS - ESTILO NICOLÁS]\nHola Paula y equipo, buenas tardes.\nGracias nuevamente por el tiempo, genial poder recorrer en detalle cómo vienen trabajando.\n\nPor lo que conversamos, hoy el principal desafío está en:\n• Facturas que todavía se aprueban en papel o por mail, con firmas que enlentecen el circuito.\n• Controles manuales contra orden de compra y entrada de mercadería antes de contabilizar.\n• Rendiciones de gastos que hoy se gestionan de forma manual, con comprobantes en un drive.\n• Operar dos razones sociales (Molino Chacabuco y Nutripet) sin duplicar trabajo ni costos.\n\nSobre este circuito vemos un encaje concreto: Xtract centraliza la captura y aprobación con trazabilidad completa, valida contra orden de compra y recepción vía integración, y suma la gestión de gastos desde la app. Otros documentos como liquidaciones de cereal o hacienda los levantamos como punto a revisar según el modelo de cada comprobante.\n\nComo acordamos, coordinamos una videollamada la semana próxima para presentarles la propuesta y explicar en detalle alcance, implementación e inversión.\n\n¿Me confirman si esta lectura refleja bien cómo están trabajando hoy, o hay algún punto importante que se me esté escapando?\n\n[CASO 2: CLIENTE CON ERP Y VALIDACIÓN TÉCNICA]\nHola Freddy y equipo, buenas tardes.\nMuchas gracias nuevamente por el tiempo de hoy. Tal como conversamos, les comparto un breve resumen de los principales puntos relevados y los próximos pasos para avanzar con el análisis de Xtract.\n\nActualmente procesan aproximadamente 2.000 a 2.500 facturas mensuales, considerando las distintas empresas del grupo, trabajando con Fénix como sistema de gestión.\nDentro del proceso actual identificamos principalmente:\n• Recepción de la información de las facturas a través del SRI.\n• Asignación manual de cuentas contables y demás imputaciones según proveedor y concepto.\n• Aprobación de las facturas por correo electrónico antes de su contabilización, con aproximadamente 20–30 posibles aprobadores.\n• Gestión de anticipos a proveedores, con la necesidad de cruzar posteriormente esos anticipos con las facturas.\n• Selección de códigos/porcentajes de retención aplicables según cada empresa.\n• Control de facturas duplicadas y reglas de recepción.\n\nLa propuesta de Xtract sería centralizar la recepción y procesamiento de las facturas, automatizar las imputaciones contables según las reglas que definamos conjuntamente, gestionar el circuito de aprobación y enviar la información a Fénix para su contabilización.\n\nComo siguiente paso, coordinemos una demo de Xtract junto con la presentación de la propuesta comercial, para que puedan visualizar el circuito completo.\n\nQuedo atento a su disponibilidad para enviarles invitación.\n\n=== REGLAS MANDATORIAS DE REDACCIÓN ===\n1. Capturá TODOS los datos duros reales de la transcripción: nombres de los interlocutores, ERP/sistema actual (SAP, NetSuite, Fénix, Siigo, Fineganz, etc.), volumen de facturas/mes, estacionalidad, cantidad de aprobadores y dolores específicos.\n2. Formato:\n   - Saludo cercano y agradecimiento ejecutivo.\n   - Diagnóstico en bullets ('desafios_puntos') claros, directos y profesionales.\n   - Párrafo de encaje ('solucion_encaje') conectando los dolores específicos con cómo Xtract los resuelve.\n   - Próximos pasos claros ('proximos_pasos') orientados a agendar Demo + Propuesta Comercial.\n3. Validación técnica ('menciono_validacion_tecnica'): Marcar true si se habló de integraciones por API, validar factibilidad con el equipo técnico o consultar con el soporte del ERP."
+    }
+   },
+   "id": "node-ia-extractor",
+   "name": "IA - Redactar borrador de correo",
+   "type": "@n8n/n8n-nodes-langchain.informationExtractor",
+   "typeVersion": 1.2,
+   "position": [
+    720,
+    200
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "// =====================================================================\n// MODO PRUEBA -- UNICO LUGAR PARA CAMBIARLO\n//\n// Con un valor cargado, TODOS los borradores van a este DM y NUNCA al\n// comercial real. Para pasar a produccion, dejarlo en '' (string vacio).\n//\n// Existe porque el 28/08 el borrador de Creta Disegno le llego a Nicolas\n// creyendo que estabamos probando: este workflow no tenia interruptor y\n// la tabla KNOWN_OWNERS resuelve al comercial siempre. El DM de respaldo\n// (SLACK_FALLBACK_DM) NO alcanza: solo actua cuando NO se pudo resolver\n// al owner, que casi nunca pasa.\n// =====================================================================\nconst FORZAR_DESTINATARIO = 'U0BJLTDCAMR';   // member id de Santiago en su workspace (T0BJPS3C3NH)\n\nconst notion = $('Code - Extraer Datos').first().json || {};\nconst iaRaw = $('IA - Redactar borrador de correo').first().json || {};\nconst ia = iaRaw.output || iaRaw;\n\n// 1. Resolver Destinatarios (Emails del cliente)\nconst emailsNotion = Array.isArray(notion.emails) ? notion.emails : (notion.emails ? [notion.emails] : []);\nconst emailsIa = Array.isArray(ia.emails_destinatarios) ? ia.emails_destinatarios : (ia.emails_destinatarios ? [ia.emails_destinatarios] : []);\nconst todosEmails = [...new Set([...emailsNotion, ...emailsIa].map(e => String(e || '').trim().toLowerCase()))].filter(e => e && e.includes('@'));\nconst paraTexto = todosEmails.length ? todosEmails.join(', ') : '*(Completar emails de los interlocutores)*';\n\n// 2. Nombres y Comercial\nconst interlocutores = (ia.interlocutores || notion.persona || 'equipo').trim();\nconst rawOwner = (Array.isArray(notion.owner) ? notion.owner[0] : notion.owner) || notion.ownerEmail || '';\nconst ownerLocal = rawOwner.split('@')[0].replace(/[._-]+/g, ' ');\nconst nombreComercial = ownerLocal ? ownerLocal.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ') : 'Nicolás';\n\n// 3. Construir Bloques del Correo\nconst saludo = ia.saludo_intro || ('Hola ' + interlocutores + ', buenas tardes.\\nGracias nuevamente por el tiempo de hoy.');\n\n// Bullets de desafíos\nconst puntos = Array.isArray(ia.desafios_puntos) ? ia.desafios_puntos : (ia.desafios_puntos ? [ia.desafios_puntos] : []);\n// TOPE DE 7 BULLETS.\n// Estaba en 5 para respetar el maximo de 180 palabras de la espec, pero eso\n// hacia perder dolores reales en llamadas largas. Decision explicita del\n// usuario: PRIMERO cubrir toda la informacion, despues el largo. El tope\n// queda como freno de mano por si el modelo se dispara.\nconst puntosCortados = puntos.slice(0, 7);\nconst bloqueDesafios = puntosCortados.length\n  ? puntosCortados.map((p) => '• ' + String(p).replace(/^[•\\-\\*]\\s*/, '').trim()).join('\\n')\n  : (ia.desafio || '');\n\n// Párrafo de solución\nconst bloqueSolucion = ia.solucion_encaje || ia.solucion || '';\n\n// La documentacion de API NO va en el post-discovery: es un segundo\n// pedido (\"que el equipo tecnico valide\") y compite con el CTA de\n// validacion. Se conserva la senal para los mails siguientes.\nconst pidioValidacionTecnica = ia.menciono_validacion_tecnica === true;\n\n// =====================================================================\n// CTA UNICO -- VALIDACION DEL DIAGNOSTICO.\n//\n// Antes salia 'bloqueProximos' con lo que devolvia la IA, que proponia\n// demo + propuesta comercial + referencias. Medido contra la espec del\n// mail post-discovery eran CINCO CTAs y 470 palabras, cuando el maximo\n// es UNO y 180.\n//\n// El post-discovery no vende: valida. El unico pedido es que confirmen\n// si entendimos bien como trabajan. La demo y la propuesta van en los\n// mails siguientes de la secuencia.\n// =====================================================================\n// =====================================================================\n// CTA UNICO -- COORDINAR LA LLAMADA, CON LA VALIDACION ADENTRO.\n//\n// La espec del post-discovery pedia como CTA solo validar el diagnostico,\n// pero en la practica este mail YA coordina la siguiente llamada. Se\n// fusionan en UNA sola frase a proposito: pedir las dos cosas por separado\n// serian dos CTAs, y la regla es uno.\n//\n// El pedido principal es la llamada; la validacion viaja de arrastre, sin\n// obligar al cliente a contestar dos cosas.\n// =====================================================================\nconst bloqueCta = '\\nSi te parece, coordinamos una llamada para mostrarte cómo se vería esto en la práctica — y de paso me confirmás si interpreté bien el diagnóstico o hay algo que se me esté escapando.';\n\n// =====================================================================\n// CASO DE EXITO -- SOLO SI EL SISTEMA DEL CLIENTE MATCHEA DE VERDAD.\n//\n// Antes esto era un bloque FIJO con dos videos que salian siempre, y\n// encima los dos apuntaban al mismo ID (k2uYl5kSGBQ, que es el de MODO):\n// el link de Pomelo estaba mal desde el principio.\n//\n// Mandarle un caso de SAP a alguien que usa Siigo es peor que no mandar\n// nada: muestra que no escuchamos. Por eso, sin match certero NO VA NADA.\n//\n// Solo entran casos con CLIENTE NOMBRADO. Quedaron afuera a proposito:\n//   - MODO: su match seria \"es fintech\", y eso no se detecta con certeza\n//     desde una transcripcion.\n//   - El video de Xero: no tiene cliente nombrado, es demo. No es prueba\n//     social.\n// =====================================================================\nconst CASOS_POR_SISTEMA = [\n  { re: /\\bsap\\b/i,      titulo: 'Pomelo automatizo la contabilizacion de facturas sobre SAP', url: 'https://www.youtube.com/watch?v=ikDLA5HjQbs' },\n  { re: /netsuite/i,      titulo: 'InvGate automatizo la contabilizacion de facturas en NetSuite', url: 'https://www.youtube.com/watch?v=4xFCkoxat1o' }\n];\n\nconst erpDetectado = String(ia.erp_detectado || '').trim();\nlet bloqueCasosExito = '';\nif (erpDetectado) {\n  const caso = CASOS_POR_SISTEMA.find((x) => x.re.test(erpDetectado));\n  if (caso) {\n    bloqueCasosExito = '\\nPor si les sirve, un equipo que venia con el mismo sistema: <' + caso.url + '|' + caso.titulo + '>.';\n  }\n}\n\n// Cierre y firma\n// =====================================================================\n// EL CIERRE NO PUEDE OFRECER UNA REUNION.\n//\n// El schema se lo prohibe, pero se le colo igual: en la corrida de Creta\n// devolvio \"Quedo atento a tu confirmacion para coordinar la demo\". Eso\n// mete un SEGUNDO pedido justo debajo del CTA de validacion, que es\n// exactamente lo que la espec del post-discovery prohibe.\n//\n// Se sanea aca en vez de volver a pedirselo al prompt: si la frase\n// menciona demo, reunion, llamada o propuesta, se descarta entera y se\n// usa un cierre neutro.\n// =====================================================================\nconst OFRECE_REUNION = /\\b(demo|demostraci[oó]n|reuni[oó]n|videollamada|llamada|call|propuesta|invitaci[oó]n|agendar|coordinar|disponibilidad)\\b/i;\nconst cierreIa = String(ia.cierre_despedida || '').trim();\nconst cierreLimpio = (cierreIa && !OFRECE_REUNION.test(cierreIa)) ? cierreIa : 'Quedo atento a sus comentarios.';\nconst cierre = cierreLimpio + '\\n' + nombreComercial;\n\n// 4. Ensamble del Borrador Completo\nconst cuerpoEmail = [\n  saludo,\n  '',\n  'Por lo que conversamos, hoy el principal desafío está en:',\n  bloqueDesafios,\n  '',\n  bloqueSolucion,\n  bloqueCasosExito,\n  bloqueCta,\n  '',\n  cierre\n].filter(x => x !== undefined && x !== null && x !== '').join('\\n').replace(/\\n{3,}/g, '\\n\\n');\n\n// Control de largo: la espec pide 140-165 palabras, maximo 180. El conteo\n// viaja hasta Slack para que se vea si un borrador se paso, en vez de\n// enterarnos cuando el comercial ya lo mando.\nconst palabrasMail = cuerpoEmail.replace(/<[^|>]+\\|([^>]+)>/g, '$1').split(/\\s+/).filter(Boolean).length;\n// El conteo viaja SIEMPRE para ver la tendencia. La alarma recien salta en\n// 220: por debajo de eso se prefiere un mail algo mas largo antes que uno\n// que deje afuera algo que el cliente dijo.\nconst avisoLargo = palabrasMail > 220 ? ('\\n:warning: *' + palabrasMail + ' palabras* — quedo largo, conviene revisarlo.') : ('\\n_' + palabrasMail + ' palabras_');\n\n// 5. Matching en Cascada para encontrar el ID de Slack del Comercial\nconst norm = s => String(s == null ? '' : s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();\nconst emailNorm = norm(rawOwner);\nconst local = norm(rawOwner.split('@')[0]);\nconst comoNombre = local.replace(/[._-]+/g, ' ');\n\n// Tabla estática de resguardo por si users.list tiene rate limit 429\nconst KNOWN_OWNERS = {\n  'nicolas.gonzalez@xtract.app': 'U02MCAHHM1T',\n  'wenceslao.hoepner@xtract.app': 'U0BBASA0F60',\n  'damian.deggeller@xtract.app': 'U09PYEWUHGF',\n  'greta.bruno@xtract.app': 'U096BLX5864',\n  'ian.brandan@xtract.app': 'U09FZ5MLF0E'\n};\n\n// El nodo nativo de Slack devuelve UN ITEM POR USUARIO, no un objeto\n// {members:[...]} como la llamada HTTP cruda. Se leen con .all().\n// Se deja el fallback a la forma vieja por si el nodo vuelve a cambiar.\nlet usuarios = [];\ntry {\n  usuarios = $('Slack - Traer usuarios').all()\n    .map((i) => i.json)\n    .filter((u) => u && u.id && !u.deleted && !u.is_bot);\n  if (!usuarios.length) {\n    const raw = $('Slack - Traer usuarios').first().json || {};\n    usuarios = (raw.members || raw.users || []).filter((u) => u && u.id && !u.deleted && !u.is_bot);\n  }\n} catch (e) {}\n\nconst perfil = u => u.profile || {};\nlet owner = usuarios.find(u => norm(perfil(u).email) === emailNorm) || null;\nif (!owner) owner = usuarios.find(u => norm(u.name) === local) || null;\nif (!owner) owner = usuarios.find(u => norm(perfil(u).display_name) === local) || null;\nif (!owner) owner = usuarios.find(u => norm(u.real_name) === comoNombre) || null;\nif (!owner) owner = usuarios.find(u => norm(perfil(u).real_name) === comoNombre) || null;\n\n// D0BRPUE84UA era el DM de OTRO bot: nunca funciono. El fallback correcto\n// es el member id, para que Slack abra la conversacion.\nconst SLACK_FALLBACK_DM = 'U0BJLTDCAMR';\nconst ownerSlackIdReal = owner ? owner.id : (KNOWN_OWNERS[emailNorm] || SLACK_FALLBACK_DM);\nconst ownerSlackId = FORZAR_DESTINATARIO || ownerSlackIdReal;\nconst enModoPrueba = !!FORZAR_DESTINATARIO;\nconst esFallback = !owner && !KNOWN_OWNERS[emailNorm];\n\n// Link a Notion\nconst rawId = (notion.id || notion.page_id || '').replace(/-/g, '');\nconst notionUrl = notion.url || (rawId ? ('https://www.notion.so/' + rawId) : '');\nconst empresa = notion.property_nombre_oportunidad || notion.empresa || 'Cliente';\n\n// 6. Mensaje Formateado para Slack\nconst textoSlack = [\n  // El cartel va PRIMERO y sin ambiguedad: un borrador de prueba es\n  // indistinguible de uno real, y el riesgo es que alguien lo copie y lo\n  // mande al cliente.\n  (enModoPrueba ? ':test_tube: *MODO PRUEBA* — en produccion esto le hubiera llegado a `' + ownerSlackIdReal + '`' : ''),\n  ':incoming_envelope: *Borrador de Email Post-Discovery* — ' + empresa,\n  (notionUrl ? '• <' + notionUrl + '|Abrir card en Notion>' : ''),\n  (esFallback ? '_Nota: Enviado a fallback de pruebas._' : ''),\n  '',\n  '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',\n  '*Para:* ' + paraTexto,\n  '*Subject:* Resumen de nuestra reunión + Próximos pasos — Xtract',\n  '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',\n  '',\n  cuerpoEmail,\n  '',\n  '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',\n  avisoLargo,\n  '_Listo para copiar y enviar en Gmail / Outlook._'\n].filter(Boolean).join('\\n');\n\nreturn [{ json: {\n  texto_slack: textoSlack,\n  cuerpo_email: cuerpoEmail,\n  palabras_mail: palabrasMail,\n  erp_detectado: erpDetectado,\n  para: paraTexto,\n  subject: 'Resumen de nuestra reunión + Próximos pasos — Xtract',\n  owner_slack_id: ownerSlackId,\n  comercial: nombreComercial,\n  empresa: empresa,\n  notion_url: notionUrl\n} }];"
+   },
+   "id": "node-armar-slack",
+   "name": "Armar mensaje de Slack",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    960,
+    200
+   ]
+  },
+  {
+   "parameters": {
+    "select": "user",
+    "text": "={{ $json.texto_slack }}",
+    "otherOptions": {
+     "includeLinkToWorkflow": false,
+     "mrkdwn": true,
+     "unfurl_links": true,
+     "unfurl_media": true
+    },
+    "authentication": "oAuth2",
+    "user": {
+     "__rl": true,
+     "value": "={{ $json.owner_slack_id }}",
+     "mode": "id"
+    }
+   },
+   "type": "n8n-nodes-base.slack",
+   "typeVersion": 2.3,
+   "id": "node-slack-post",
+   "name": "Slack - Enviar borrador a Santiago",
+   "position": [
+    1180,
+    200
+   ],
+   "webhookId": "0b2ddbd8-c2a1-44f9-bdd6-f64c751a409f",
+   "credentials": {
+    "slackOAuth2Api": {
+     "id": "LOGlZWLcdTggazKj",
+     "name": "Slack personal Santi"
+    }
+   },
+   "notes": "MODO PRUEBA. select='user' (no 'channel'): con un ID de canal Slack intentaba escribir en el DM de OTRO bot y devolvia restricted_action_read_only_channel. Apuntando al USUARIO, Slack abre la conversacion directa con esta app.\nEl destino lo decide FORZAR_DESTINATARIO en 'Armar mensaje de Slack' -- unico interruptor.\nVOLVER A PRODUCCION = credencial a 'Xtract notifications'/accessToken + FORZAR_DESTINATARIO = ''.",
+   "notesInFlow": false
+  },
+  {
+   "parameters": {
+    "authentication": "accessToken",
+    "resource": "user",
+    "operation": "getAll",
+    "returnAll": true
+   },
+   "type": "n8n-nodes-base.slack",
+   "typeVersion": 2.3,
+   "id": "slack-traer-usuarios-wf06",
+   "name": "Slack - Traer usuarios",
+   "position": [
+    600,
+    -200
+   ],
+   "webhookId": "e289798b-7c01-497a-b46d-271d8884d66e",
+   "credentials": {
+    "slackApi": {
+     "id": "y1DaRieOF29GQnxm",
+     "name": "Xtract notifications"
+    }
+   },
+   "notes": "Sigue con 'Xtract notifications' A PROPOSITO: tiene que listar el padron del workspace de XTRACT para resolver al comercial real. Si se le pone la credencial personal, resuelve contra el workspace equivocado y los owners no matchean nunca.",
+   "notesInFlow": false,
+   "onError": "continueRegularOutput",
+   "retryOnFail": true,
+   "maxTries": 3,
+   "waitBetweenTries": 2000,
+   "alwaysOutputData": true
+  }
+ ],
+ "connections": {
+  "Link a discovery cargado": {
+   "main": [
+    [
+     {
+      "node": "Code - Extraer Datos",
+      "type": "main",
+      "index": 0
+     },
+     {
+      "node": "Slack - Traer usuarios",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Code - Extraer Datos": {
+   "main": [
+    [
+     {
+      "node": "JWT",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "JWT": {
+   "main": [
+    [
+     {
+      "node": "HTTP - Generar Access Token",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "HTTP - Generar Access Token": {
+   "main": [
+    [
+     {
+      "node": "Drive - export texto",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Drive - export texto": {
+   "main": [
+    [
+     {
+      "node": "Preparar transcripcion",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Preparar transcripcion": {
+   "main": [
+    [
+     {
+      "node": "IA - Redactar borrador de correo",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "DeepSeek Chat Model": {
+   "ai_languageModel": [
+    [
+     {
+      "node": "IA - Redactar borrador de correo",
+      "type": "ai_languageModel",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "IA - Redactar borrador de correo": {
+   "main": [
+    [
+     {
+      "node": "Armar mensaje de Slack",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Armar mensaje de Slack": {
+   "main": [
+    [
+     {
+      "node": "Slack - Enviar borrador a Santiago",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ }
+}

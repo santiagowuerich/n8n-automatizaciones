@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Factura · Santiago + Xtract · Septiembre 2026</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    @page {
+      size: A4;
+      margin: 0;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+      background-color: #f1f5f9;
+      color: #0f172a;
+      padding: 2.5rem 1rem;
+      display: flex;
+      justify-content: center;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    .page {
+      background: #ffffff;
+      width: 210mm;
+      min-height: 297mm;
+      padding: 26mm 24mm;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    @media print {
+      body {
+        background: transparent;
+        padding: 0;
+      }
+      .page {
+        box-shadow: none;
+        width: 100%;
+        min-height: 100vh;
+        padding: 24mm 22mm;
+      }
+      .no-print {
+        display: none !important;
+      }
+    }
+
+    /* Header */
+    .invoice-header {
+      margin-bottom: 1.5rem;
+    }
+
+    .invoice-title {
+      font-size: 1.55rem;
+      font-weight: 800;
+      color: #1e3a8a;
+      letter-spacing: -0.02em;
+      line-height: 1.25;
+      margin-bottom: 1rem;
+    }
+
+    .header-divider {
+      height: 2px;
+      background-color: #93c5fd;
+      margin-bottom: 1rem;
+    }
+
+    .meta-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.9rem;
+      color: #1e293b;
+      margin-bottom: 1.75rem;
+    }
+
+    .meta-row b {
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    /* Payment Details */
+    .payment-section {
+      margin-bottom: 2rem;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+    }
+
+    .payment-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #475569;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.5rem;
+    }
+
+    .payment-block {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .payment-subtitle {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .payment-line {
+      font-size: 0.95rem;
+      color: #1e3a8a;
+      font-family: 'SF Mono', Consolas, monospace;
+      font-weight: 700;
+      background: #e0f2fe;
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+    }
+
+    /* Project Scope Box */
+    .scope-box {
+      margin-bottom: 2rem;
+      border-left: 3px solid #2563eb;
+      padding-left: 1rem;
+    }
+
+    .scope-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #0f172a;
+      margin-bottom: 0.25rem;
+    }
+
+    .scope-desc {
+      font-size: 0.85rem;
+      color: #475569;
+      line-height: 1.45;
+    }
+
+    /* Table */
+    .items-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 2.5rem;
+    }
+
+    .items-table th {
+      text-align: left;
+      font-size: 0.85rem;
+      font-weight: 800;
+      color: #475569;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding-bottom: 0.75rem;
+      border-bottom: 2px solid #cbd5e1;
+    }
+
+    .items-table th.price-col {
+      text-align: right;
+      width: 140px;
+    }
+
+    .items-table td {
+      padding: 1.1rem 0;
+      vertical-align: top;
+      font-size: 0.9rem;
+      border-bottom: 1px solid #f1f5f9;
+    }
+
+    .items-table td.price-cell {
+      text-align: right;
+      font-weight: 700;
+      color: #0f172a;
+      font-size: 0.95rem;
+    }
+
+    .item-desc-title {
+      font-weight: 700;
+      color: #0f172a;
+      margin-bottom: 0.35rem;
+      line-height: 1.35;
+    }
+
+    .item-features {
+      list-style: none;
+      padding-left: 0;
+      margin-top: 0.35rem;
+    }
+
+    .item-features li {
+      font-size: 0.8rem;
+      color: #64748b;
+      line-height: 1.4;
+      position: relative;
+      padding-left: 1rem;
+      margin-bottom: 0.2rem;
+    }
+
+    .item-features li::before {
+      content: "•";
+      position: absolute;
+      left: 0;
+      color: #2563eb;
+      font-weight: bold;
+    }
+
+    /* Total Section */
+    .total-section {
+      padding-top: 1.5rem;
+      border-top: 2px solid #0f172a;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: auto;
+    }
+
+    .total-label {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #475569;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .total-amount {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: #0f172a;
+      letter-spacing: -0.02em;
+    }
+
+    .print-button-bar {
+      position: fixed;
+      top: 1rem;
+      right: 1rem;
+      background: #ffffff;
+      padding: 0.6rem 1rem;
+      border-radius: 8px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      display: flex;
+      gap: 0.75rem;
+      z-index: 100;
+    }
+
+    .btn-print {
+      background: #2563eb;
+      color: #ffffff;
+      border: none;
+      font-weight: 700;
+      font-size: 0.875rem;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<div class="print-button-bar no-print">
+  <button class="btn-print" onclick="window.print()">🖨️ Imprimir / Guardar como PDF</button>
+</div>
+
+<div class="page">
+  <div>
+    <!-- Header -->
+    <div class="invoice-header">
+      <div class="invoice-title">
+        Factura – “Santiago + Xtract – Proyectos Freelance Septiembre 2026”
+      </div>
+      <div class="header-divider"></div>
+      <div class="meta-row">
+        <div><b>Emitido por:</b> Wuerich, Santiago</div>
+        <div><b>Fecha:</b> 01/09/2026</div>
+      </div>
+    </div>
+
+    <!-- Datos de Transferencia -->
+    <div class="payment-section">
+      <div class="payment-title">Datos de transferencia:</div>
+      <div class="payment-block">
+        <div class="payment-subtitle">Transferencia (USD):</div>
+        <div class="payment-line">Alias: SWUERICH.NX.USD</div>
+      </div>
+    </div>
+
+    <!-- Resumen del Proyecto -->
+    <div class="scope-box">
+      <div class="scope-title">Proyecto: Agente automatización generador de Slides y Docs (ROI)</div>
+      <div class="scope-desc">
+        A partir de la transcripción de una Discovery call (.docx / Google Doc), genera automáticamente el borrador de la propuesta comercial en Google Slides y la calculadora de ROI en Google Docs, notificando por Slack y registrando los enlaces en Notion.
+      </div>
+    </div>
+
+    <!-- Items Table -->
+    <table class="items-table">
+      <thead>
+        <tr>
+          <th>Descripción</th>
+          <th class="price-col">Precio (USD)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>
+            <div class="item-desc-title">
+              1. Automatización Generador de Slides Comerciales (Google Slides)
+            </div>
+            <ul class="item-features">
+              <li>Trigger automático por nueva transcripción cargada en Google Drive.</li>
+              <li>Extracción estructurada con IA: ficha del cliente, dolor operativo y hasta 4 puntos de mejora con tabla de beneficios.</li>
+              <li>Duplicación y reemplazo dinámico sobre la plantilla oficial de Google Slides manteniendo tipografía y diseño.</li>
+            </ul>
+            <div style="font-size: 0.8rem; color: #64748b; margin-top: 0.3rem;">
+              <i>(3.00 horas x 25.0 USD)</i>
+            </div>
+          </td>
+          <td class="price-cell">
+            $75.00
+          </td>
+        </tr>
+
+        <tr>
+          <td>
+            <div class="item-desc-title">
+              2. Módulo Calculadora ROI, Generación de Docs y Notificaciones (Slack + Notion)
+            </div>
+            <ul class="item-features">
+              <li>Generación automática del documento de Calculadora ROI reemplazando plantilla oficial.</li>
+              <li>Aviso inmediato por Slack con los enlaces directos a los 2 archivos listos para revisión comercial.</li>
+              <li>Actualización de la tarjeta de la oportunidad en Notion con los adjuntos y comentarios.</li>
+            </ul>
+            <div style="font-size: 0.8rem; color: #64748b; margin-top: 0.3rem;">
+              <i>(1.00 hora x 25.0 USD)</i>
+            </div>
+          </td>
+          <td class="price-cell">
+            $25.00
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Total Section -->
+  <div class="total-section">
+    <div class="total-label">Total a pagar</div>
+    <div class="total-amount">$100.00 USD</div>
+  </div>
+</div>
+
+</body>
+</html>

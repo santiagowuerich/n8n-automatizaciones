@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reporte Ejecutivo · Auditoría WhatsApp Xtract</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #09090b;
+      --card-bg: #121215;
+      --card-inner: #18181b;
+      --border: #27272a;
+      --border-focus: #3f3f46;
+      --text: #fafafa;
+      --text-muted: #a1a1aa;
+      --text-sub: #71717a;
+      --white: #ffffff;
+      --green-btn: #10b981;
+      --green-btn-hover: #059669;
+      --wa-bg: #111b21;
+      --bubble-client: #202c33;
+      --bubble-bot: #005c4b;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding: 3rem 1.5rem;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      max-width: 1040px;
+      margin: 0 auto;
+    }
+
+    /* Header */
+    header {
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 2rem;
+      margin-bottom: 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+    }
+
+    .title-group h1 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.85rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      color: var(--white);
+    }
+
+    .title-group p {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin-top: 0.35rem;
+    }
+
+    /* View Switcher Tabs */
+    .tab-nav {
+      display: flex;
+      gap: 0.75rem;
+      background: var(--card-bg);
+      padding: 0.4rem;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      margin-bottom: 2.25rem;
+    }
+
+    .tab-btn {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-family: 'Inter', sans-serif;
+      font-size: 0.875rem;
+      font-weight: 600;
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+    }
+
+    .tab-btn.active {
+      background: var(--card-inner);
+      color: var(--white);
+      border: 1px solid var(--border-focus);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    /* KPI Grid */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      margin-bottom: 2.5rem;
+    }
+
+    @media (max-width: 768px) {
+      .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    .kpi-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+    }
+
+    .kpi-card .label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-sub);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 0.5rem;
+    }
+
+    .kpi-card .value {
+      font-family: 'Outfit', sans-serif;
+      font-size: 2.25rem;
+      font-weight: 800;
+      color: var(--white);
+      letter-spacing: -0.03em;
+      line-height: 1;
+      margin-bottom: 0.4rem;
+    }
+
+    .kpi-card .sub {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .kpi-card.highlight {
+      border-color: var(--border-focus);
+      background: linear-gradient(180deg, #18181b 0%, #121215 100%);
+    }
+
+    /* Hot Leads Cards Section */
+    .hot-leads-section {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.75rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .hot-header h2 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--white);
+      margin-bottom: 0.35rem;
+    }
+
+    .hot-header p {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin-bottom: 1.25rem;
+    }
+
+    .hot-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.25rem;
+    }
+
+    @media (max-width: 768px) {
+      .hot-cards-grid { grid-template-columns: 1fr; }
+    }
+
+    .hot-card {
+      background: var(--card-inner);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .hot-card .lead-name {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--white);
+    }
+
+    .hot-card .lead-company {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 0.75rem;
+    }
+
+    .hot-card .lead-quote {
+      font-size: 0.875rem;
+      background: rgba(0, 0, 0, 0.3);
+      border-left: 3px solid #f59e0b;
+      padding: 0.65rem 0.85rem;
+      border-radius: 4px;
+      color: #e4e4e7;
+      margin-bottom: 1.25rem;
+      font-style: italic;
+      min-height: 60px;
+      display: flex;
+      align-items: center;
+    }
+
+    .btn-action {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      background: var(--green-btn);
+      color: #09090b;
+      font-weight: 700;
+      font-size: 0.85rem;
+      padding: 0.65rem 1rem;
+      border-radius: 8px;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-action:hover {
+      background: var(--green-btn-hover);
+      transform: translateY(-1px);
+    }
+
+    /* Section Headings */
+    .section-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 1.25rem;
+      color: var(--text-muted);
+    }
+
+    .section {
+      margin-bottom: 2.5rem;
+    }
+
+    /* Table */
+    .table-wrapper {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.875rem;
+    }
+
+    th {
+      background: #141418;
+      color: var(--text-muted);
+      font-weight: 600;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 0.85rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    td {
+      padding: 1.25rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    .lead-meta {
+      font-weight: 600;
+      color: var(--white);
+      font-size: 0.95rem;
+      margin-bottom: 0.2rem;
+    }
+
+    .lead-sub {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .badge-tag {
+      display: inline-block;
+      padding: 0.3rem 0.65rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: var(--white);
+      margin-bottom: 0.4rem;
+    }
+
+    .response-box {
+      font-size: 0.825rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    .response-box b {
+      color: #d4d4d8;
+    }
+
+    /* Breakdown Grid */
+    .breakdown-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+    }
+
+    @media (max-width: 650px) {
+      .breakdown-grid { grid-template-columns: 1fr; }
+    }
+
+    .card-block {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+    }
+
+    .card-block h3 {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-sub);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 1.25rem;
+    }
+
+    .item-row {
+      margin-bottom: 1rem;
+    }
+
+    .item-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .item-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.85rem;
+      font-weight: 500;
+      margin-bottom: 0.4rem;
+    }
+
+    .item-header span:first-child { color: var(--text); }
+    .item-header span:last-child { color: var(--text-muted); font-weight: 600; }
+
+    .bar-bg {
+      background: var(--card-inner);
+      height: 6px;
+      border-radius: 9999px;
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      background: var(--white);
+      height: 100%;
+      border-radius: 9999px;
+    }
+
+    .bar-fill.dim {
+      background: #52525b;
+    }
+
+    /* Summary Box */
+    .summary-box {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.75rem;
+    }
+
+    .summary-box h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--white);
+      margin-bottom: 0.6rem;
+    }
+
+    .summary-box p {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    .summary-box ul {
+      margin-top: 0.75rem;
+      padding-left: 1.25rem;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+
+    .summary-box li {
+      margin-bottom: 0.4rem;
+    }
+
+    .summary-box b {
+      color: var(--white);
+    }
+
+    /* Modal WhatsApp Chat */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(8px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 1rem;
+    }
+
+    .modal-backdrop.active {
+      display: flex;
+    }
+
+    .modal-window {
+      background: var(--wa-bg);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      width: 100%;
+      max-width: 620px;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
+    }
+
+    .modal-header {
+      background: #202c33;
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .modal-header h4 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .modal-header .lead-sub {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .modal-close {
+      background: transparent;
+      border: none;
+      color: #fff;
+      font-size: 1.5rem;
+      cursor: pointer;
+      line-height: 1;
+    }
+
+    .modal-meta {
+      background: rgba(255, 255, 255, 0.04);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 0.85rem 1.5rem;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .modal-body {
+      padding: 1.5rem;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      background-image: radial-gradient(#1f2c34 1px, transparent 1px);
+      background-size: 20px 20px;
+    }
+
+    .chat-bubble {
+      max-width: 82%;
+      padding: 0.75rem 1rem;
+      border-radius: 12px;
+      font-size: 0.875rem;
+      line-height: 1.4;
+      position: relative;
+    }
+
+    .chat-bubble.client {
+      align-self: flex-start;
+      background: var(--bubble-client);
+      color: #e9edef;
+      border-bottom-left-radius: 2px;
+    }
+
+    .chat-bubble.bot {
+      align-self: flex-end;
+      background: var(--bubble-bot);
+      color: #e9edef;
+      border-bottom-right-radius: 2px;
+    }
+
+    .bubble-author {
+      font-size: 0.75rem;
+      font-weight: 700;
+      margin-bottom: 0.25rem;
+      opacity: 0.8;
+    }
+
+    .bubble-author.client-author { color: #53bdeb; }
+    .bubble-author.bot-author { color: #aebac1; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <div class="title-group">
+      <h1>Auditoría Ejecutiva · WhatsApp Xtract</h1>
+      <p>Análisis integral de conversaciones: Reactivación Closed Lost (Outbound) vs. Consultas Generales (Inbound)</p>
+    </div>
+  </header>
+
+  <!-- Tab Switcher -->
+  <div class="tab-nav">
+    <button id="tabBtn1" class="tab-btn active" onclick="switchTab('consultas')">Consultas Generales & Inbound (63 Hilos)</button>
+    <button id="tabBtn2" class="tab-btn" onclick="switchTab('closed_lost')">Reactivación Closed Lost (73 Leads)</button>
+  </div>
+
+  <!-- TAB 1: CONSULTAS GENERALES -->
+  <div id="tabContentConsultas" class="tab-content active">
+    
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="label">Hilos Inbound Netos</div>
+        <div class="value">63</div>
+        <div class="sub">Sin contar pruebas internas</div>
+      </div>
+      <div class="kpi-card highlight">
+        <div class="label">Piden Presupuesto / Demo</div>
+        <div class="value" style="color:var(--green-btn);">6</div>
+        <div class="sub">Leads de alta intención</div>
+      </div>
+      <div class="kpi-card">
+        <div class="label">Esperando en Meet (En Vivo)</div>
+        <div class="value">10</div>
+        <div class="sub">Soporte y aviso en sala</div>
+      </div>
+      <div class="kpi-card">
+        <div class="label">Gestión de Agenda</div>
+        <div class="value">17</div>
+        <div class="sub">Reprogramación / Confirmación</div>
+      </div>
+    </div>
+
+    <!-- Hot Inbound Cards Section -->
+    <div class="hot-leads-section">
+      <div class="hot-header">
+        <h2>Casos Críticos de Consultas Generales (Inbound)</h2>
+        <p>Prospectos pidiendo presupuesto formal, soporte urgente en sala de Google Meet o reprogramación de agenda.</p>
+      </div>
+
+      <div class="hot-cards-grid">
+        <div class="hot-card">
+          <div>
+            <div class="lead-name">Marcela Saconi</div>
+            <div class="lead-company">Cuentas a Pagar · +54 9 11 3107-7753</div>
+            <div class="lead-quote">“No te olvides de enviarme lo que me ibas a pasar ayer... estamos interesados, hoy hablé con sistemas”</div>
+          </div>
+          <button class="btn-action" onclick="openModalById(201)">Ver Chat Completo →</button>
+        </div>
+
+        <div class="hot-card">
+          <div>
+            <div class="lead-name">Silvia Sosa</div>
+            <div class="lead-company">Laboratorios Multiempresa · +54 9 11 8024-3813</div>
+            <div class="lead-quote">“¿Permite integración vía API? Usamos Tango y SAP... seguimos esperando la cotización para los 3 laboratorios”</div>
+          </div>
+          <button class="btn-action" onclick="openModalById(202)">Ver Chat Completo →</button>
+        </div>
+
+        <div class="hot-card">
+          <div>
+            <div class="lead-name">Ivo</div>
+            <div class="lead-company">Prospecto Post-Demo · +54 9 351 221-6965</div>
+            <div class="lead-quote">“Cuando puedas te pido la propuesta, en los archivos adjuntos solo tengo la minuta. Gracias!”</div>
+          </div>
+          <button class="btn-action" onclick="openModalById(203)">Ver Chat Completo →</button>
+        </div>
+
+        <div class="hot-card">
+          <div>
+            <div class="lead-name">Gaston (YPF Mac Energía)</div>
+            <div class="lead-company">ypfmacenergia@gmail.com · +54 9 3471 56-2984</div>
+            <div class="lead-quote">“¿Podemos reprogramar para la tarde? ... El jueves a las 15” (Reprogramado exitoso en Calendly)</div>
+          </div>
+          <button class="btn-action" onclick="openModalById(204)">Ver Chat Completo →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Details Table Consultas Generales -->
+    <div class="section">
+      <div class="section-title">Detalle de Gestión de Consultas Generales</div>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 28%;">Contacto</th>
+              <th style="width: 34%;">Mensaje del Cliente</th>
+              <th style="width: 38%;">Respuesta del Bot y Próxima Acción</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <div class="lead-meta">Marcela Saconi</div>
+                <div class="lead-sub">+54 9 11 3107-7753 · Argentina</div>
+              </td>
+              <td>
+                <div class="lead-quote" style="min-height:auto; margin-bottom:0;">“Estamos interesados, hoy hablé con la persona de sistemas... no te olvides de enviarme lo que me ibas a pasar”</div>
+              </td>
+              <td>
+                <div class="badge-tag">PIDE PRESUPUESTO</div>
+                <div class="response-box">
+                  <b>Estado:</b> Escalado a ejecutivo comercial.<br>
+                  <b>Acción:</b> Enviar propuesta económica urgente para avanzar el cierre.
+                </div>
+              </td>
+            </tr>
+
+            <tr>
+              <td>
+                <div class="lead-meta">Silvia Sosa</div>
+                <div class="lead-sub">+54 9 11 8024-3813 · Argentina</div>
+              </td>
+              <td>
+                <div class="lead-quote" style="min-height:auto; margin-bottom:0;">“¿Permite integración vía API? Usamos Tango y SAP... seguimos esperando la cotización”</div>
+              </td>
+              <td>
+                <div class="badge-tag">PIDE COTIZACIÓN / API</div>
+                <div class="response-box">
+                  <b>Estado:</b> Escalado a especialista técnico.<br>
+                  <b>Acción:</b> Cotizar integración API multiempresa.
+                </div>
+              </td>
+            </tr>
+
+            <tr>
+              <td>
+                <div class="lead-meta">Ivo</div>
+                <div class="lead-sub">+54 9 351 221-6965 · Argentina</div>
+              </td>
+              <td>
+                <div class="lead-quote" style="min-height:auto; margin-bottom:0;">“Cuando puedas te pido la propuesta, solo tengo la minuta”</div>
+              </td>
+              <td>
+                <div class="badge-tag">REENVÍO DE PROPUESTA</div>
+                <div class="response-box">
+                  <b>Estado:</b> Derivado a comercial.<br>
+                  <b>Acción:</b> Adjuntar y reenviar PDF de propuesta comercial.
+                </div>
+              </td>
+            </tr>
+
+            <tr>
+              <td>
+                <div class="lead-meta">Flavio Melo</div>
+                <div class="lead-sub">+55 62 9205-8595 · Brasil</div>
+              </td>
+              <td>
+                <div class="lead-quote" style="min-height:auto; margin-bottom:0;">“Quero ver apresentação sobre o processo de automação de entrada de nota no ERP”</div>
+              </td>
+              <td>
+                <div class="badge-tag">DEMO / PRESENTACIÓN</div>
+                <div class="response-box">
+                  <b>Estado:</b> Atendido en portugués y derivado.<br>
+                  <b>Acción:</b> Asignar comercial bilingüe.
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Breakdown Grid Consultas Generales -->
+    <div class="section">
+      <div class="section-title">Distribución de las 63 Consultas Generales</div>
+      <div class="breakdown-grid">
+        <div class="card-block">
+          <h3>Tipología de Mensajes Recibidos</h3>
+          
+          <div class="item-row">
+            <div class="item-header">
+              <span>Piden Presupuesto / Intención de Compra</span>
+              <span>6 leads (9.5%)</span>
+            </div>
+            <div class="bar-bg"><div class="bar-fill" style="width: 9.5%;"></div></div>
+          </div>
+
+          <div class="item-row">
+            <div class="item-header">
+              <span>Soporte en Vivo (Esperando en Google Meet)</span>
+              <span>10 leads (15.9%)</span>
+            </div>
+            <div class="bar-bg"><div class="bar-fill" style="width: 15.9%;"></div></div>
+          </div>
+
+          <div class="item-row">
+            <div class="item-header">
+              <span>Gestión de Agenda (Reprogramación / Cancelación)</span>
+              <span>6 leads (9.5%)</span>
+            </div>
+            <div class="bar-bg"><div class="bar-fill dim" style="width: 9.5%;"></div></div>
+          </div>
+
+          <div class="item-row">
+            <div class="item-header">
+              <span>Confirmación de Asistencia a Videollamada</span>
+              <span>11 leads (17.5%)</span>
+            </div>
+            <div class="bar-bg"><div class="bar-fill dim" style="width: 17.5%;"></div></div>
+          </div>
+
+          <div class="item-row">
+            <div class="item-header">
+              <span>Saludos de Contacto / Mensajes Cortos</span>
+              <span>30 leads (47.6%)</span>
+            </div>
+            <div class="bar-bg"><div class="bar-fill dim" style="width: 47.6%;"></div></div>
+          </div>
+        </div>
+
+        <div class="card-block">
+          <h3>Hallazgos Operativos de Consultas Generales</h3>
+          <p style="font-size:0.85rem; color:var(--text-muted); line-height:1.6;">
+            • <b>Altísima efectividad en soporte de sala:</b> El bot resolvió el aviso inmediato a los comerciales cuando el prospecto avisó *"ya estoy en el meet"* o *"no veo a nadie"*.<br><br>
+            • <b>Autonomía de Calendly:</b> Clientes como Gaston (YPF Mac Energía) reprogramaron exitosamente sin intervención humana.<br><br>
+            • <b>Fuga de presupuestos detectada:</b> Se detectaron 3 leads calientes (Marcela Saconi, Silvia Sosa, Ivo) esperando la propuesta económica.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 2: CLOSED LOST -->
+  <div id="tabContentClosedLost" class="tab-content">
+    
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="label">Base Impactada</div>
+        <div class="value">73</div>
+        <div class="sub">64 entregados (87.7%)</div>
+      </div>
+      <div class="kpi-card highlight">
+        <div class="label">Tasa de Respuesta</div>
+        <div class="value">46.9%</div>
+        <div class="sub">30 leads reactivados</div>
+      </div>
+      <div class="kpi-card">
+        <div class="label">Oportunidades Activas</div>
+        <div class="value">4</div>
+        <div class="sub">13.3% de las respuestas</div>
+      </div>
+      <div class="kpi-card">
+        <div class="label">Proyección Total</div>
+        <div class="value">~107</div>
+        <div class="sub">Reuniones sobre 2.585 leads</div>
+      </div>
+    </div>
+
+    <div class="hot-leads-section">
+      <div class="hot-header">
+        <h2>4 Leads Calientes de Closed Lost</h2>
+        <p>Contactos de la cartera antigua que confirmaron dolor activo, pidieron llamada o consultaron factibilidad técnica.</p>
+      </div>
+
+      <div class="hot-cards-grid">
+        <div class="hot-card">
+          <div>
+            <div class="lead-name">Pablo Mosquera</div>
+            <div class="lead-company">+54 9 11 4493-3752 · Argentina</div>
+            <div class="lead-quote">“Todavía seguimos manual. ¿Se puede implementar con el Odoo?”</div>
+          </div>
+          <button class="btn-action" onclick="openModalById(18)">Ver Chat Completo →</button>
+        </div>
+
+        <div class="hot-card">
+          <div>
+            <div class="lead-name">Patricio Rial</div>
+            <div class="lead-company">Noble Transfers · +54 9 11 5838-1792</div>
+            <div class="lead-quote">Aceptó revisar la propuesta ajustada en llamada corta de 30 min.</div>
+          </div>
+          <button class="btn-action" onclick="openModalById(28)">Ver Chat Completo →</button>
+        </div>
+
+        <div class="hot-card">
+          <div>
+            <div class="lead-name">Distribución & Servicios</div>
+            <div class="lead-company">+54 9 11 6039-0055 · Argentina</div>
+            <div class="lead-quote">“Me interesa hablemos en la semana... Semana próxima”</div>
+          </div>
+          <button class="btn-action" onclick="openModalById(14)">Ver Chat Completo →</button>
+        </div>
+
+        <div class="hot-card">
+          <div>
+            <div class="lead-name">Noly Henriquez</div>
+            <div class="lead-company">H.A. Seguros · +507 6612-8576 · Panamá</div>
+            <div class="lead-quote">“Yo podría reunirme a las 12:30 hora de Panamá” (Reactivó espontáneamente)</div>
+          </div>
+          <button class="btn-action" onclick="openModalById(99)">Ver Chat Completo →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Closed Lost Table -->
+    <div class="section">
+      <div class="section-title">Detalle de Respuestas Emitidas en Closed Lost</div>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 28%;">Contacto</th>
+              <th style="width: 32%;">Mensaje del Cliente</th>
+              <th style="width: 40%;">Respuesta del Bot y Próxima Acción</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <div class="lead-meta">Pablo Mosquera</div>
+                <div class="lead-sub">+54 9 11 4493-3752 · Argentina</div>
+              </td>
+              <td>
+                <div class="lead-quote" style="min-height:auto; margin-bottom:0;">“Buen día. Todavía seguimos manual. ¿Se puede implementar con el Odoo?”</div>
+              </td>
+              <td>
+                <div class="badge-tag">OPORTUNIDAD ACTIVA</div>
+                <div class="response-box">
+                  <b>Respuesta emitida:</b> Se confirmó integración con Odoo por API/CSV (~5 días) y se ofreció llamada de 30 min esta semana.<br>
+                  <b>Próxima acción:</b> Contacto comercial para confirmar horario.
+                </div>
+              </td>
+            </tr>
+
+            <tr>
+              <td>
+                <div class="lead-meta">Patricio Rial</div>
+                <div class="lead-sub">Noble Transfers · +54 9 11 5838-1792</div>
+              </td>
+              <td>
+                <div class="lead-quote" style="min-height:auto; margin-bottom:0;">“Buenas tardes... el presupuesto sigue siendo un limitante: Sí”</div>
+              </td>
+              <td>
+                <div class="badge-tag">RENEGOCIACIÓN COMERCIAL</div>
+                <div class="response-box">
+                  <b>Respuesta emitida:</b> Se propuso una llamada de 30 min para evaluar un ajuste de la propuesta a su escala actual.<br>
+                  <b>Próxima acción:</b> Presentar alternativa comercial o plan escalonado.
+                </div>
+              </td>
+            </tr>
+
+            <tr>
+              <td>
+                <div class="lead-meta">Distribución & Servicios</div>
+                <div class="lead-sub">+54 9 11 6039-0055 · Argentina</div>
+              </td>
+              <td>
+                <div class="lead-quote" style="min-height:auto; margin-bottom:0;">“Me interesa hablemos en la semana... Semana próxima”</div>
+              </td>
+              <td>
+                <div class="badge-tag">EN AGENDAMIENTO</div>
+                <div class="response-box">
+                  <b>Respuesta emitida:</b> Se enviaron opciones de agenda concretas para el lunes 31 a las 13:00 hs.<br>
+                  <b>Próxima acción:</b> Bloquear y confirmar el espacio en Calendly.
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Summary Box -->
+  <div class="summary-box">
+    <h3>Conclusiones y Próximos Pasos Ejecutivos</h3>
+    <p>
+      El canal de WhatsApp demostró una doble función de alto impacto para la empresa:
+    </p>
+    <ul>
+      <li><b>En Consultas Generales (Inbound):</b> Rescata prospectos calientes pidiendo presupuesto (Marcela Saconi, Silvia Sosa, Ivo) y salva reuniones en vivo con clientes esperando en Google Meet.</li>
+      <li><b>En Reactivación Closed Lost (Outbound):</b> Logró un <b>46.9% de tasa de respuesta</b> y 4 oportunidades de reunión con costo de adquisición $0.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- Modal Chat -->
+<div id="chatModal" class="modal-backdrop" onclick="closeModal(event)">
+  <div class="modal-window" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <div>
+        <h4 id="modalLeadName">Nombre del Lead</h4>
+        <div id="modalLeadSub" class="lead-sub">Empresa · Teléfono</div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">&times;</button>
+    </div>
+    <div id="modalMeta" class="modal-meta">
+      <!-- Meta Details -->
+    </div>
+    <div id="modalChatBody" class="modal-body">
+      <!-- Chat bubbles -->
+    </div>
+  </div>
+</div>
+
+<script>
+  const rawData = [{"id": 18, "nombre": "Pablo Mosquera", "empresa": "Pablo Mosquera", "telefono": "+54 9 11 4493-3752", "pais": "Argentina", "motivo_original": "Superó 30 días sin presentarse a discovery", "tipo": "caliente", "tipo_label": "OPORTUNIDAD ACTIVA", "quote": "“Todavía seguimos manual. ¿Se puede implementar con el Odoo?”", "respuesta": "Se confirmó integración con Odoo (API/CSV en ~5 días) y se ofreció llamada de 30 min esta semana.", "accion": "Tomar contacto para fijar día y hora de la demo.", "dialogue": [{"client": "Buen dia. Todavia seguimos manual", "bot": "Buen dia Pablo. Recuerdo que habiamos quedado en coordinar una charla para ver como automatizar el proceso de facturas, pero no llego a concretarse en su momento. Como viene ese tema hoy, siguen con toda la carga manual?"}, {"client": "se puede implementar con el odoo?", "bot": "Si, Pablo. Xtract se integra con Odoo sin reemplazarlo: como no es uno de los ERPs con conexion nativa, se hace por API REST o por archivos planos (CSV, TXT, XLS), y la implementacion estandar toma unos 5 dias habiles. Para verlo aplicado al circuito de su empresa, le parece que agendemos una llamada corta de 30 minutos esta semana?"}]}, {"id": 28, "nombre": "Patricio Rial", "empresa": "Noble Transfers", "telefono": "+54 9 11 5838-1792", "pais": "Argentina", "motivo_original": "Desestimó la propuesta por presupuesto", "tipo": "caliente", "tipo_label": "RENEGOCIACIÓN COMERCIAL", "quote": "“Buenas tardes... el presupuesto sigue siendo un limitante: Sí”", "respuesta": "Se propuso llamada de 30 min para evaluar un ajuste de la propuesta a su escala actual.", "accion": "Presentar alternativa o esquema escalonado.", "dialogue": [{"client": "buenas tardes", "bot": "Hola Patricio, buenas tardes! Quedamos en mayo con la propuesta frenada por una cuestion de presupuesto. Como esta hoy esa situacion, sigue siendo un limitante?"}, {"client": "si", "bot": "Entiendo Patricio. Justamente para eso, si le parece, coordinamos una llamada corta de 30 minutos y vemos si hay forma de ajustar la propuesta a lo que hoy les resulta viable. Le parece?"}]}, {"id": 14, "nombre": "Distribución & Servicios", "empresa": "Distribución & Servicios", "telefono": "+54 9 11 6039-0055", "pais": "Argentina", "motivo_original": "No apareció más", "tipo": "caliente", "tipo_label": "EN AGENDAMIENTO", "quote": "“Me interesa hablemos en la semana... Semana próxima”", "respuesta": "Se enviaron opciones de agenda concretas para el lunes 31 a las 13:00 hs.", "accion": "Bloquear y confirmar el espacio en Calendly.", "dialogue": [{"client": "Me interesa hablemos en la semana", "bot": "Excelente que quiera retomarlo, Distribucion! Para esta semana ya no quedan horarios disponibles; le dejo opciones para la proxima: 1) Lunes 31 a las 13:00, 2) Martes 1 a las 11:30, 3) Miercoles 2 a las 09:00 (horario de Argentina). Cual le queda mas comodo?"}, {"client": "Semana próxima", "bot": "Perfecto! Para ir cerrando, le propongo el lunes 31 a las 13:00 (horario de Argentina). Le sirve, o prefiere el martes 1 o el miercoles 2?"}]}, {"id": 99, "nombre": "Noly Henriquez", "empresa": "H.A. Seguros", "telefono": "+507 6612-8576", "pais": "Panamá", "motivo_original": "Superó 30 días sin presentarse por diferencia horaria", "tipo": "caliente", "tipo_label": "REAGENDAMIENTO INBOUND", "quote": "“El tema es que pensé que era hora de Panamá... Yo podría reunirme a las 12:30 hora de Panamá”", "respuesta": "Se derivó al equipo comercial para confirmar la llamada en su huso horario.", "accion": "Enviar confirmación en horario Panamá (UTC-5).", "dialogue": [{"client": "El tema es que pense que era hora de panama", "bot": "Dispense la confusión anterior. Quedo a su disposición para ayudarlo: me confirma por escrito a qué hora tenía agendada la videollamada y con qué correo, así lo verifico?"}, {"client": "Alla son 3 horas mas que aca creo. Yo podria reunirme a las 12:30 hora de panama", "bot": "Noly, en breve lo atiende una persona del equipo comercial para confirmar el horario."}]}, {"id": 201, "nombre": "Marcela Saconi", "empresa": "Cuentas a Pagar", "telefono": "+54 9 11 3107-7753", "pais": "Argentina", "motivo_original": "Prospecto Inbound Activo", "tipo": "presupuesto", "tipo_label": "PIDE PROPUESTA COMERCIAL", "quote": "“Cuando puedas no te olvides de enviarme lo que me ibas a pasar ayer... estamos interesados, hoy hablé con la persona de sistemas”", "respuesta": "El bot escaló la conversación directamente al ejecutivo comercial.", "accion": "Enviar cotización y propuesta formal urgente.", "dialogue": [{"client": "Hola Nicolas como estas", "bot": "Hola Marcela, muy bien, gracias. Como esta? En que puedo ayudarla?"}, {"client": "cuando puedas no te olvides de enviarme lo que me ibas a pasar ayer", "bot": "Marcela, en breve lo atiende una persona del equipo."}, {"client": "estamos interesados, hoy hable con la persona de sistemas", "bot": "Marcela, su mensaje fue derivado al asesor comercial responsable."}]}, {"id": 202, "nombre": "Silvia Sosa", "empresa": "Laboratorios Multiempresa", "telefono": "+54 9 11 8024-3813", "pais": "Argentina", "motivo_original": "Evaluación ERP Multiempresa", "tipo": "presupuesto", "tipo_label": "PIDE COTIZACIÓN / API", "quote": "“¿Qué ERP utilizan y si permite integración vía API? Por ahora usamos Tango y SAP... seguimos esperando la cotización”", "respuesta": "Se derivó a especialista de integraciones para responder el requerimiento técnico.", "accion": "Enviar propuesta económica para los 3 laboratorios.", "dialogue": [{"client": "¿qué ERP utilizan y si permite integración vía API? Por ahora usamos Tango y SAP, más adelante no sabemos, estamos en la busqueda de un ERP multiempresa integrado para los 3 laboratorios", "bot": "Silvia, esa consulta la puede responder mejor un especialista de nuestro equipo. Le derivo la conversacion y se comunican a la brevedad."}, {"client": "seguimos esperando la cotización", "bot": "Silvia, en breve lo atiende una persona del equipo."}]}, {"id": 203, "nombre": "Ivo", "empresa": "Prospecto Inbound", "telefono": "+54 9 351 221-6965", "pais": "Argentina", "motivo_original": "Post-Demo Comercial", "tipo": "presupuesto", "tipo_label": "PIDE PROPUESTA", "quote": "“Hola Nico! Cómo va? Cuando puedas te pido la propuesta, en los archivos adjuntos solo tengo la minuta. Gracias!”", "respuesta": "Derivado al comercial responsable de la cuenta.", "accion": "Adjuntar y reenviar el PDF de la propuesta comercial.", "dialogue": [{"client": "Hola Nico! Cómo va? Cuando puedas te pido la propuesta, en los archivos adjuntos solo tengo la minuta. Gracias!", "bot": "Ivo, en breve lo atiende una persona del equipo comercial."}]}, {"id": 204, "nombre": "Gaston", "empresa": "YPF Mac Energía", "telefono": "+54 9 3471 56-2984", "pais": "Argentina", "motivo_original": "Gestión Automática Calendly", "tipo": "agendamiento", "tipo_label": "REPROGRAMADO EXITOSO", "quote": "“Hola buenos días! ¿Podemos reprogramar para la tarde? ... El jueves a las 15”", "respuesta": "El bot validó su correo (ypfmacenergia@gmail.com) y reprogramó la cita en Calendly automáticamente.", "accion": "Videollamada confirmada en agenda para el jueves a las 15:00 hs.", "dialogue": [{"client": "Hola buenos días! Podemos re programar para la tarde?", "bot": "Buenos días Gaston! Claro, sin problema. Para reprogramarla necesito que me indique el correo con el que agendo."}, {"client": "ypfmacenergia@gmail.com", "bot": "Gaston, para esta tarde no quedan horarios disponibles. Le ofrezco estas opciones en horario de Argentina: Jueves a las 11:30 o Jueves a las 15:00."}, {"client": "El jueves a las 15", "bot": "Perfecto Gaston, le quedó reprogramada para el jueves a las 15:00 hs (horario de Argentina). Le llega la confirmación por correo."}]}, {"id": 205, "nombre": "Flavio Melo", "empresa": "Brasil / Inbound", "telefono": "+55 62 9205-8595", "pais": "Brasil", "motivo_original": "Consulta de Producto (Portugués)", "tipo": "presupuesto", "tipo_label": "PIDE DEMO / PRESENTACIÓN", "quote": "“Quero ver apresentação sobre o processo de automação de entrada de nota no ERP.”", "respuesta": "El bot atendió en portugués y derivó a un ejecutivo regional.", "accion": "Asignar ejecutivo bilingüe o enviar material de producto en portugués.", "dialogue": [{"client": "Boa noite", "bot": "Boa noite, Flavio! Em que posso ajudar?"}, {"client": "Confirmado", "bot": "Perfeito, Flavio! Ficamos atentos."}, {"client": "Quero ver apresentação sobre o processo de automação de entrada de nota no ERP.", "bot": "Hola Flavio, esa consulta la puede responder mejor un especialista de nuestro equipo. Le derivo la conversacion."}]}];
+
+  function switchTab(tabId) {
+    document.getElementById('tabBtn1').classList.toggle('active', tabId === 'consultas');
+    document.getElementById('tabBtn2').classList.toggle('active', tabId === 'closed_lost');
+    document.getElementById('tabContentConsultas').classList.toggle('active', tabId === 'consultas');
+    document.getElementById('tabContentClosedLost').classList.toggle('active', tabId === 'closed_lost');
+  }
+
+  function openModal(item) {
+    document.getElementById('modalLeadName').textContent = item.nombre;
+    document.getElementById('modalLeadSub').textContent = `${item.empresa} · ${item.telefono} (${item.pais})`;
+    
+    document.getElementById('modalMeta').innerHTML = `
+      <b>Situación:</b> ${item.motivo_original} · <b>Estado:</b> ${item.tipo_label}
+    `;
+
+    const chatBody = document.getElementById('modalChatBody');
+    chatBody.innerHTML = '';
+
+    item.dialogue.forEach(turn => {
+      if (turn.client) {
+        const cDiv = document.createElement('div');
+        cDiv.className = 'chat-bubble client';
+        cDiv.innerHTML = `<div class="bubble-author client-author">${item.nombre}</div>${turn.client}`;
+        chatBody.appendChild(cDiv);
+      }
+      if (turn.bot) {
+        const bDiv = document.createElement('div');
+        bDiv.className = 'chat-bubble bot';
+        bDiv.innerHTML = `<div class="bubble-author bot-author">Asistente Xtract (IA)</div>${turn.bot}`;
+        chatBody.appendChild(bDiv);
+      }
+    });
+
+    document.getElementById('chatModal').classList.add('active');
+  }
+
+  function openModalById(id) {
+    const item = rawData.find(d => d.id === id);
+    if (item) openModal(item);
+  }
+
+  function closeModal() {
+    document.getElementById('chatModal').classList.remove('active');
+  }
+</script>
+</body>
+</html>

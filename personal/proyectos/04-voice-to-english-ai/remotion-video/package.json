@@ -1,0 +1,27 @@
+{
+  "name": "voice-to-english-promo",
+  "version": "1.0.0",
+  "description": "Promo video for VoiceToEnglishAI built with Remotion",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "remotion preview src/index.ts",
+    "build": "remotion render src/index.ts PromoVideo out/video.mp4",
+    "build:vertical": "remotion render src/index.ts PromoVideoVertical out/video-vertical.mp4"
+  },
+  "dependencies": {
+    "@remotion/cli": "^4.0.200",
+    "@remotion/media-utils": "^4.0.517",
+    "@remotion/paths": "^4.0.517",
+    "@remotion/sfx": "^4.0.517",
+    "@remotion/transitions": "^4.0.517",
+    "lucide-react": "^0.475.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "remotion": "^4.0.200"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "typescript": "^5.7.0"
+  }
+}

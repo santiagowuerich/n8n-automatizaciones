@@ -113,6 +113,44 @@ guarda el *por qué* y el *cuándo*.
 
 ---
 
+## 2026-08-26 · Google Sheets Update omite silenciosamente columnas ausentes en cabeceras
+
+- **Síntoma:** El nodo de Google Sheets en modo `update` finaliza con estado `success` pero devuelve
+  `data: [[]]` (0 filas afectadas), sin arrojar ningún error fatal.
+- **Causa:** Las columnas mapeadas para actualizar (`seguimiento`, `fecha_seguimiento`) no existían
+  físicamente en la fila 1 (cabeceras) de la hoja. La API de Google Sheets ignora campos sin columna
+  asociada y no actualiza nada.
+- **Impacto:** Los workflows basados en Cron que filtran por estado (`seguimiento !== "enviado"`)
+  vuelven a seleccionar a los mismos destinatarios en cada intervalo (ej: cada 30 min), enviando
+  mensajes duplicados en bucle continuo.
+- **Regla:** Antes de configurar un nodo de `update` por coincidencia en Google Sheets, verificar
+  que todas las columnas destino existan en la primera fila de la pestaña correspondiente.
+
+---
+
+## 2026-08-26 · Chatwoot `content` vs Meta `processed_params` en plantillas de WhatsApp
+
+- **Síntoma:** El chat de Chatwoot muestra textos de plantilla con números literales como
+  `"Hola 1, te escribe 2 del equipo..."` en lugar de los nombres reales.
+- **Causa:** En la API de Chatwoot, `content` es el texto de previsualización que se renderiza
+  en la bandeja de entrada y sirve de fallback. Si se deja un string con los placeholders crudos
+  `1` y `2`, ese es el texto que queda visible en la conversación.
+- **Regla:** Interpolar siempre las variables dinámicas (`${empresa}`, `${sistema}`, etc.) tanto en
+  el campo `content` como dentro del objeto `template_params.processed_params`.
+
+---
+
+## 2026-08-26 · Multi-workspace de Slack y Bot Direct Messages (DMs)
+
+- **Síntoma:** Error `channel_not_found` al intentar enviar mensajes a través de la API de Slack.
+- **Causa:** Los IDs de usuario (`U...`) y de canal directo (`D...`) pertenecen exclusivamente a un
+  `team_id` (Workspace). Un Bot Token corporativo de Xtract (`T019FLW78AJ`) no puede enviar a canales
+  DMs de un workspace personal (`T0BJPS3C3NH`).
+- **Regla:** Para enviar notificaciones privadas a un Slack personal, usar el Bot Token (`xoxb-...`)
+  de la aplicación instalada en ese workspace específico y su `channel_id` correspondiente (`D0BRPUE84UA`).
+
+---
+
 ## Reglas heredadas (origen sin fecha registrada)
 
 Estas quedaron documentadas antes de existir este registro. Si volvés a toparte con el caso,
@@ -132,3 +170,4 @@ y falle la validación, aunque la credencial OAuth2 esté bien configurada.
 `$('Nodo_X')` sobre un nodo de una rama no ejecutada tira error. Hay que guardar con
 `.isExecuted`.
 → [`n8n-reglas-construccion.md §2`](n8n-reglas-construccion.md).
+

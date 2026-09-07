@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleIdentifier</key>
+    <string>com.personal.VoiceToEnglishAI</string>
+    <key>CFBundleName</key>
+    <string>VoiceToEnglishAI</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0.0</string>
+    <key>CFBundleVersion</key>
+    <string>1</string>
+    <key>LSMinimumSystemVersion</key>
+    <string>13.0</string>
+    <!-- Set LSUIElement to true so the app runs purely in the menu bar without a Dock icon -->
+    <key>LSUIElement</key>
+    <true/>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>VoiceToEnglishAI needs microphone access to record your voice for speech recognition.</string>
+    <key>NSSpeechRecognitionUsageDescription</key>
+    <string>VoiceToEnglishAI uses Apple Speech Recognition on-device to transcribe and translate your voice for free.</string>
+</dict>
+</plist>

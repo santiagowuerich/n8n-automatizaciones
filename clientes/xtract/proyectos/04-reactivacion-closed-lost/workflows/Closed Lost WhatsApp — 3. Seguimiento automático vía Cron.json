@@ -8,13 +8,13 @@
         "rule": {
           "interval": [
             {
-              "field": "cronExpression",
-              "expression": "*/30 9-19 * * 1-5"
+              "field": "minutes",
+              "minutesInterval": 5
             }
           ]
         }
       },
-      "name": "Cron de Seguimiento (cada 30 min)",
+      "name": "Cron de Seguimiento (cada 5 min)",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
       "position": [
@@ -25,7 +25,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Configuración centralizada de Seguimiento\nreturn [{ json: {\n  CHATWOOT_URL: 'https://chatwoot.xtract.app',\n  CHATWOOT_ACCOUNT_ID: '1',\n  WA_SHEET_URL: 'https://docs.google.com/spreadsheets/d/1B7T1j6b8_8zC9Z0l1s7E_xR9U6q0Z2M4x0P_8t_Y5E/edit',\n  WA_SEGUIMIENTO_ESPERA_MIN: 120, // 2 horas\n  WA_SEGUIMIENTO_NAME: 'reactivacion_closed_lost_seguimiento',\n  WA_SEGUIMIENTO_LANG: 'es_AR',\n  WA_SEGUIMIENTO_PREVIEW: 'Nos juntamos hace un tiempo cuando en {{1}} estaban buscando automatizar el ingreso de facturas en {{2}}. Quería saber cómo vienen con ese proceso, si ya encontraron alguna forma de automatizarlo o si lo siguen haciendo de forma manual.'\n} }];"
+        "jsCode": "// Configuración centralizada de Seguimiento\nreturn [{ json: {\n  CHATWOOT_URL: 'https://chatwoot.xtract.app',\n  CHATWOOT_ACCOUNT_ID: '1',\n  WA_SHEET_URL: 'https://docs.google.com/spreadsheets/d/1w6wVAuYmHjI8Fk4b3S1VLxAcgSSQkUjHOTrE1enmaP8/edit',\n  WA_SEGUIMIENTO_ESPERA_MIN: 15, // 15 minutos exactos\n  WA_SEGUIMIENTO_NAME: 'reactivacion_closed_lost_seguimiento',\n  WA_SEGUIMIENTO_LANG: 'es_AR',\n  WA_SEGUIMIENTO_PREVIEW: 'Nos juntamos hace un tiempo cuando en {{1}} estaban buscando automatizar el ingreso de facturas en {{2}}. Quería saber cómo vienen con ese proceso, si ya encontraron alguna forma de automatizarlo o si lo siguen haciendo de forma manual.'\n} }];"
       },
       "name": "Config",
       "type": "n8n-nodes-base.code",
@@ -67,7 +67,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Filtrar leads que ya cumplieron las 2hs y no tienen seguimiento enviado ni respondido\nconst cfg = $('Config').first().json;\nconst esperaMs = (cfg.WA_SEGUIMIENTO_ESPERA_MIN || 120) * 60 * 1000;\nconst ahora = Date.now();\n\nconst elegibles = [];\nfor (const item of $input.all()) {\n  const row = item.json || {};\n  const estado = String(row.estado || '').toLowerCase();\n  const convId = row.chatwoot_conversation_id;\n  const seg = String(row.seguimiento || '').toLowerCase();\n  const fechaEnvioStr = row.fecha_envio;\n\n  // Solo enviados con conversación\n  if (estado !== 'enviado' || !convId) continue;\n  // Si ya se mandó seguimiento o ya respondió, saltear\n  if (seg === 'enviado' || seg === 'respondio' || seg === 'cancelado') continue;\n  if (!fechaEnvioStr) continue;\n\n  const fechaEnvio = new Date(fechaEnvioStr).getTime();\n  if (isNaN(fechaEnvio)) continue;\n\n  const antiguedad = ahora - fechaEnvio;\n  // Ventana: entre 2 horas y 48 horas\n  if (antiguedad >= esperaMs && antiguedad <= 48 * 60 * 60 * 1000) {\n    elegibles.push({ json: {\n      telefono: row.telefono,\n      nombre: row.nombre,\n      primer_nombre: row.primer_nombre || row.nombre,\n      empresa: row.empresa || 'tu empresa',\n      sistema: row.sistema || 'el sistema que usan',\n      conversation_id: convId,\n      fecha_envio: row.fecha_envio,\n      owner: 'Nicolás González'\n    } });\n  }\n}\n\nreturn elegibles;"
+        "jsCode": "// Filtrar leads que ya cumplieron las 2hs y no tienen seguimiento enviado ni respondido\nconst cfg = $('Config').first().json;\nconst esperaMs = (cfg.WA_SEGUIMIENTO_ESPERA_MIN || 120) * 60 * 1000;\nconst ahora = Date.now();\nconst MAX_ANTIGUEDAD_MS = 7 * 24 * 60 * 60 * 1000; // 7 días max para cubrir fines de semana\n\nconst elegibles = [];\nfor (const item of $input.all()) {\n  const row = item.json || {};\n  const estado = String(row.estado || \"\").toLowerCase().trim();\n  const convId = row.chatwoot_conversation_id;\n  const seg = String(row.seguimiento || \"\").toLowerCase().trim();\n  const fechaEnvioStr = row.fecha_envio;\n\n  // Solo enviados con conversación\n  if (estado !== \"enviado\" || !convId) continue;\n  // Si ya se mandó seguimiento o ya respondió o cancelado, saltear\n  if (seg === \"enviado\" || seg === \"respondio\" || seg === \"cancelado\") continue;\n  if (!fechaEnvioStr) continue;\n\n  const fechaEnvio = new Date(fechaEnvioStr).getTime();\n  if (isNaN(fechaEnvio)) continue;\n\n  const antiguedad = ahora - fechaEnvio;\n  // Ventana: entre esperaMs (2hs) y 7 días\n  if (antiguedad >= esperaMs && antiguedad <= MAX_ANTIGUEDAD_MS) {\n    const rawSis = String(row.sistema || \"\").trim();\n    const sistemaLimpio = (!rawSis || rawSis.toLowerCase() === \"otro\" || rawSis.toLowerCase() === \"sistema propio\")\n      ? \"su sistema\"\n      : rawSis;\n\n    elegibles.push({ json: {\n      row_number: row.row_number,\n      telefono: row.telefono,\n      nombre: row.nombre,\n      primer_nombre: row.primer_nombre || row.nombre,\n      empresa: row.empresa || \"tu empresa\",\n      sistema: sistemaLimpio,\n      conversation_id: convId,\n      fecha_envio: row.fecha_envio,\n      owner: \"Nicolás González\"\n    } });\n  }\n}\n\nreturn elegibles;"
       },
       "name": "Filtrar pendientes de seguimiento",
       "type": "n8n-nodes-base.code",
@@ -161,7 +161,7 @@
         "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ content: $('Config').first().json.WA_SEGUIMIENTO_PREVIEW, message_type: \"outgoing\", template_params: { name: $('Config').first().json.WA_SEGUIMIENTO_NAME || \"reactivacion_closed_lost_seguimiento\", category: \"marketing\", language: $('Config').first().json.WA_SEGUIMIENTO_LANG || \"es_AR\", processed_params: { \"1\": $('Loop de seguimiento').item.json.empresa || \"tu empresa\", \"2\": $('Loop de seguimiento').item.json.sistema || \"el sistema que usan\" } } }) }}",
+        "jsonBody": "={{ JSON.stringify({\n  content: \"Nos juntamos hace un tiempo cuando en \" + ($('Loop de seguimiento').item.json.empresa || \"tu empresa\") + \" estaban buscando automatizar el ingreso de facturas en \" + ($('Loop de seguimiento').item.json.sistema || \"el sistema que usan\") + \". Quería saber cómo vienen con ese proceso, si ya encontraron alguna forma de automatizarlo o si lo siguen haciendo de forma manual.\",\n  message_type: \"outgoing\",\n  template_params: {\n    name: $('Config').first().json.WA_SEGUIMIENTO_NAME || \"reactivacion_closed_lost_seguimiento\",\n    category: \"marketing\",\n    language: $('Config').first().json.WA_SEGUIMIENTO_LANG || \"es_AR\",\n    processed_params: {\n      \"1\": $('Loop de seguimiento').item.json.empresa || \"tu empresa\",\n      \"2\": $('Loop de seguimiento').item.json.sistema || \"el sistema que usan\"\n    }\n  }\n}) }}",
         "options": {
           "response": {
             "response": {
@@ -188,7 +188,7 @@
     },
     {
       "parameters": {
-        "operation": "appendOrUpdate",
+        "operation": "update",
         "documentId": {
           "__rl": true,
           "mode": "url",
@@ -202,13 +202,55 @@
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
-            "telefono": "={{ $('Loop de seguimiento').item.json.telefono }}",
+            "row_number": "={{ $('Loop de seguimiento').item.json.row_number }}",
+            "chatwoot_conversation_id": "={{ $('Loop de seguimiento').item.json.conversation_id }}",
             "seguimiento": "enviado",
             "fecha_seguimiento": "={{ $now.toISO() }}"
           },
           "matchingColumns": [
-            "telefono"
-          ]
+            "row_number"
+          ],
+          "schema": [
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "chatwoot_conversation_id",
+              "displayName": "chatwoot_conversation_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "seguimiento",
+              "displayName": "seguimiento",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "fecha_seguimiento",
+              "displayName": "fecha_seguimiento",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
         },
         "options": {}
       },
@@ -229,7 +271,7 @@
     },
     {
       "parameters": {
-        "operation": "appendOrUpdate",
+        "operation": "update",
         "documentId": {
           "__rl": true,
           "mode": "url",
@@ -243,13 +285,55 @@
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
-            "telefono": "={{ $('Loop de seguimiento').item.json.telefono }}",
+            "row_number": "={{ $('Loop de seguimiento').item.json.row_number }}",
+            "chatwoot_conversation_id": "={{ $('Loop de seguimiento').item.json.conversation_id }}",
             "seguimiento": "respondio",
             "fecha_seguimiento": "={{ $now.toISO() }}"
           },
           "matchingColumns": [
-            "telefono"
-          ]
+            "row_number"
+          ],
+          "schema": [
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "chatwoot_conversation_id",
+              "displayName": "chatwoot_conversation_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "seguimiento",
+              "displayName": "seguimiento",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "fecha_seguimiento",
+              "displayName": "fecha_seguimiento",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
         },
         "options": {}
       },
@@ -285,17 +369,6 @@
     }
   ],
   "connections": {
-    "Cron de Seguimiento (cada 30 min)": {
-      "main": [
-        [
-          {
-            "node": "Config",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "Config": {
       "main": [
         [
@@ -413,9 +486,21 @@
           }
         ]
       ]
+    },
+    "Cron de Seguimiento (cada 5 min)": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "settings": {
-    "executionOrder": "v1"
+    "executionOrder": "v1",
+    "timezone": "America/Argentina/Buenos_Aires"
   }
 }

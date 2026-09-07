@@ -14,6 +14,9 @@ Instancias de n8n y su rol según de quién sea el proyecto:
 | `n8n.santiagowuerich.info` | DEV / staging | 🔴 **PRODUCCIÓN** |
 | `n8n.xtract.app` | 🔴 **PRODUCCIÓN** | no aplica |
 
+🛑 **GATE DE APROBACIÓN OBLIGATORIO PARA PRODUCCIÓN:**
+Jamás realizar modificaciones, creaciones, actualizaciones, eliminaciones o cambios de estado (`active: true/false`) en ningún workflow de producción (`n8n.xtract.app` o workflows propios en `n8n.santiagowuerich.info`) sin mostrar el diff detallado y **obtener la aprobación explícita del usuario**. El agente debe detenerse y esperar la confirmación humana.
+
 ⚠️ **Verificar el acceso antes de escribir.** Los servidores MCP se configuran por host.
 Hoy Antigravity (`n8n` + `n8n_prod`) y Claude Code (`n8n-mcp` + `n8n_prod`) llegan a los dos
 entornos, pero eso se comprueba, no se asume:

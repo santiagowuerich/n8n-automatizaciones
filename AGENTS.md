@@ -15,9 +15,13 @@ Este repositorio implementa un sistema personal de orquestación autónoma sobre
 
 ---
 
-> **Descubrimiento por host:** las skills viven en `.agents/skills/`. Claude Code las carga a
-> través del symlink `.claude/skills`; el resto de los hosts las indexa vía
-> `.atl/skill-registry.md`.
+## Reglas Duras de Operación (Hard Rules)
+
+🛑 **PROHIBIDO TOCAR PRODUCCIÓN SIN APROBACIÓN HUMANA EXPLÍCITA:**
+Cualquier modificación, creación, actualización, borrado, activación o desactivación de workflows en entornos de **PRODUCCIÓN** (`n8n.xtract.app` o workflows propios protegidos en `n8n.santiagowuerich.info`):
+1. **Requiere validación previa en DEV + Diff explícito.**
+2. **El agente DEBE DETENERSE y pedir confirmación expresa al usuario antes de ejecutar cualquier mutación en PROD.**
+3. **Jamás ejecutar un cambio en producción de forma autónoma o implícita.**
 
 ---
 

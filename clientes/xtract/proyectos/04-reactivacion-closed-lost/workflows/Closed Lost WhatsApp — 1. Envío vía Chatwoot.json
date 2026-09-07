@@ -80,7 +80,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Unico lugar de configuracion del workflow.\n// Esta instancia de n8n corre con N8N_BLOCK_ENV_ACCESS_IN_NODE: $env tira\n// \"access to env vars denied\" y el `|| default` NO salva, porque la excepcion\n// se tira al tocar $env. Por eso la config vive aca.\n// Todo nodo aguas abajo lee con: $('Config').first().json.LO_QUE_SEA\nreturn [{ json: {\n  // --- Chatwoot ---\n  CHATWOOT_URL: 'https://chatwoot.xtract.app',               // sin barra final, ej: https://app.chatwoot.com\n  CHATWOOT_ACCOUNT_ID: '1', // numerico, sale de la URL /app/accounts/<id>/\n  CHATWOOT_INBOX_ID: '1',     // inbox de WhatsApp, NO otro canal\n\n  // --- Hoja de control del piloto (pestanas: Enviados WA, Interacciones) ---\n  // Pestana de la MISMA planilla de donde salen los leads a contactar.\n  // Antes esto venia de Notion; se saco a pedido y el piloto se maneja\n  // 100% con la hoja.\n  WA_LEADS_TAB: 'Leads Piloto',\n\n  // Pausa entre un envio y el siguiente. NO es cosmetico permite a meta no degradar el numero\n  WA_ESPERA_ENTRE_ENVIOS_SEG: 8,\n\n  // Pausa antes de verificar si el envio realmente salio. Chatwoot acepta\n  // el mensaje al toque (devuelve id), pero el rechazo real de WhatsApp\n  // (numero invalido, plantilla, ventana cerrada) llega despues, de forma\n  // asincrona. Sin esta espera, se consulta el estado antes de que exista.\n  WA_ESPERA_CONFIRMACION_SEG: 10,\n\n  WA_SHEET_URL: 'https://docs.google.com/spreadsheets/d/1w6wVAuYmHjI8Fk4b3S1VLxAcgSSQkUjHOTrE1enmaP8/edit',\n\n  // --- Plantilla aprobada en Meta ---\n  WA_TEMPLATE_NAME: 'reactivacion_closed_lost_1',\n  WA_TEMPLATE_LANG: 'es_AR',\n  WA_TEMPLATE_PREVIEW: 'Hola {{1}}, cómo estás? Te escribe {{2}} del equipo de Xtract',\n\n  // --- Plantilla de seguimiento: se manda si a las 2 horas no hubo respuesta ---\n  WA_SEGUIMIENTO_ESPERA_MIN: 120,\n  WA_SEGUIMIENTO_NAME: 'reactivacion_closed_lost_seguimiento',\n  WA_SEGUIMIENTO_PREVIEW: 'Nos juntamos hace un tiempo cuando en {{1}} estaban buscando automatizar el ingreso de facturas en {{2}}. Quería saber cómo vienen con ese proceso, si ya encontraron alguna forma de automatizarlo o si lo siguen haciendo de forma manual.',\n\n  // --- Barandas del piloto ---\n  WA_LIMITE_TANDA: 4,   // maximo de envios por corrida, para no quemar el numero\n  WA_SOLO_VERDES: 'true' // solo leads calificados Verde\n} }];"
+        "jsCode": "// Unico lugar de configuracion del workflow.\n// Esta instancia de n8n corre con N8N_BLOCK_ENV_ACCESS_IN_NODE: $env tira\n// \"access to env vars denied\" y el `|| default` NO salva, porque la excepcion\n// se tira al tocar $env. Por eso la config vive aca.\n// Todo nodo aguas abajo lee con: $('Config').first().json.LO_QUE_SEA\nreturn [{ json: {\n  // --- Chatwoot ---\n  CHATWOOT_URL: 'https://chatwoot.xtract.app',               // sin barra final, ej: https://app.chatwoot.com\n  CHATWOOT_ACCOUNT_ID: '1', // numerico, sale de la URL /app/accounts/<id>/\n  CHATWOOT_INBOX_ID: '1',     // inbox de WhatsApp, NO otro canal\n\n  // --- Hoja de control del piloto (pestanas: Enviados WA, Interacciones) ---\n  // Pestana de la MISMA planilla de donde salen los leads a contactar.\n  // Antes esto venia de Notion; se saco a pedido y el piloto se maneja\n  // 100% con la hoja.\n  WA_LEADS_TAB: 'Leads Piloto',\n\n  // Pausa entre un envio y el siguiente. NO es cosmetico permite a meta no degradar el numero\n  WA_ESPERA_ENTRE_ENVIOS_SEG: 8,\n\n  // Pausa antes de verificar si el envio realmente salio. Chatwoot acepta\n  // el mensaje al toque (devuelve id), pero el rechazo real de WhatsApp\n  // (numero invalido, plantilla, ventana cerrada) llega despues, de forma\n  // asincrona. Sin esta espera, se consulta el estado antes de que exista.\n  WA_ESPERA_CONFIRMACION_SEG: 10,\n\n  WA_SHEET_URL: 'https://docs.google.com/spreadsheets/d/1w6wVAuYmHjI8Fk4b3S1VLxAcgSSQkUjHOTrE1enmaP8/edit',\n\n  // --- Plantilla aprobada en Meta ---\n  WA_TEMPLATE_NAME: 'reactivacion_closed_lost_1',\n  WA_TEMPLATE_LANG: 'es_AR',\n  WA_TEMPLATE_PREVIEW: 'Hola {{1}}, cómo estás? Te escribe {{2}} del equipo de Xtract',\n\n  // --- Plantilla de seguimiento: se manda si a las 2 horas no hubo respuesta ---\n  WA_SEGUIMIENTO_ESPERA_MIN: 180,\n  WA_SEGUIMIENTO_NAME: 'reactivacion_closed_lost_seguimiento',\n  WA_SEGUIMIENTO_PREVIEW: 'Nos juntamos hace un tiempo cuando en {{1}} estaban buscando automatizar el ingreso de facturas en {{2}}. Quería saber cómo vienen con ese proceso, si ya encontraron alguna forma de automatizarlo o si lo siguen haciendo de forma manual.',\n\n  // --- Barandas del piloto ---\n  WA_LIMITE_TANDA: 4,   // maximo de envios por corrida, para no quemar el numero\n  WA_SOLO_VERDES: 'true' // solo leads calificados Verde\n} }];"
       },
       "id": "7a4efdbe-10e4-447a-8c05-faf70b4f8f6f",
       "name": "Config",
@@ -93,7 +93,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// =====================================================================\n// ARMA LA TANDA DE ENVIO desde la pestana de leads de la planilla.\n// Antes esto leia Notion; se saco a pedido. El normalizador de telefonos\n// se conserva TAL CUAL: la hoja puede traer numeros pegados a mano y es\n// la unica pieza que evita mandarle un WhatsApp a un numero invalido.\n// =====================================================================\nconst LIMITE = parseInt($('Config').first().json.WA_LIMITE_TANDA) || 20;\nconst SOLO_VERDES = String($('Config').first().json.WA_SOLO_VERDES || 'true') === 'true';\n\n// normKey: NFD, sin acentos, minusculas, separadores colapsados.\n// Los encabezados de la hoja los escribe una persona: \"Telefono Normalizado\",\n// \"telefono_normalizado\" y \"Teléfono normalizado\" tienen que ser lo mismo.\nconst normKey = s => (s || '').toString()\n  .normalize('NFD').replace(/[̀-ͯ]/g, '')\n  .toLowerCase().replace(/[\\s_\\-\\/]+/g, ' ').trim();\n\nconst normalizarFila = r => {\n  const o = {};\n  for (const k of Object.keys(r || {})) o[normKey(k)] = r[k];\n  return o;\n};\n\n// Primer alias que exista y no venga vacio\nfunction campo(fila, ...alias) {\n  for (const a of alias) {\n    const v = fila[normKey(a)];\n    if (v != null && String(v).trim() !== '') return String(v).trim();\n  }\n  return '';\n}\n\nconst PREFIJOS = { argentina: '54', uruguay: '598', chile: '56', mexico: '52', colombia: '57', peru: '51', brasil: '55', 'costa rica': '506', ecuador: '593', panama: '507', paraguay: '595', bolivia: '591' };\n\nfunction normalizarTel(raw, paisStr) {\n  let d = (raw || '').toString().replace(/[^0-9]/g, '');\n  if (!d) return '';\n  if (d.startsWith('00')) d = d.slice(2);\n  const pais = (paisStr || '').toString().toLowerCase();\n  const clave = Object.keys(PREFIJOS).find(k => pais.includes(k)) || '';\n  const pref = PREFIJOS[clave] || '';\n\n  // Si el numero YA trae prefijo de CUALQUIER pais conocido y largo pleno,\n  // se respeta lo cargado: el campo Pais puede estar mal (datos a mano).\n  const yaInternacional = d.length >= 11 && Object.values(PREFIJOS).some(pf => d.startsWith(pf));\n\n  if (!yaInternacional && pref) {\n    if (d.startsWith('0')) d = d.slice(1);\n    d = pref + d;\n  }\n  // Argentina: moviles llevan 9 tras el 54. Sin el 9, WhatsApp lo trata\n  // como fijo y el mensaje NO SE ENTREGA (sin error).\n  if (d.startsWith('54') && !d.startsWith('549')) {\n    d = '549' + d.slice(2);\n  }\n  if (d.length < 10 || d.length > 15) return '';\n  return d;\n}\n\n// Dedupe contra lo ya enviado. Solo bloquea los que salieron DE VERDAD:\n// una fila con estado 'error' vuelve a entrar en la proxima tanda.\n// Si la hoja no existe o no se pudo leer, la lista queda vacia y no se\n// bloquea a nadie: es preferible a cortar la tanda entera.\nconst yaEnviados = new Set();\ntry {\n  for (const it of $('Leer enviados').all()) {\n    const r = it.json || {};\n    if (!String(r.estado || '').toLowerCase().startsWith('enviado')) continue;\n    const t = String(r.telefono || '').replace(/[^0-9]/g, '');\n    if (t) yaEnviados.add(t.slice(-8));\n  }\n} catch (e) {}\n\n// Nombre de pila real del equipo comercial, por email. La columna\n// Owner/Comercial de la hoja a veces trae el email en vez del nombre\n// completo (ej. \"nicolas.gonzalez@xtract.app\"), y derivar el nombre de la\n// parte local del email pierde los acentos (\"Nicolas\" en vez de \"Nicolás\").\n// Con la tabla se manda el nombre real, tal como lo escribe el equipo.\nconst OWNERS_PRIMER_NOMBRE = {\n  'nicolas.gonzalez@xtract.app': 'Nicolás',\n  'juan.alvarez@xtract.app': 'Juan',\n  'matias.febre@xtract.app': 'Matías',\n  'jesus.soria@xtract.app': 'Jesús',\n  'damian.deggeller@xtract.app': 'Damián',\n  'jesus@xtract.app': 'Jesús',\n  'nicolas@xtract.app': 'Nicolás',\n  'tomas@xtract.app': 'Tomás',\n  'wenceslao.hoepner@xtract.app': 'Wenceslao',\n  'greta.bruno@xtract.app': 'Greta'\n};\n\n// Fallback generico para cuando el owner no esta en la tabla de arriba (ej.\n// alguien nuevo que todavia no se sumo a la lista), o para el primer nombre\n// del CONTACTO del lead (ahi no hay tabla posible: son emails externos de\n// cualquier empresa). Si viene un email, saca el nombre de la parte local\n// -- sin acentos, es lo maximo que se puede inferir sin una tabla.\nfunction primerNombreDe(raw) {\n  const s = (raw || '').toString().trim();\n  if (!s) return '';\n  if (s.includes('@')) {\n    const local = s.split('@')[0].split(/[._-]+/)[0];\n    return local ? local.charAt(0).toUpperCase() + local.slice(1).toLowerCase() : '';\n  }\n  return (s.split(' ')[0] || '').trim();\n}\n\nconst elegibles = [];\nconst vistos = new Set();   // la hoja puede traer el mismo numero dos veces\n\nfor (const item of $('Leer leads del piloto').all()) {\n  const f = normalizarFila(item.json);\n\n  const empresa = campo(f, 'Empresa', 'Nombre Oportunidad');\n  const nombre  = campo(f, 'Contacto', 'Nombre', 'Nombre KDM (SDR)');\n  const pais    = campo(f, 'Pais', 'Pais(*)');\n  const calif   = campo(f, 'Calificacion');\n\n  // Si la hoja NO trae la columna de calificacion, NO se filtra: la lista\n  // del piloto ya viene filtrada a Verdes. Filtrar por una columna ausente\n  // dejaria la tanda vacia sin ningun error visible.\n  if (SOLO_VERDES && calif && !calif.toLowerCase().startsWith('verde')) continue;\n\n  const tel = normalizarTel(\n    campo(f, 'Telefono Normalizado', 'Telefono', 'Whatsapp KDM'), pais);\n  if (!tel) continue;\n\n  const cola = tel.slice(-8);\n  if (yaEnviados.has(cola) || vistos.has(cola)) continue;\n  vistos.add(cola);\n\n  // Si 'empresa' es un email cargado por error, no puede ir en la plantilla\n  const empresaDisplay = (!empresa || empresa.includes('@')) ? (nombre || 'tu empresa') : empresa;\n  const primerNombre = campo(f, 'Primer Nombre')\n    || primerNombreDe(nombre)\n    || empresaDisplay;\n\n  // Owner/comercial: primero la tabla de nombres reales, despues el\n  // fallback generico si no esta listado.\n  const ownerNombre = 'Nicolás González';\n  const primerNombreOwner = 'Nico';\n\n  // El motivo suele traer el mensaje de despedida pegado entero. Es el\n  // contexto mas valioso que hay, pero normalizado para no romper el prompt.\n  let motivo = campo(f, 'Motivo Perdida', 'Motivo Lost').replace(/\\s+/g, ' ').trim();\n  if (motivo.length > 600) motivo = motivo.slice(0, 600) + '…';\n\n  elegibles.push({ json: {\n    notion_page_id: campo(f, 'notion id', 'notion page id'),\n    nombre: nombre || primerNombre,\n    primer_nombre: primerNombre,\n    empresa: empresaDisplay,\n    telefono: tel,\n    telefono_e164: '+' + tel,\n    motivo_perdida: motivo,\n    sistema: campo(f, 'Sistema Actual', 'Sistema', 'Que sistema usan?(*)'),\n    pais: pais,\n    email: campo(f, 'Email'),\n    owner: ownerNombre,\n    primer_nombre_owner: primerNombreOwner,\n    origen: campo(f, 'Origen'),\n    cantidad_facturas: campo(f, 'Facturas Mes', 'Cantidad de facturas', 'Cantidad de facturas(*)'),\n    company_size: campo(f, 'Company Size'),\n    fecha_discovery: campo(f, 'Fecha Discovery').slice(0, 10),\n    fecha_reunion: campo(f, 'Fecha Reunion', 'Fecha Primera Reunion').slice(0, 10),\n    fecha_propuesta: campo(f, 'Fecha Propuesta', 'Fecha Envio Propuesta').slice(0, 10),\n    dias_desde_perdida: campo(f, 'Dias desde Perdida'),\n    hubo_reunion: campo(f, 'Hubo Reunion'),\n    link_discovery: campo(f, 'Link Discovery', 'Link a Discovery(*)'),\n    calificacion: calif\n  } });\n}\n\nreturn elegibles.slice(0, LIMITE);"
+        "jsCode": "// =====================================================================\n// ARMA LA TANDA DE ENVIO desde la pestana de leads de la planilla.\n// Restricciones:\n// - Horario y dias: Martes, Miercoles y Jueves a las 09:30 hs (ART).\n// - Re-contacto: Permite 1 reintento a los 7 dias si no respondio a las 2 plantillas.\n// =====================================================================\nconst LIMITE = parseInt($('Config').first().json.WA_LIMITE_TANDA) || 20;\nconst SOLO_VERDES = String($('Config').first().json.WA_SOLO_VERDES || 'true') === 'true';\n\n// Candado defensivo: solo Martes (2), Miercoles (3) y Jueves (4) en hora Argentina\nconst ahora = new Date();\nconst fechaArt = new Date(ahora.toLocaleString(\"en-US\", { timeZone: \"America/Argentina/Buenos_Aires\" }));\nconst diaSemana = fechaArt.getDay();\nconst DIAS_PERMITIDOS = [2, 3, 4];\nconst FORZAR_ENVIO_TEST = false; // cambiar a true solo para forzar ejecucion manual de prueba en otro dia\n\nif (!FORZAR_ENVIO_TEST && !DIAS_PERMITIDOS.includes(diaSemana)) {\n  return [{ json: { aviso: \"Ejecucion omitida: envios restringidos a Martes, Miercoles y Jueves.\", dia_actual: diaSemana } }];\n}\n\nconst normKey = s => (s || '').toString()\n  .normalize('NFD').replace(/[̀-ͯ]/g, '')\n  .toLowerCase().replace(/[\\s_\\-\\/]+/g, ' ').trim();\n\nconst normalizarFila = r => {\n  const o = {};\n  for (const k of Object.keys(r || {})) o[normKey(k)] = r[k];\n  return o;\n};\n\nfunction campo(fila, ...alias) {\n  for (const a of alias) {\n    const v = fila[normKey(a)];\n    if (v != null && String(v).trim() !== '') return String(v).trim();\n  }\n  return '';\n}\n\nconst PREFIJOS = { argentina: '54', uruguay: '598', chile: '56', mexico: '52', colombia: '57', peru: '51', brasil: '55', 'costa rica': '506', ecuador: '593', panama: '507', paraguay: '595', bolivia: '591' };\n\nfunction normalizarTel(raw, paisStr) {\n  let d = (raw || '').toString().replace(/[^0-9]/g, '');\n  if (!d) return '';\n  if (d.startsWith('00')) d = d.slice(2);\n  const pais = (paisStr || '').toString().toLowerCase();\n  const clave = Object.keys(PREFIJOS).find(k => pais.includes(k)) || '';\n  const pref = PREFIJOS[clave] || '';\n\n  const yaInternacional = d.length >= 11 && Object.values(PREFIJOS).some(pf => d.startsWith(pf));\n\n  if (!yaInternacional && pref) {\n    if (d.startsWith('0')) d = d.slice(1);\n    d = pref + d;\n  }\n  if (d.startsWith('54') && !d.startsWith('549')) {\n    d = '549' + d.slice(2);\n  }\n  if (d.length < 10 || d.length > 15) return '';\n  return d;\n}\n\n// Historial y deduplicacion con regla de re-contacto a los 7 dias (max 2 envios totales)\nconst SIETE_DIAS_MS = 7 * 24 * 60 * 60 * 1000;\nconst ahoraMs = Date.now();\nconst historialPorTel = {};\n\ntry {\n  for (const it of $('Leer enviados').all()) {\n    const r = it.json || {};\n    if (!String(r.estado || '').toLowerCase().startsWith('enviado')) continue;\n    const t = String(r.telefono || '').replace(/[^0-9]/g, '').slice(-8);\n    if (!t) continue;\n\n    if (!historialPorTel[t]) {\n      historialPorTel[t] = { envios: 0, respondio: false, ultimaFecha: 0 };\n    }\n    historialPorTel[t].envios++;\n    if (r.seguimiento === 'respondio' || r.estado === 'respondio') {\n      historialPorTel[t].respondio = true;\n    }\n    const fechaRef = new Date(r.fecha_seguimiento || r.fecha_envio || 0).getTime();\n    if (fechaRef > historialPorTel[t].ultimaFecha) {\n      historialPorTel[t].ultimaFecha = fechaRef;\n    }\n  }\n} catch (e) {}\n\nconst yaBloqueados = new Set();\nfor (const [tel8, h] of Object.entries(historialPorTel)) {\n  if (h.respondio) {\n    yaBloqueados.add(tel8); // Respondio: no volver a contactar\n  } else if (h.envios >= 2) {\n    yaBloqueados.add(tel8); // Ya tuvo 2 intentos (limite maximo)\n  } else if (ahoraMs - h.ultimaFecha < SIETE_DIAS_MS) {\n    yaBloqueados.add(tel8); // Todavia no pasaron los 7 dias de enfriamiento\n  }\n}\n\nfunction primerNombreDe(raw) {\n  const s = (raw || '').toString().trim();\n  if (!s) return '';\n  if (s.includes('@')) {\n    const local = s.split('@')[0].split(/[._-]+/)[0];\n    return local ? local.charAt(0).toUpperCase() + local.slice(1).toLowerCase() : '';\n  }\n  return (s.split(' ')[0] || '').trim();\n}\n\nconst elegibles = [];\nconst vistos = new Set();\n\nfor (const item of $('Leer leads del piloto').all()) {\n  const f = normalizarFila(item.json);\n\n  const empresa = campo(f, 'Empresa', 'Nombre Oportunidad');\n  const nombre  = campo(f, 'Contacto', 'Nombre', 'Nombre KDM (SDR)');\n  const pais    = campo(f, 'Pais', 'Pais(*)');\n  const calif   = campo(f, 'Calificacion');\n\n  if (SOLO_VERDES && calif && !calif.toLowerCase().startsWith('verde')) continue;\n\n  const tel = normalizarTel(\n    campo(f, 'Telefono Normalizado', 'Telefono', 'Whatsapp KDM'), pais);\n  if (!tel) continue;\n\n  const cola = tel.slice(-8);\n  if (yaBloqueados.has(cola) || vistos.has(cola)) continue;\n  vistos.add(cola);\n\n  const empresaDisplay = (!empresa || empresa.includes('@')) ? (nombre || 'tu empresa') : empresa;\n  const primerNombre = campo(f, 'Primer Nombre')\n    || primerNombreDe(nombre)\n    || empresaDisplay;\n\n  const ownerNombre = 'Nicolás González';\n  const primerNombreOwner = 'Nico';\n\n  let motivo = campo(f, 'Motivo Perdida', 'Motivo Lost').replace(/\\s+/g, ' ').trim();\n  if (motivo.length > 600) motivo = motivo.slice(0, 600) + '…';\n\n  const cicloActual = (historialPorTel[cola]?.envios || 0) + 1;\n\n  elegibles.push({ json: {\n    notion_page_id: campo(f, 'notion id', 'notion page id'),\n    nombre: nombre || primerNombre,\n    primer_nombre: primerNombre,\n    empresa: empresaDisplay,\n    telefono: tel,\n    telefono_e164: '+' + tel,\n    motivo_perdida: motivo,\n    sistema: campo(f, 'Sistema Actual', 'Sistema', 'Que sistema usan?(*)'),\n    pais: pais,\n    email: campo(f, 'Email'),\n    owner: ownerNombre,\n    primer_nombre_owner: primerNombreOwner,\n    origen: campo(f, 'Origen'),\n    cantidad_facturas: campo(f, 'Facturas Mes', 'Cantidad de facturas', 'Cantidad de facturas(*)'),\n    company_size: campo(f, 'Company Size'),\n    fecha_discovery: campo(f, 'Fecha Discovery').slice(0, 10),\n    fecha_reunion: campo(f, 'Fecha Reunion', 'Fecha Primera Reunion').slice(0, 10),\n    fecha_propuesta: campo(f, 'Fecha Propuesta', 'Fecha Envio Propuesta').slice(0, 10),\n    dias_desde_perdida: campo(f, 'Dias desde Perdida'),\n    hubo_reunion: campo(f, 'Hubo Reunion'),\n    link_discovery: campo(f, 'Link Discovery', 'Link a Discovery(*)'),\n    calificacion: calif,\n    ciclo: cicloActual\n  } });\n}\n\nreturn elegibles.slice(0, LIMITE);\n"
       },
       "id": "e4fccd99-50c8-4533-9a48-135eb0421ce9",
       "name": "Filtrar elegibles y armar tanda",
@@ -326,7 +326,7 @@
             "fecha_reunion": "={{ $('Resolver contact_id').item.json.fecha_reunion }}",
             "dias_desde_perdida": "={{ $('Resolver contact_id').item.json.dias_desde_perdida }}",
             "hubo_reunion": "={{ $('Resolver contact_id').item.json.hubo_reunion }}",
-            "seguimiento": "pendiente"
+            "seguimiento": ""
           },
           "matchingColumns": [
             "telefono"
@@ -524,8 +524,8 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
-        2208,
-        1360
+        2220,
+        1260
       ],
       "credentials": {
         "googleSheetsOAuth2Api": {
@@ -757,6 +757,343 @@
         1984,
         1360
       ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.estado_real }}",
+              "rightValue": "enviado",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-envio-exitoso",
+      "name": "¿El envío fue exitoso?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2000,
+        1360
+      ]
+    },
+    {
+      "parameters": {
+        "method": "DELETE",
+        "url": "={{ $('Config').first().json.CHATWOOT_URL }}/api/v1/accounts/{{ $('Config').first().json.CHATWOOT_ACCOUNT_ID }}/conversations/{{ $('Chatwoot - Crear conversacion').item.json.id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          },
+          "timeout": 15000
+        }
+      },
+      "id": "delete-failed-conv",
+      "name": "Chatwoot - Borrar conversacion fallida",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2220,
+        1540
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "BjYt68eHeT61ihqb",
+          "name": "Chatwoot API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "mode": "url",
+          "value": "={{ $('Config').first().json.WA_SHEET_URL }}"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Enviados WA"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "telefono": "={{ $('Resolver contact_id').item.json.telefono }}",
+            "nombre": "={{ $('Resolver contact_id').item.json.nombre }}",
+            "empresa": "={{ $('Resolver contact_id').item.json.empresa }}",
+            "motivo_perdida": "={{ $('Resolver contact_id').item.json.motivo_perdida }}",
+            "sistema": "={{ $('Resolver contact_id').item.json.sistema }}",
+            "notion_page_id": "={{ $('Resolver contact_id').item.json.notion_page_id }}",
+            "chatwoot_contact_id": "={{ $('Resolver contact_id').item.json.contact_id }}",
+            "chatwoot_conversation_id": "",
+            "fecha_envio": "={{ $now.toISO() }}",
+            "estado": "={{ $('Determinar estado real del envio').item.json.estado_real }}",
+            "pais": "={{ $('Resolver contact_id').item.json.pais }}",
+            "email": "={{ $('Resolver contact_id').item.json.email }}",
+            "fecha_propuesta": "={{ $('Resolver contact_id').item.json.fecha_propuesta }}",
+            "calificacion": "={{ $('Resolver contact_id').item.json.calificacion }}",
+            "owner": "={{ $('Resolver contact_id').item.json.owner }}",
+            "cantidad_facturas": "={{ $('Resolver contact_id').item.json.cantidad_facturas }}",
+            "fecha_discovery": "={{ $('Resolver contact_id').item.json.fecha_discovery }}",
+            "fecha_reunion": "={{ $('Resolver contact_id').item.json.fecha_reunion }}",
+            "dias_desde_perdida": "={{ $('Resolver contact_id').item.json.dias_desde_perdida }}",
+            "hubo_reunion": "={{ $('Resolver contact_id').item.json.hubo_reunion }}",
+            "seguimiento": "cancelado"
+          },
+          "matchingColumns": [
+            "telefono"
+          ],
+          "schema": [
+            {
+              "id": "telefono",
+              "displayName": "telefono",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "nombre",
+              "displayName": "nombre",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "empresa",
+              "displayName": "empresa",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "motivo_perdida",
+              "displayName": "motivo_perdida",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "sistema",
+              "displayName": "sistema",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "pais",
+              "displayName": "pais",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "owner",
+              "displayName": "owner",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "cantidad_facturas",
+              "displayName": "cantidad_facturas",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "fecha_discovery",
+              "displayName": "fecha_discovery",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "fecha_reunion",
+              "displayName": "fecha_reunion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "fecha_propuesta",
+              "displayName": "fecha_propuesta",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "dias_desde_perdida",
+              "displayName": "dias_desde_perdida",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "hubo_reunion",
+              "displayName": "hubo_reunion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "calificacion",
+              "displayName": "calificacion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "notion_page_id",
+              "displayName": "notion_page_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "chatwoot_contact_id",
+              "displayName": "chatwoot_contact_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "chatwoot_conversation_id",
+              "displayName": "chatwoot_conversation_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "fecha_envio",
+              "displayName": "fecha_envio",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "estado",
+              "displayName": "estado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "seguimiento",
+              "displayName": "seguimiento",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "mark-error-sheet",
+      "name": "Marcar error en Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        2440,
+        1540
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "sgEH8OTRXcjJiTTc",
+          "name": "SheetCuentaSantiago"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "30 9 * * 2,3,4"
+            }
+          ]
+        }
+      },
+      "id": "sched-trigger-930",
+      "name": "Disparo Martes Miércoles Jueves 9:30hs",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -1152,
+        1280
+      ]
     }
   ],
   "connections": {
@@ -870,7 +1207,7 @@
       "main": [
         [
           {
-            "node": "Chatwoot - Etiquetar piloto",
+            "node": "Esperar entre envios",
             "type": "main",
             "index": 0
           }
@@ -970,7 +1307,58 @@
       "main": [
         [
           {
+            "node": "¿El envío fue exitoso?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿El envío fue exitoso?": {
+      "main": [
+        [
+          {
             "node": "Marcar como enviado",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Chatwoot - Borrar conversacion fallida",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chatwoot - Borrar conversacion fallida": {
+      "main": [
+        [
+          {
+            "node": "Marcar error en Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Marcar error en Sheet": {
+      "main": [
+        [
+          {
+            "node": "Esperar entre envios",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Disparo Martes Miércoles Jueves 9:30hs": {
+      "main": [
+        [
+          {
+            "node": "Config",
             "type": "main",
             "index": 0
           }
@@ -981,6 +1369,7 @@
   "settings": {
     "executionOrder": "v1",
     "binaryMode": "separate",
-    "availableInMCP": false
+    "availableInMCP": false,
+    "timezone": "America/Argentina/Buenos_Aires"
   }
 }

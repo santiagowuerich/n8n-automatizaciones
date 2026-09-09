@@ -3,12 +3,12 @@
   "name": "Closed Lost WhatsApp — 3. Seguimiento automático vía Cron",
   "description": null,
   "active": true,
-  "activeVersionId": "a05c174f-14c4-4eb4-b528-1d410330db4f",
+  "activeVersionId": "5e136148-4e02-4bc8-a7b2-7802f2d16699",
   "createdAt": "2026-08-21T18:49:31.010Z",
-  "updatedAt": "2026-09-08T12:12:43.706Z",
+  "updatedAt": "2026-08-27T22:40:08.472Z",
   "isArchived": false,
-  "versionId": "a05c174f-14c4-4eb4-b528-1d410330db4f",
-  "versionCounter": 12,
+  "versionId": "5e136148-4e02-4bc8-a7b2-7802f2d16699",
+  "versionCounter": 11,
   "sourceWorkflowId": null,
   "triggerCount": 1,
   "nodes": [
@@ -18,12 +18,12 @@
           "interval": [
             {
               "field": "cronExpression",
-              "expression": "*/5 9-19 * * 1-5"
+              "expression": "*/30 9-19 * * 1-5"
             }
           ]
         }
       },
-      "name": "Cron de Seguimiento (cada 5 min)",
+      "name": "Cron de Seguimiento (cada 30 min)",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
       "position": [
@@ -34,7 +34,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Configuración centralizada de Seguimiento\nreturn [{ json: {\n  CHATWOOT_URL: 'https://chatwoot.xtract.app',\n  CHATWOOT_ACCOUNT_ID: '1',\n  WA_SHEET_URL: 'https://docs.google.com/spreadsheets/d/1w6wVAuYmHjI8Fk4b3S1VLxAcgSSQkUjHOTrE1enmaP8/edit',\n  WA_SEGUIMIENTO_ESPERA_MIN: 15, // 15 minutos\n  WA_SEGUIMIENTO_NAME: 'reactivacion_closed_lost_seguimiento',\n  WA_SEGUIMIENTO_LANG: 'es_AR',\n  WA_SEGUIMIENTO_PREVIEW: 'Nos juntamos hace un tiempo cuando en {{1}} estaban buscando automatizar el ingreso de facturas en {{2}}. Quería saber cómo vienen con ese proceso, si ya encontraron alguna forma de automatizarlo o si lo siguen haciendo de forma manual.'\n} }];"
+        "jsCode": "// Configuración centralizada de Seguimiento\nreturn [{ json: {\n  CHATWOOT_URL: 'https://chatwoot.xtract.app',\n  CHATWOOT_ACCOUNT_ID: '1',\n  WA_SHEET_URL: 'https://docs.google.com/spreadsheets/d/1w6wVAuYmHjI8Fk4b3S1VLxAcgSSQkUjHOTrE1enmaP8/edit',\n  WA_SEGUIMIENTO_ESPERA_MIN: 180, // 3 horas\n  WA_SEGUIMIENTO_NAME: 'reactivacion_closed_lost_seguimiento',\n  WA_SEGUIMIENTO_LANG: 'es_AR',\n  WA_SEGUIMIENTO_PREVIEW: 'Nos juntamos hace un tiempo cuando en {{1}} estaban buscando automatizar el ingreso de facturas en {{2}}. Quería saber cómo vienen con ese proceso, si ya encontraron alguna forma de automatizarlo o si lo siguen haciendo de forma manual.'\n} }];"
       },
       "name": "Config",
       "type": "n8n-nodes-base.code",
@@ -426,6 +426,17 @@
     }
   ],
   "connections": {
+    "Cron de Seguimiento (cada 30 min)": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "Config": {
       "main": [
         [
@@ -561,17 +572,6 @@
           }
         ]
       ]
-    },
-    "Cron de Seguimiento (cada 5 min)": {
-      "main": [
-        [
-          {
-            "node": "Config",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
     }
   },
   "nodeGroups": [],
@@ -581,14 +581,6 @@
   },
   "staticData": {
     "node:Cron de Seguimiento (cada 30 min)": {
-      "recurrenceRules": [
-        null
-      ],
-      "recurrenceRuleSignatures": [
-        null
-      ]
-    },
-    "node:Cron de Seguimiento (cada 5 min)": {
       "recurrenceRules": [
         null
       ],
@@ -621,7 +613,7 @@
     }
   ],
   "activeVersion": {
-    "versionId": "a05c174f-14c4-4eb4-b528-1d410330db4f",
+    "versionId": "5e136148-4e02-4bc8-a7b2-7802f2d16699",
     "workflowId": "KYqttVyQPTvG8xg6",
     "nodes": [
       {
@@ -630,12 +622,12 @@
             "interval": [
               {
                 "field": "cronExpression",
-                "expression": "*/5 9-19 * * 1-5"
+                "expression": "*/30 9-19 * * 1-5"
               }
             ]
           }
         },
-        "name": "Cron de Seguimiento (cada 5 min)",
+        "name": "Cron de Seguimiento (cada 30 min)",
         "type": "n8n-nodes-base.scheduleTrigger",
         "typeVersion": 1.2,
         "position": [
@@ -646,7 +638,7 @@
       },
       {
         "parameters": {
-          "jsCode": "// Configuración centralizada de Seguimiento\nreturn [{ json: {\n  CHATWOOT_URL: 'https://chatwoot.xtract.app',\n  CHATWOOT_ACCOUNT_ID: '1',\n  WA_SHEET_URL: 'https://docs.google.com/spreadsheets/d/1w6wVAuYmHjI8Fk4b3S1VLxAcgSSQkUjHOTrE1enmaP8/edit',\n  WA_SEGUIMIENTO_ESPERA_MIN: 15, // 15 minutos\n  WA_SEGUIMIENTO_NAME: 'reactivacion_closed_lost_seguimiento',\n  WA_SEGUIMIENTO_LANG: 'es_AR',\n  WA_SEGUIMIENTO_PREVIEW: 'Nos juntamos hace un tiempo cuando en {{1}} estaban buscando automatizar el ingreso de facturas en {{2}}. Quería saber cómo vienen con ese proceso, si ya encontraron alguna forma de automatizarlo o si lo siguen haciendo de forma manual.'\n} }];"
+          "jsCode": "// Configuración centralizada de Seguimiento\nreturn [{ json: {\n  CHATWOOT_URL: 'https://chatwoot.xtract.app',\n  CHATWOOT_ACCOUNT_ID: '1',\n  WA_SHEET_URL: 'https://docs.google.com/spreadsheets/d/1w6wVAuYmHjI8Fk4b3S1VLxAcgSSQkUjHOTrE1enmaP8/edit',\n  WA_SEGUIMIENTO_ESPERA_MIN: 180, // 3 horas\n  WA_SEGUIMIENTO_NAME: 'reactivacion_closed_lost_seguimiento',\n  WA_SEGUIMIENTO_LANG: 'es_AR',\n  WA_SEGUIMIENTO_PREVIEW: 'Nos juntamos hace un tiempo cuando en {{1}} estaban buscando automatizar el ingreso de facturas en {{2}}. Quería saber cómo vienen con ese proceso, si ya encontraron alguna forma de automatizarlo o si lo siguen haciendo de forma manual.'\n} }];"
         },
         "name": "Config",
         "type": "n8n-nodes-base.code",
@@ -1038,6 +1030,17 @@
       }
     ],
     "connections": {
+      "Cron de Seguimiento (cada 30 min)": {
+        "main": [
+          [
+            {
+              "node": "Config",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
       "Config": {
         "main": [
           [
@@ -1173,17 +1176,6 @@
             }
           ]
         ]
-      },
-      "Cron de Seguimiento (cada 5 min)": {
-        "main": [
-          [
-            {
-              "node": "Config",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
       }
     },
     "nodeGroups": [],
@@ -1191,16 +1183,16 @@
     "name": null,
     "description": null,
     "autosaved": false,
-    "createdAt": "2026-09-08T12:12:43.715Z",
-    "updatedAt": "2026-09-08T12:12:43.715Z",
+    "createdAt": "2026-08-27T22:40:08.479Z",
+    "updatedAt": "2026-08-27T22:40:08.479Z",
     "workflowPublishHistory": [
       {
-        "id": 2347,
+        "id": 1999,
         "workflowId": "KYqttVyQPTvG8xg6",
-        "versionId": "a05c174f-14c4-4eb4-b528-1d410330db4f",
+        "versionId": "5e136148-4e02-4bc8-a7b2-7802f2d16699",
         "event": "activated",
         "userId": "aa64b914-db8b-4587-b15e-b195296be28f",
-        "createdAt": "2026-09-08T12:12:43.868Z"
+        "createdAt": "2026-08-27T22:40:08.676Z"
       }
     ]
   }

@@ -1,0 +1,14 @@
+{
+  "name": "numvalidate-service",
+  "version": "1.0.0",
+  "description": "High-performance Phone Number Validation & Intelligence API powered by libphonenumber",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "google-libphonenumber": "^3.2.40",
+    "cors": "^2.8.5"
+  }
+}

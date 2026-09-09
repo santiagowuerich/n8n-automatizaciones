@@ -17,7 +17,7 @@
         "options": { "fileType": "application/vnd.google-apps.document" }
       },
       "credentials": {
-        "googleDriveOAuth2Api": { "id": "REEMPLAZAR_CREDENCIAL_DRIVE", "name": "REEMPLAZAR_CREDENCIAL_DRIVE" }
+        "googleDriveOAuth2Api": { "id": "2nHeE2yjp5ghofd4", "name": "Xtract cred-santiagow" }
       }
     },
     {
@@ -35,7 +35,7 @@
         "options": { "fileType": "application/vnd.google-apps.document" }
       },
       "credentials": {
-        "googleDriveOAuth2Api": { "id": "REEMPLAZAR_CREDENCIAL_DRIVE", "name": "REEMPLAZAR_CREDENCIAL_DRIVE" }
+        "googleDriveOAuth2Api": { "id": "2nHeE2yjp5ghofd4", "name": "Xtract cred-santiagow" }
       }
     },
     {
@@ -53,7 +53,7 @@
         "options": { "fileType": "application/vnd.google-apps.document" }
       },
       "credentials": {
-        "googleDriveOAuth2Api": { "id": "REEMPLAZAR_CREDENCIAL_DRIVE", "name": "REEMPLAZAR_CREDENCIAL_DRIVE" }
+        "googleDriveOAuth2Api": { "id": "2nHeE2yjp5ghofd4", "name": "Xtract cred-santiagow" }
       }
     },
     {
@@ -120,7 +120,7 @@
         "options": { "googleFileConversion": { "conversion": { "docsToFormat": "text/plain" } } }
       },
       "credentials": {
-        "googleDriveOAuth2Api": { "id": "REEMPLAZAR_CREDENCIAL_DRIVE", "name": "REEMPLAZAR_CREDENCIAL_DRIVE" }
+        "googleDriveOAuth2Api": { "id": "2nHeE2yjp5ghofd4", "name": "Xtract cred-santiagow" }
       }
     },
     {
@@ -147,10 +147,7 @@
       "name": "Detectar ejecutivo comercial",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        320,
-        688
-      ],
+      "position": [320, 688],
       "parameters": {
         "mode": "runOnceForAllItems",
         "jsCode": "// Roster de ejecutivos comerciales de Xtract, tal como figuran en el CRM.\n// Editar ACA si alguien entra o sale del equipo (unico lugar).\nconst EJECUTIVOS = [\n  { nombre: 'Nicolás Gonzalez', cuentas: 394 },\n  { nombre: 'Juan Alvarez', cuentas: 127 },\n  { nombre: 'Tomas Marconi', cuentas: 60 },\n  { nombre: 'Jesús De Gruttola', cuentas: 26 },\n  { nombre: 'Damian Deggeller', cuentas: 16 },\n  { nombre: 'Matías Febré', cuentas: 3 },\n  { nombre: 'Wenceslao Hoepner', cuentas: 1 },\n  { nombre: 'Jesús Soria', cuentas: 0 }\n];\n\n// Particulas que no aportan a la identidad del nombre.\nconst PARTICULAS = ['de', 'del', 'la', 'las', 'los', 'da', 'di', 'van', 'von', 'san'];\n\n// Los notetakers entran como un asistente mas: hay que descartarlos.\nconst BOTS = /notetaker|fathom|otter|fireflies|companion|read ai|grabador|transcriptor|\\bbot\\b/i;\n\n// Normalizacion estandar del repo: NFD, sin acentos, minusculas, espacios colapsados.\nfunction normKey(s) {\n  return (s || '').toString()\n    .normalize('NFD').replace(/[\\u0300-\\u036f]/g, '')\n    .toLowerCase()\n    .replace(/[^a-z0-9\\s]/g, ' ')\n    .replace(/\\s+/g, ' ')\n    .trim();\n}\n\nfunction tokens(s) {\n  return normKey(s).split(' ').filter(t => t && PARTICULAS.indexOf(t) === -1);\n}\n\n// Coincide si TODOS los tokens del ejecutivo estan en el candidato.\n// Asi \"Juan Alvarez\" matchea \"Juan Alvarez (Xtract)\" pero no \"Juan Perez\".\nfunction coincide(ejecutivo, candidato) {\n  const tokensEjecutivo = tokens(ejecutivo);\n  const tokensCandidato = tokens(candidato);\n  if (tokensEjecutivo.length < 2 || !tokensCandidato.length) return false;\n  return tokensEjecutivo.every(t => tokensCandidato.indexOf(t) !== -1);\n}\n\n// Nombres de la seccion \"Asistentes\" (separados por coma).\nfunction listarAsistentes(str) {\n  return (str || '')\n    .split(',')\n    .map(s => s.trim())\n    .filter(s => s && !BOTS.test(s));\n}\n\n// Quien habla en el cuerpo: lineas con formato \"Nombre Apellido: texto\".\nfunction contarIntervenciones(texto) {\n  const conteo = {};\n  (texto || '').split('\\n').forEach((linea) => {\n    const m = linea.match(/^([^:]{2,60}):\\s/);\n    if (!m) return;\n    const nombre = m[1].trim();\n    if (BOTS.test(nombre)) return;\n    conteo[nombre] = (conteo[nombre] || 0) + 1;\n  });\n  return conteo;\n}\n\nconst salida = [];\n\n$input.all().forEach((item) => {\n  const meta = item.json || {};\n  const asistentes = listarAsistentes(meta.participantes);\n  const intervenciones = contarIntervenciones(meta.transcripcion_texto);\n  const hablantes = Object.keys(intervenciones);\n\n  const detectados = [];\n  EJECUTIVOS.forEach((ej) => {\n    const enAsistentes = asistentes.some(a => coincide(ej.nombre, a));\n    const hablante = hablantes.find(h => coincide(ej.nombre, h));\n    if (!enAsistentes && !hablante) return;\n    detectados.push({\n      nombre: ej.nombre,\n      cuentas: ej.cuentas,\n      en_asistentes: enAsistentes,\n      intervenciones: hablante ? intervenciones[hablante] : 0\n    });\n  });\n\n  // El principal es el que mas hablo; si nadie hablo, el de mas cuentas asignadas.\n  detectados.sort((a, b) => (b.intervenciones - a.intervenciones) || (b.cuentas - a.cuentas));\n\n  const nombres = detectados.map(d => d.nombre);\n\n  salida.push({ json: Object.assign({}, meta, {\n    ejecutivo: nombres[0] || 'Sin identificar',\n    ejecutivos: nombres.join(', '),\n    ejecutivos_detalle: detectados,\n    ejecutivo_identificado: detectados.length > 0\n  }) });\n});\n\nreturn salida;"
@@ -163,7 +160,7 @@
       "typeVersion": 2,
       "position": [544, 688],
       "parameters": {
-        "jsCode": "const MAX = 40000;\n\n// Base de conocimiento de Xtract. La IA la da por SABIDA: no puede pedirle al\n// cliente nada que ya este resuelto aca.\n// Fuente editable: clientes/xtract/base-conocimiento.md -- si cambia alla,\n// hay que replicar el cambio aca.\nconst BASE_CONOCIMIENTO = [\n  'QUE ES XTRACT',\n  'Plataforma SaaS 100% en la nube, con IA, para automatizar el procesamiento de facturas de COMPRA, flujos de aprobacion y gestion de gastos corporativos. Elimina el tipeo manual, reduce errores de digitacion, evita pagos duplicados y acelera la contabilizacion en el ERP SIN modificar el sistema contable existente.',\n  '',\n  'METRICAS',\n  '- Reduccion de costos administrativos: hasta 40%.',\n  '- Ahorro de tiempo: hasta 110 horas mensuales por empresa.',\n  '- Velocidad: hasta 100 facturas por segundo.',\n  '- Implementacion estandar: 5 dias habiles.',\n  '',\n  'MODULOS',\n  '1. Contabilizacion automatica de facturas: ingesta por redireccion de correo desde las casillas de proveedores (Gmail u Outlook), se configura en menos de 10 minutos. Lee con IA facturas de compra en PDF sin importar diseno, pais, moneda ni idioma. Extrae emisor/receptor, numero de factura, fechas, importes, impuestos, items de detalle, ordenes de compra, cuentas contables, centros de costo y dimensiones. Repositorio digital ilimitado con busqueda avanzada. Exporta en archivos planos (CSV, TXT, XLS) o integra por API REST.',\n  '2. Flujo de aprobacion: 100% digital, web y movil. Ruteo automatico a los responsables segun reglas predefinidas, recordatorios automaticos y trazabilidad completa de estados y motivos.',\n  '3. Gestion de gastos: app iOS y Android, rendicion por foto del comprobante, reportes automaticos e integracion contable con el ERP.',\n  '',\n  'INTEGRACIONES',\n  '- ERPs: conexion nativa con SAP, Microsoft Dynamics 365, Oracle y NetSuite, y con cualquier ERP local o desarrollo a medida.',\n  '- API REST publica con SDKs oficiales (Ruby, NodeJS, Java) y sincronizacion bidireccional en tiempo real.',\n  '- Archivos planos CSV, TXT o XLS adaptados a la estructura exacta de importacion del ERP del cliente.',\n  '- BI: Power BI y Tableau.',\n  '- Estudios contables: funcionalidad multicuenta para gestionar varios clientes.',\n  '',\n  'LO QUE NO ESTA DEFINIDO (no afirmar nada de esto, derivar al equipo comercial)',\n  '- Precios: no hay tarifas publicas, la cotizacion es a medida.',\n  '- Formatos que no sean PDF: la ingesta directa de JPG, PNG o XML no esta confirmada.',\n  '- Limites de API o cuotas de consumo: no estan publicados.'\n].join('\\n');\n\n// Errores concretos observados en corridas reales. Cada regla existe porque la IA\n// ya se equivoco de esa forma.\nconst REGLAS = [\n  'NO le pidas al cliente una factura de ejemplo para verificar si Xtract puede leerla. Xtract lee cualquier factura de compra en PDF sin importar el diseno, el pais, la moneda ni el idioma: no hace falta una muestra para confirmarlo, y pedirla da la impresion de que no sabemos si funciona.',\n  'NO le pidas nada que ya este respondido en la BASE DE CONOCIMIENTO. Si el dato esta ahi, ya lo sabemos.',\n  'NO pidas la version exacta del ERP como si de eso dependiera la compatibilidad. Xtract integra con cualquier ERP por API REST o archivo plano. Preguntar por el ERP sirve solo para definir el METODO de integracion, no para saber si se puede.',\n  'NO menciones precios, planes, descuentos ni plazos de contrato. Si el cliente los pidio en la reunion, el proximo paso es que se los pase el equipo comercial.',\n  'NO prometas soporte de formatos que no sean PDF, ni limites de volumen o de API.',\n  'NO inventes fechas, nombres ni compromisos que no esten dichos en la transcripcion.',\n  'Pedi UNICAMENTE lo que quedo explicitamente pendiente en la llamada o lo que hace falta para avanzar al proximo paso concreto (por ejemplo: a que ERP integran y por que via, volumen mensual de facturas para dimensionar, quien es el referente de Sistemas, o el dato puntual que el cliente quedo en confirmar).'\n].map((r, i) => (i + 1) + '. ' + r).join('\\n');\n\nconst salida = [];\n\n$input.all().forEach((item) => {\n  const meta = item.json || {};\n  const transcripcion = meta.transcripcion_texto || '';\n  if (!transcripcion.trim()) return;\n  const transcripcionRecortada = transcripcion.slice(0, MAX);\n\n  const prompt = 'Sos un asistente que ayuda a preparar el seguimiento de una reunion comercial en espanol neutro.\\n\\n' +\n    'Trabajas para Xtract. Esto es lo que YA SABEMOS de nuestro propio producto:\\n\\n' +\n    '=== BASE DE CONOCIMIENTO ===\\n' + BASE_CONOCIMIENTO + '\\n=== FIN BASE DE CONOCIMIENTO ===\\n\\n' +\n    'Reunion: ' + (meta.titulo || '') + '\\n' +\n    'Area: ' + (meta.area || '') + '\\n' +\n    'Participantes: ' + (meta.participantes || '') + '\\n' +\n    'Ejecutivo comercial de Xtract en la reunion: ' + (meta.ejecutivo || 'sin identificar') + '\\n\\n' +\n    'TRANSCRIPCION:\\n' + transcripcionRecortada + '\\n\\n' +\n    'El objetivo NO es una minuta interna. Es un mensaje LISTO PARA ENVIARLE AL CLIENTE apenas termina la reunion. Completa estos campos:\\n' +\n    '- recap: 2 o 3 oraciones en tono cordial recapitulando lo hablado, escritas como si se las mandaramos directamente al cliente (sin jerga interna, sin nombrar procesos internos nuestros).\\n' +\n    '- informacion_necesaria: bullets con la informacion que necesitamos QUE EL CLIENTE NOS PASE para avanzar. Array vacio si no quedo nada pendiente de pedir; un array vacio es mejor que un pedido inventado o que uno que ya sabemos responder.\\n' +\n    '- proximo_paso: una frase con el proximo paso acordado con el cliente (por ejemplo coordinar una segunda reunion, y la fecha si se menciono).\\n\\n' +\n    'REGLAS OBLIGATORIAS:\\n' + REGLAS + '\\n\\n' +\n    'Se concreto y basate solo en lo que esta en la transcripcion y en la base de conocimiento. No inventes nada.';\n\n  salida.push({ json: {\n    area: meta.area,\n    slackChannel: meta.slackChannel,\n    evento_id: meta.evento_id,\n    titulo: meta.titulo,\n    fin: meta.fin,\n    participantes: meta.participantes,\n    ejecutivo: meta.ejecutivo,\n    ejecutivos: meta.ejecutivos,\n    ejecutivo_identificado: meta.ejecutivo_identificado,\n    prompt: prompt\n  } });\n});\n\nreturn salida;"
+        "jsCode": "const MAX = 40000;\n\n// Base de conocimiento de Xtract. La IA la da por SABIDA: no puede pedirle al\n// cliente nada que ya este resuelto aca.\n// Fuente editable: clientes/xtract/base-conocimiento.md -- si cambia alla,\n// hay que replicar el cambio aca.\nconst BASE_CONOCIMIENTO = [\n  'QUE ES XTRACT',\n  'Plataforma SaaS 100% en la nube, con IA, para automatizar el procesamiento de facturas de COMPRA, flujos de aprobacion y gestion de gastos corporativos. Elimina el tipeo manual, reduce errores de digitacion, evita pagos duplicados y acelera la contabilizacion en el ERP SIN modificar el sistema contable existente.',\n  '',\n  'METRICAS',\n  '- Reduccion de costos administrativos: hasta 40%.',\n  '- Ahorro de tiempo: hasta 110 horas mensuales por empresa.',\n  '- Velocidad: hasta 100 facturas por segundo.',\n  '- Implementacion estandar: 5 dias habiles.',\n  '',\n  'MODULOS',\n  '1. Contabilizacion automatica de facturas: ingesta por redireccion de correo desde las casillas de proveedores (Gmail u Outlook), se configura en menos de 10 minutos. Lee con IA facturas de compra en PDF sin importar diseno, pais, moneda ni idioma. Extrae emisor/receptor, numero de factura, fechas, importes, impuestos, items de detalle, ordenes de compra, cuentas contables, centros de costo y dimensiones. Repositorio digital ilimitado con busqueda avanzada. Exporta en archivos planos (CSV, TXT, XLS) o integra por API REST.',\n  '2. Flujo de aprobacion: 100% digital, web y movil. Ruteo automatico a los responsables segun reglas predefinidas, recordatorios automaticos y trazabilidad completa de estados y motivos.',\n  '3. Gestion de gastos: app iOS y Android, rendicion por foto del comprobante, reportes automaticos e integracion contable con el ERP.',\n  '',\n  'INTEGRACIONES',\n  '- ERPs: conexion nativa con SAP, Microsoft Dynamics 365, Oracle y NetSuite, y con cualquier ERP local o desarrollo a medida.',\n  '- API REST publica con SDKs oficiales (Ruby, NodeJS, Java) y sincronizacion bidireccional en tiempo real.',\n  '- Archivos planos CSV, TXT o XLS adaptados a la estructura exacta de importacion del ERP del cliente.',\n  '- BI: Power BI y Tableau.',\n  '- Estudios contables: funcionalidad multicuenta para gestionar varios clientes.',\n  '',\n  'LO QUE NO ESTA DEFINIDO (no afirmar nada de esto, derivar al equipo comercial)',\n  '- Precios: no hay tarifas publicas, la cotizacion es a medida.',\n  '- Formatos que no sean PDF: la ingesta directa de JPG, PNG o XML no esta confirmada.',\n  '- Limites de API o cuotas de consumo: no estan publicados.'\n].join('\\n');\n\n// Errores concretos observados en corridas reales. Cada regla existe porque la IA\n// ya se equivoco de esa forma.\nconst REGLAS = [\n  'NO le pidas al cliente una factura de ejemplo para verificar si Xtract puede leerla. Xtract lee cualquier factura de compra en PDF sin importar el diseno, el pais, la moneda ni el idioma: no hace falta una muestra para confirmarlo, y pedirla da la impresion de que no sabemos si funciona.',\n  'NO le pidas nada que ya este respondido en la BASE DE CONOCIMIENTO. Si el dato esta ahi, ya lo sabemos.',\n  'NO pidas la version exacta del ERP como si de eso dependiera la compatibilidad. Xtract integra con cualquier ERP por API REST o archivo plano. Preguntar por el ERP sirve solo para definir el METODO de integracion, no para saber si se puede.',\n  'NO menciones precios, planes, descuentos ni plazos de contrato. Si el cliente los pidio en la reunion, el proximo paso es que se los pase el equipo comercial.',\n  'NO prometas soporte de formatos que no sean PDF, ni limites de volumen o de API.',\n  'NO inventes fechas, nombres ni compromisos que no esten dichos en la transcripcion.',\n  'Pedi UNICAMENTE lo que quedo explicitamente pendiente en la llamada o lo que hace falta para avanzar al proximo paso concreto (por ejemplo: a que ERP integran y por que via, volumen mensual de facturas para dimensionar, quien es el referente de Sistemas, o el dato puntual que el cliente quedo en confirmar).'\n].map((r, i) => (i + 1) + '. ' + r).join('\\n');\n\nconst salida = [];\n\n$input.all().forEach((item) => {\n  const meta = item.json || {};\n  const transcripcion = meta.transcripcion_texto || '';\n  const transcripcionRecortada = (transcripcion || '').slice(0, MAX);\n\n  const prompt = 'Sos un asistente que ayuda a preparar el seguimiento de una reunion comercial en espanol neutro.\\n\\n' +\n    'Trabajas para Xtract. Esto es lo que YA SABEMOS de nuestro propio producto:\\n\\n' +\n    '=== BASE DE CONOCIMIENTO ===\\n' + BASE_CONOCIMIENTO + '\\n=== FIN BASE DE CONOCIMIENTO ===\\n\\n' +\n    'Reunion: ' + (meta.titulo || '') + '\\n' +\n    'Area: ' + (meta.area || '') + '\\n' +\n    'Participantes: ' + (meta.participantes || '') + '\\n' +\n    'Ejecutivo comercial de Xtract en la reunion: ' + (meta.ejecutivo || 'sin identificar') + '\\n\\n' +\n    'TRANSCRIPCION:\\n' + (transcripcionRecortada || '(Sin transcripcion provista)') + '\\n\\n' +\n    'El objetivo NO es una minuta interna. Es un mensaje LISTO PARA ENVIARLE AL CLIENTE apenas termina la reunion. Completa estos campos:\\n' +\n    '- recap: 2 o 3 oraciones en tono cordial recapitulando lo hablado, escritas como si se las mandaramos directamente al cliente (sin jerga interna, sin nombrar procesos internos nuestros).\\n' +\n    '- informacion_necesaria: bullets con la informacion que necesitamos QUE EL CLIENTE NOS PASE para avanzar. Array vacio si no quedo nada pendiente de pedir; un array vacio es mejor que un pedido inventado o que uno que ya sabemos responder.\\n' +\n    '- proximo_paso: una frase con el proximo paso acordado con el cliente (por ejemplo coordinar una segunda reunion, y la fecha si se menciono).\\n\\n' +\n    'REGLAS OBLIGATORIAS:\\n' + REGLAS + '\\n\\n' +\n    'Se concreto y basate solo en lo que esta en la transcripcion y en la base de conocimiento. No inventes nada.';\n\n  salida.push({ json: {\n    area: meta.area,\n    slackChannel: meta.slackChannel,\n    evento_id: meta.evento_id,\n    titulo: meta.titulo,\n    fin: meta.fin,\n    participantes: meta.participantes,\n    ejecutivo: meta.ejecutivo,\n    ejecutivos: meta.ejecutivos,\n    ejecutivo_identificado: meta.ejecutivo_identificado,\n    prompt: prompt\n  } });\n});\n\nreturn salida;"
       }
     },
     {
@@ -176,13 +173,13 @@
     },
     {
       "id": "715ffe1f-49fa-4f9a-b385-93761467663a",
-      "name": "Google Gemini Chat Model",
-      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
-      "typeVersion": 1.1,
+      "name": "DeepSeek Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatDeepSeek",
+      "typeVersion": 1,
       "position": [848, 912],
-      "parameters": { "modelName": "models/gemini-2.5-flash", "options": {} },
+      "parameters": { "model": "deepseek-chat", "options": { "temperature": 0.2 } },
       "credentials": {
-        "googlePalmApi": { "id": "REEMPLAZAR_CREDENCIAL_GEMINI", "name": "REEMPLAZAR_CREDENCIAL_GEMINI" }
+        "deepSeekApi": { "id": "H5fC2aZoNphCCole", "name": "SantiagoApikey" }
       }
     },
     {
@@ -226,7 +223,7 @@
       },
       "onError": "continueRegularOutput",
       "credentials": {
-        "googleDriveOAuth2Api": { "id": "REEMPLAZAR_CREDENCIAL_DRIVE", "name": "REEMPLAZAR_CREDENCIAL_DRIVE" }
+        "googleDriveOAuth2Api": { "id": "2nHeE2yjp5ghofd4", "name": "Xtract cred-santiagow" }
       }
     },
     {
@@ -261,7 +258,7 @@
         }
       },
       "credentials": {
-        "slackApi": { "id": "REEMPLAZAR_CREDENCIAL_SLACK", "name": "REEMPLAZAR_CREDENCIAL_SLACK" }
+        "slackApi": { "id": "y1DaRieOF29GQnxm", "name": "Xtract notifications" }
       }
     },
     {
@@ -270,13 +267,14 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [1824, 500],
+      "disabled": true,
       "onError": "continueRegularOutput",
       "parameters": {
         "operation": "append",
         "documentId": {
           "__rl": true,
           "mode": "url",
-          "value": "={{ $env.MINUTAS_SHEET_URL || 'https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/edit' }}"
+          "value": "https://docs.google.com/spreadsheets/d/1X6hU65f9o_placeholder/edit"
         },
         "sheetName": { "__rl": true, "mode": "name", "value": "Minutas Procesadas" },
         "columns": {
@@ -296,7 +294,7 @@
         "options": {}
       },
       "credentials": {
-        "googleSheetsOAuth2Api": { "id": "REEMPLAZAR_CREDENCIAL_SHEETS", "name": "REEMPLAZAR_CREDENCIAL_SHEETS" }
+        "googleSheetsOAuth2Api": { "id": "sgEH8OTRXcjJiTTc", "name": "SheetCuentaSantiago" }
       }
     },
     {
@@ -398,7 +396,7 @@
     "Detectar ejecutivo comercial": { "main": [[{ "node": "Armar prompt de la minuta", "type": "main", "index": 0 }]] },
     "Armar prompt de la minuta": { "main": [[{ "node": "IA - Generar minuta", "type": "main", "index": 0 }]] },
     "IA - Generar minuta": { "main": [[{ "node": "Armar HTML de la minuta", "type": "main", "index": 0 }]] },
-    "Google Gemini Chat Model": { "ai_languageModel": [[{ "node": "IA - Generar minuta", "type": "ai_languageModel", "index": 0 }]] },
+    "DeepSeek Chat Model": { "ai_languageModel": [[{ "node": "IA - Generar minuta", "type": "ai_languageModel", "index": 0 }]] },
     "Parsear salida de la minuta": { "ai_outputParser": [[{ "node": "IA - Generar minuta", "type": "ai_outputParser", "index": 0 }]] },
     "Armar HTML de la minuta": { "main": [[{ "node": "Crear documento (Drive API)", "type": "main", "index": 0 }]] },
     "Crear documento (Drive API)": { "main": [[{ "node": "Formatear mensaje", "type": "main", "index": 0 }]] },

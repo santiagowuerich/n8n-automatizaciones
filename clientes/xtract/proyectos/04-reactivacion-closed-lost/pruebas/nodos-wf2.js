@@ -1,6 +1,6 @@
-// Banco de pruebas de los nodos Code de WF2 tras el refactor a tools.
 const fs = require('fs');
-const F = '/Users/santi/Downloads/marketplace-helper/n8n-automatizaciones/clientes/xtract/proyectos/04-reactivacion-closed-lost/workflows/Closed Lost WhatsApp — 2. Recepción vía Chatwoot.json';
+const path = require('path');
+const F = path.join(__dirname, '../workflows/Closed Lost WhatsApp — 2. Recepción vía Chatwoot.json');
 const w = JSON.parse(fs.readFileSync(F, 'utf8'));
 const src = nm => w.nodes.find(n => n.name === nm).parameters.jsCode;
 

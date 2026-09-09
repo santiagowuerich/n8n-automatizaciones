@@ -5,7 +5,8 @@
 // un mensaje a la persona equivocada. Por eso corre contra el CSV REAL del
 // piloto, no contra datos sinteticos.
 const fs = require('fs');
-const BASE = '/Users/santi/Downloads/marketplace-helper/n8n-automatizaciones/clientes/xtract/proyectos/04-reactivacion-closed-lost/';
+const path = require('path');
+const BASE = path.join(__dirname, '../');
 const F = BASE + 'workflows/Closed Lost WhatsApp — 1. Envío vía Chatwoot.json';
 const w = JSON.parse(fs.readFileSync(F, 'utf8'));
 const src = nm => w.nodes.find(n => n.name === nm).parameters.jsCode;

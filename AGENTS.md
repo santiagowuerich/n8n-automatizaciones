@@ -23,6 +23,11 @@ Cualquier modificación, creación, actualización, borrado, activación o desac
 2. **El agente DEBE DETENERSE y pedir confirmación expresa al usuario antes de ejecutar cualquier mutación en PROD.**
 3. **Jamás ejecutar un cambio en producción de forma autónoma o implícita.**
 
+### Disciplina de Alcance y Ejecución
+- **Sin refactors especulativos:** Modificar estrictamente lo necesario para resolver la tarea. No tocar ni reescribir lógica adyacente que ya funciona.
+- **Entorno Limpio:** Archivos temporales o scripts de prueba van en `scratch/` o se eliminan tras validar.
+- **Verificación Obligatoria:** Antes de dar por finalizada una tarea, verificar siempre con ejecuciones reales, logs y respuestas de API.
+
 ---
 
 ## Memoria Operativa (`docs/brain/`)

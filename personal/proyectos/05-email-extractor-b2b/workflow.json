@@ -1,0 +1,235 @@
+{
+  "name": "Prospector B2B — Extractor Masivo de Emails (Dorking & Web Scraper)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "extractor-emails-b2b",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "name": "Webhook Manual",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        180,
+        240
+      ],
+      "id": "node-webhook-manual"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 5
+            }
+          ]
+        }
+      },
+      "name": "Cron Cada 5 Minutos",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        180,
+        440
+      ],
+      "id": "node-cron-trigger"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Matriz de 30 Ciudades y Zonas Comerciales de Argentina con Bounding Boxes\nconst CIUDADES = [\n  { ciudad: 'Corrientes Capital', bbox: '(-27.55,-58.88,-27.43,-58.75)' },\n  { ciudad: 'Resistencia', bbox: '(-27.50,-59.05,-27.40,-58.92)' },\n  { ciudad: 'Posadas', bbox: '(-27.43,-55.98,-27.33,-55.85)' },\n  { ciudad: 'Formosa', bbox: '(-26.22,-58.25,-26.13,-58.12)' },\n  { ciudad: 'Mendoza Capital & Godoy Cruz', bbox: '(-32.95,-68.90,-32.85,-68.80)' },\n  { ciudad: 'San Miguel de Tucuman', bbox: '(-26.88,-65.28,-26.78,-65.15)' },\n  { ciudad: 'Cordoba Capital Centro', bbox: '(-31.45,-64.25,-31.35,-64.12)' },\n  { ciudad: 'Cordoba Norte & Argüello', bbox: '(-31.38,-64.30,-31.30,-64.18)' },\n  { ciudad: 'CABA Microcentro & Recoleta', bbox: '(-34.62,-58.40,-34.57,-58.35)' },\n  { ciudad: 'CABA Palermo & Belgrano', bbox: '(-34.58,-58.47,-34.53,-58.40)' },\n  { ciudad: 'CABA Caballito & Flores', bbox: '(-34.65,-58.48,-34.60,-58.42)' },\n  { ciudad: 'Salta Capital', bbox: '(-24.84,-65.46,-24.74,-65.36)' },\n  { ciudad: 'Santa Fe Capital', bbox: '(-31.68,-60.75,-31.57,-60.65)' },\n  { ciudad: 'Mar del Plata Centro', bbox: '(-38.05,-57.60,-37.95,-57.50)' },\n  { ciudad: 'Bahia Blanca', bbox: '(-38.76,-62.32,-38.66,-62.20)' },\n  { ciudad: 'La Plata', bbox: '(-34.96,-57.99,-34.88,-57.90)' },\n  { ciudad: 'GBA Norte (San Isidro & Vicente Lopez)', bbox: '(-34.53,-58.55,-34.45,-58.45)' },\n  { ciudad: 'GBA Oeste (Moron & Ramos Mejia)', bbox: '(-34.68,-58.62,-34.62,-58.54)' },\n  { ciudad: 'GBA Sur (Avellaneda & Quilmes)', bbox: '(-34.73,-58.38,-34.65,-58.25)' },\n  { ciudad: 'Parana', bbox: '(-31.78,-60.56,-31.70,-60.48)' },\n  { ciudad: 'Concordia', bbox: '(-31.42,-58.06,-31.35,-57.98)' },\n  { ciudad: 'Gualeguaychu', bbox: '(-33.04,-58.56,-32.98,-58.48)' },\n  { ciudad: 'Neuquen Capital', bbox: '(-38.98,-68.12,-38.92,-68.02)' },\n  { ciudad: 'San Juan Capital', bbox: '(-31.57,-68.57,-31.50,-68.48)' },\n  { ciudad: 'San Luis Capital', bbox: '(-33.33,-66.38,-33.26,-66.30)' },\n  { ciudad: 'Santiago del Estero', bbox: '(-27.82,-64.30,-27.74,-64.22)' },\n  { ciudad: 'San Salvador de Jujuy', bbox: '(-24.22,-65.34,-24.15,-65.26)' },\n  { ciudad: 'Bariloche', bbox: '(-41.16,-71.35,-41.10,-71.25)' },\n  { ciudad: 'Rosario Centro', bbox: '(-33.00,-60.70,-32.92,-60.62)' },\n  { ciudad: 'Tandil & Olavarria', bbox: '(-37.38,-59.20,-37.28,-59.08)' }\n];\n\n// Semilla basada en timestamp actual\nconst seed = Math.floor(Date.now() / (1000 * 60 * 5));\nconst item = CIUDADES[seed % CIUDADES.length];\n\n// Query ultrarrápida para nodes de comercios/empresas con email\nconst query = `[out:json][timeout:15];\n(\n  node[\"email\"]${item.bbox};\n  node[\"contact:email\"]${item.bbox};\n);\nout tags;`;\n\nreturn [{\n  json: {\n    query: query,\n    ciudad: item.ciudad\n  }\n}];"
+      },
+      "name": "Generar Region y Query Overpass",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        420,
+        340
+      ],
+      "id": "node-generate-queries"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "data",
+              "value": "={{ $json.query }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 45000
+        }
+      },
+      "name": "HTTP - Overpass Extractor",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        640,
+        340
+      ],
+      "id": "node-scrape-search",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.first()?.json || {};\nconst elements = raw.elements || [];\nconst meta = $('Generar Region y Query Overpass').first()?.json || {};\n\nconst leads = [];\nconst seenEmails = new Set();\n\nconst BLACKLIST = [\n  'sentry.io', 'wixpress.com', 'example.com', 'schema.org', 'googleapis.com', \n  'cloudflare.com', 'facebook.com', 'instagram.com', 'google.com', 'test@', 'support@', 'noreply@'\n];\n\nfor (const el of elements) {\n  const tags = el.tags || {};\n  const name = tags.name || tags.operator || tags.brand || '';\n  if (!name || name.length < 2) continue;\n\n  const rawEmail = tags.email || tags['contact:email'] || '';\n  if (!rawEmail || !rawEmail.includes('@')) continue;\n\n  const splitEmails = rawEmail.split(/[,;\\s]+/).filter(e => e.includes('@'));\n\n  const phone = tags.phone || tags['contact:phone'] || tags['contact:mobile'] || tags['contact:whatsapp'] || '';\n  const website = tags.website || tags['contact:website'] || tags['contact:facebook'] || tags['contact:instagram'] || '';\n  const rubro = tags.shop || tags.amenity || tags.office || tags.craft || tags.commercial || tags.tourism || 'Empresa / Comercio';\n\n  for (const e of splitEmails) {\n    const email = e.toLowerCase().trim().replace(/[.,;:]+$/, '');\n    if (email.length < 6 || email.length > 65) continue;\n    if (BLACKLIST.some(b => email.includes(b))) continue;\n    if (seenEmails.has(email)) continue;\n\n    seenEmails.add(email);\n\n    let cleanPhone = phone.replace(/\\D/g, '');\n    let displayPhone = '-';\n    let linkWa = '-';\n    if (cleanPhone.length >= 8) {\n      if (!cleanPhone.startsWith('54')) cleanPhone = '549' + cleanPhone;\n      displayPhone = '+' + cleanPhone;\n      linkWa = 'https://wa.me/' + cleanPhone;\n    }\n\n    leads.push({\n      'Nombre del Negocio': name,\n      'Email': email,\n      'Teléfono WhatsApp': displayPhone,\n      'Link WhatsApp': linkWa,\n      'Categoría / Rubro': rubro.replace(/_/g, ' '),\n      'Ciudad': meta.ciudad || 'Argentina',\n      'País': 'AR',\n      'Instagram URL': website.includes('instagram.com') ? website : '-',\n      'Tiene Sitio Web': (website && !website.includes('instagram.com') && !website.includes('facebook.com')) ? 'Sí' : 'No',\n      'Enlace / Web': website || '-',\n      'Dolor Detectado': 'Oportunidad de automatización y venta de sistemas.',\n      'Solución Propuesta': '🚀 Sistema Web / Gestión + Campaña B2B.',\n      'Estado': '🟢 Email Verificado',\n      'Fecha Extracción': new Date().toISOString().replace('T', ' ').slice(0, 16)\n    });\n  }\n}\n\nreturn leads.map(l => ({ json: l }));"
+      },
+      "name": "Parsear y Normalizar Leads con Email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        860,
+        340
+      ],
+      "id": "node-extract-emails"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.Email }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "name": "¿Hay Leads con Email?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1080,
+        340
+      ],
+      "id": "node-if-emails"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1pteXQKBYKCVewqTguWzcYm-G7cEyQVRIIUzEXkcwJi4/edit",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "leads_mails",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData"
+        },
+        "options": {}
+      },
+      "name": "Cargar en Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1300,
+        320
+      ],
+      "id": "node-append-sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "vB1bfFFyDiA59OJt",
+          "name": "Wuerich"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook Manual": {
+      "main": [
+        [
+          {
+            "node": "Generar Region y Query Overpass",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cron Cada 5 Minutos": {
+      "main": [
+        [
+          {
+            "node": "Generar Region y Query Overpass",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generar Region y Query Overpass": {
+      "main": [
+        [
+          {
+            "node": "HTTP - Overpass Extractor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP - Overpass Extractor": {
+      "main": [
+        [
+          {
+            "node": "Parsear y Normalizar Leads con Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parsear y Normalizar Leads con Email": {
+      "main": [
+        [
+          {
+            "node": "¿Hay Leads con Email?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Hay Leads con Email?": {
+      "main": [
+        [
+          {
+            "node": "Cargar en Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

@@ -1,0 +1,906 @@
+{
+  "id": "xP2LYks5hHkcmgN5",
+  "name": "Xtract - 06 Resumen Discovery Call a Slack (Borrador de Email)",
+  "description": null,
+  "active": true,
+  "activeVersionId": "62f8b784-24eb-46fd-b278-c58503fd5e85",
+  "createdAt": "2026-08-26T18:30:04.869Z",
+  "updatedAt": "2026-09-07T18:52:05.429Z",
+  "isArchived": false,
+  "versionId": "62f8b784-24eb-46fd-b278-c58503fd5e85",
+  "versionCounter": 42,
+  "sourceWorkflowId": null,
+  "triggerCount": 1,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "discovery-email-slack",
+        "responseMode": "onReceived",
+        "responseData": "allEntries",
+        "options": {}
+      },
+      "id": "node-webhook-trigger",
+      "name": "Link a discovery cargado",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -600,
+        200
+      ],
+      "webhookId": "discovery-email-slack"
+    },
+    {
+      "parameters": {
+        "jsCode": "// =====================================================================\n// FUENTE: LA CARD DE NOTION, CON EL WEBHOOK COMO RESPALDO.\n// El webhook manda solo unos pocos campos; la card tiene el resto. Si\n// Notion falla, ese nodo esta en continueRegularOutput y aca queda lo\n// que trajo el webhook, asi que el flujo no se corta por eso.\n// =====================================================================\nlet wh = {};\ntry {\n  wh = $('Link a discovery cargado').first().json || {};\n  while (wh.body && typeof wh.body === 'object') { wh = wh.body; }\n} catch (e) {}\nconst card = $input.first().json || {};\nlet raw = Object.assign({}, wh, (card && !card.error) ? card : {});\nwhile (raw.body && typeof raw.body === 'object') {\n  raw = raw.body;\n}\n\nconst props = raw.properties || {};\n\nlet linkDiscovery = \"\";\nconst getPropValue = (p) => {\n  if (!p) return \"\";\n  if (typeof p === 'string') return p;\n  if (p.url) return p.url;\n  if (p.email) return p.email;\n  if (p.rich_text && p.rich_text[0]) return p.rich_text[0].plain_text || p.rich_text[0].text?.content || \"\";\n  if (p.title && p.title[0]) return p.title[0].plain_text || p.title[0].text?.content || \"\";\n  return \"\";\n};\n\nconst notionEmails = [];\n\n// =====================================================================\n// LOS CORREOS VIENEN EN CAMPOS PLANOS, NO EN raw.properties.\n//\n// El nodo de Notion usa simple:true, asi que devuelve\n// property_email_kdm_sdr: \"edalvarez@banesco.com\" -- un string suelto.\n// El barrido de mas abajo espera el formato CRUDO de la API\n// ({email: \"...\"}), que con simple:true no existe: raw.properties viene\n// vacio y notionEmails quedaba en [] SIEMPRE. El borrador salia diciendo\n// \"(Completar emails de los interlocutores)\" con el dato ahi al lado.\n//\n// El del KDM va primero porque es el interlocutor real de la llamada.\n// =====================================================================\nconst PRIORIDAD_MAIL = ['property_email_kdm_sdr', 'property_email_2', 'property_email_facturaci_n'];\nfor (const k of PRIORIDAD_MAIL) {\n  const v = raw[k];\n  if (typeof v === 'string' && v.indexOf('@') !== -1 && v.indexOf('@xtract.app') === -1) notionEmails.push(v.trim());\n}\nfor (const [k, v] of Object.entries(raw)) {\n  if (typeof v !== 'string' || v.indexOf('@') === -1) continue;\n  if (!/mail|correo/i.test(k)) continue;\n  if (v.indexOf('@xtract.app') !== -1) continue;\n  if (notionEmails.indexOf(v.trim()) === -1) notionEmails.push(v.trim());\n}\n\nfor (const [k, v] of Object.entries(props)) {\n  if (v.email) notionEmails.push(v.email);\n  if (v.people) {\n    v.people.forEach(p => {\n      if (p.person && p.person.email && !p.person.email.includes('@xtract.app')) {\n        notionEmails.push(p.person.email);\n      }\n    });\n  }\n  if (k.toLowerCase().includes('mail') || k.toLowerCase().includes('correo') || k.toLowerCase().includes('email')) {\n    const val = getPropValue(v);\n    if (val && val.includes('@') && !val.includes('@xtract.app')) notionEmails.push(val);\n  }\n}\n\n// Buscar link de discovery en props\nfor (const [k, v] of Object.entries(props)) {\n  if (k.toLowerCase().includes('discovery') || k.toLowerCase().includes('transcrip') || k.toLowerCase().includes('drive') || k.toLowerCase().includes('doc')) {\n    const val = getPropValue(v);\n    if (val && (val.includes('drive.google.com') || val.includes('docs.google.com'))) {\n      linkDiscovery = val;\n      break;\n    }\n  }\n}\n\n// Buscar link de discovery en campos planos de raw\nif (!linkDiscovery) {\n  for (const [k, v] of Object.entries(raw)) {\n    if (typeof v === 'string' && (v.includes('drive.google.com') || v.includes('docs.google.com'))) {\n      linkDiscovery = v;\n      break;\n    }\n  }\n}\n\nlet fileId = \"\";\nconst match = (linkDiscovery || \"\").match(/\\/d\\/([a-zA-Z0-9_-]+)/);\nif (match) {\n  fileId = match[1];\n} else {\n  const matchId = (linkDiscovery || \"\").match(/id=([a-zA-Z0-9_-]+)/);\n  if (matchId) fileId = matchId[1];\n}\n\nlet empresa = \"\";\nfor (const [k, v] of Object.entries(props)) {\n  if (k.toLowerCase().includes('empresa') || k.toLowerCase().includes('name') || k.toLowerCase().includes('title') || k.toLowerCase().includes('cliente')) {\n    empresa = getPropValue(v);\n    if (empresa) break;\n  }\n}\nif (!empresa) empresa = raw.property_nombre_oportunidad || raw.empresa || raw.name || \"Cliente\";\n\n// property_owner viene de Notion como ARRAY de mails; el webhook lo manda\n// como string suelto. Se aceptan las dos formas antes de caer al default.\nconst ownerCard = Array.isArray(raw.property_owner) ? raw.property_owner[0] : raw.property_owner;\nlet ownerEmail = ownerCard || raw.owner || raw.ownerEmail || \"nicolas.gonzalez@xtract.app\";\nfor (const [k, v] of Object.entries(props)) {\n  if (k.toLowerCase().includes('owner') || k.toLowerCase().includes('responsable')) {\n    if (v.people && v.people[0] && v.people[0].person && v.people[0].person.email) {\n      ownerEmail = v.people[0].person.email;\n      break;\n    }\n  }\n}\n\nlet interlocutor = \"\";\nfor (const [k, v] of Object.entries(props)) {\n  if (k.toLowerCase().includes('contacto') || k.toLowerCase().includes('persona') || k.toLowerCase().includes('asistente')) {\n    interlocutor = getPropValue(v);\n    if (interlocutor) break;\n  }\n}\n\nconst rawId = (raw.id || raw.page_id || \"\").replace(/-/g, \"\");\nconst notionUrl = raw.url || (rawId ? (\"https://www.notion.so/\" + rawId) : \"\");\n\n// Nombre del interlocutor: segunda señal de la guarda de transcripcion.\n// Es mas confiable que el nombre de la empresa, porque la gente NO nombra\n// su propia empresa en su llamada, pero su nombre aparece en cada linea.\nconst nombreKdm = raw.property_nombre_kdm_sdr || interlocutor || \"\";\n\n// El ERP como DATO de la card, no como inferencia del modelo sobre el\n// audio. Medido: el modelo devolvio 'Subio' donde la card dice 'Xubio', y\n// 'Walbot' donde la card no tiene nada cargado.\nconst sistemaCard = raw.property_que_sistema_usan || \"\";\n\n// Volumen de facturas. Si la card NO lo tiene, el mail lo PIDE: es el dato\n// que Nicolas reclama a mano en sus mails reales (\"quedo a la espera del\n// volumen aproximado de documentos que procesan por mes\"). Medido: falta\n// en 4 de cada 12 cards con discovery.\nconst cantidadFacturas = raw.property_cantidad_de_facturas || \"\";\n\nconst transcripcion = raw.transcripcion || \"\";\nreturn [{ json: {\n  transcripcion,\n  fileId,\n  linkDiscovery,\n  empresa,\n  interlocutor,\n  nombreKdm,\n  sistemaCard,\n  cantidadFacturas,\n  ownerEmail,\n  notionUrl,\n  notionEmails,\n  raw\n} }];"
+      },
+      "id": "node-extraer-datos",
+      "name": "Code - Extraer Datos",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -380,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "useJson": true,
+        "claimsJson": "={\n  \"iss\": \"transcript-docs-reader@transcripts-reader.iam.gserviceaccount.com\",\n  \"sub\": \"{{ $json.ownerEmail }}\",\n  \"scope\": \"https://www.googleapis.com/auth/drive.readonly\",\n  \"aud\": \"https://oauth2.googleapis.com/token\",\n  \"exp\": {{ Math.floor(Date.now() / 1000) + 3600 }},\n  \"iat\": {{ Math.floor(Date.now() / 1000) }}\n}",
+        "options": {}
+      },
+      "id": "node-jwt",
+      "name": "JWT",
+      "type": "n8n-nodes-base.jwt",
+      "typeVersion": 1,
+      "position": [
+        -160,
+        200
+      ],
+      "credentials": {
+        "jwtAuth": {
+          "id": "B3KwxGmlrCCTgAHk",
+          "name": "Service Account Xtract transcripts-reader"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://oauth2.googleapis.com/token",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "grant_type",
+              "value": "urn:ietf:params:oauth:grant-type:jwt-bearer"
+            },
+            {
+              "name": "assertion",
+              "value": "={{ $json.token }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-access-token",
+      "name": "HTTP - Generar Access Token",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        60,
+        200
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "notes": "\nReintenta 3 veces: el token de Google es transitorio.",
+      "notesInFlow": false
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://www.googleapis.com/drive/v3/files/{{ $('Code - Extraer Datos').first().json.fileId }}/export",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "mimeType",
+              "value": "text/plain"
+            },
+            {
+              "name": "supportsAllDrives",
+              "value": "true"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.access_token }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text",
+              "outputPropertyName": "data"
+            }
+          }
+        }
+      },
+      "id": "node-drive-export",
+      "name": "Drive - export texto",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        280,
+        200
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "notes": "\nReintenta 3 veces: fallo 2 veces el 28/08 con \"resource could not be found\".",
+      "notesInFlow": false,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const prevData = $('Code - Extraer Datos').first().json || {};\nlet txt = String($input.first().json.data || prevData.transcripcion || '').trim();\nif (txt.length > 22000) {\n  txt = txt.slice(0, 22000) + '\\n...[transcripción resumida]';\n}\nreturn [{ json: { transcripcion: txt } }];"
+      },
+      "id": "node-preparar-transcripcion",
+      "name": "Preparar transcripcion",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        500,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "model": "deepseek-chat",
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "id": "node-deepseek-model",
+      "name": "DeepSeek Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatDeepSeek",
+      "typeVersion": 1,
+      "position": [
+        720,
+        380
+      ],
+      "credentials": {
+        "deepSeekApi": {
+          "id": "H5fC2aZoNphCCole",
+          "name": "SantiagoApikey"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "text": "={{ $json.transcripcion }}",
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"idioma\": {\n      \"type\": \"string\",\n      \"enum\": [\n        \"es\",\n        \"pt\"\n      ],\n      \"description\": \"Idioma del cliente y de la conversación: 'pt' si el cliente es de Brasil o habló en portugués; 'es' si habló en español.\"\n    },\n    \"interlocutores\": {\n      \"type\": \"string\",\n      \"description\": \"Nombres de las personas del cliente (ej: Flavio, Lucas, Walter y Federico, Juan Pablo y equipo, Noe)\"\n    },\n    \"emails_destinatarios\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\"\n      },\n      \"description\": \"Emails de los interlocutores del cliente mencionados en la llamada. Si no se mencionaron explícitamente, devolver array vacío [] — no inventar correos.\"\n    },\n    \"saludo_intro\": {\n      \"type\": \"string\",\n      \"description\": \"Frase de saludo inicial y agradecimiento por la reunión en 1 sola línea en el idioma detectado (es o pt).\"\n    },\n    \"desafios_puntos\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\"\n      },\n      \"description\": \"Máximo 2 o 3 bullets ultra concisos (1 línea cada uno) resumiendo los dolores o proceso actual en el idioma detectado.\"\n    },\n    \"solucion_encaje\": {\n      \"type\": \"string\",\n      \"description\": \"1 solo párrafo corto de máximo 2 oraciones explicando concretamente cómo Xtract automatiza el flujo en el idioma detectado.\"\n    },\n    \"proximos_pasos\": {\n      \"type\": \"string\",\n      \"description\": \"1 sola oración directa con el siguiente paso o reunión acordada en el idioma detectado.\"\n    },\n    \"cierre_despedida\": {\n      \"type\": \"string\",\n      \"description\": \"Frase corta de cierre antes de la firma en el idioma detectado.\"\n    },\n    \"reunion_ya_agendada\": {\n      \"type\": \"boolean\",\n      \"description\": \"true si acordaron fecha y hora concreta.\"\n    },\n    \"detalle_reunion_agendada\": {\n      \"type\": \"string\",\n      \"description\": \"Día y hora acordados si reunion_ya_agendada es true.\"\n    },\n    \"asunto_email\": {\n      \"type\": \"string\",\n      \"description\": \"Asunto del correo conciso en el idioma detectado.\"\n    },\n    \"solicito_documentacion_api\": {\n      \"type\": \"boolean\",\n      \"description\": \"true si solicitaron o acordaron enviar la documentación de la API.\"\n    }\n  },\n  \"required\": [\n    \"idioma\",\n    \"interlocutores\",\n    \"saludo_intro\",\n    \"desafios_puntos\",\n    \"solucion_encaje\",\n    \"proximos_pasos\",\n    \"reunion_ya_agendada\",\n    \"detalle_reunion_agendada\",\n    \"asunto_email\",\n    \"solicito_documentacion_api\"\n  ]\n}",
+        "options": {
+          "systemPromptTemplate": "Sos Nicolás González, Account Executive senior de Xtract (plataforma B2B SaaS de automatización de Cuentas a Pagar y procesamiento inteligente de facturas para medianas y grandes empresas).\n\nTu tarea es analizar la transcripción de la Discovery Call y redactar el borrador del correo ejecutivo de seguimiento que le enviarás al cliente para cerrar la oportunidad.\n\n=== REGLAS COMERCIALES Y DE REDACCIÓN (MANDATORIAS) ===\n1. MENTALIDAD DE CIERRE Y PROACTIVIDAD (TIRAR SIEMPRE LA MEJOR PARA CERRAR):\n   - El correo debe ser siempre positivo, enfocado en el valor, la eficiencia y en avanzar con la oportunidad comercial.\n   - NUNCA pongas frenos, dudas ni objeciones (prohibido decir frases como 'si el volumen lo justifica', 'dado el bajo volumen', 'si les parece', etc.).\n   - Si un proceso o empresa del grupo tiene potencial (ej: Odoo, SAP, etc.), destacá el valor de automatizarla con seguridad.\n   - El próximo paso SIEMPRE propone avanzar proactivamente: agendar videollamada de 30 minutos la próxima semana para mostrarles la herramienta de punta a punta y presentarles la propuesta comercial adaptada.\n\n2. NUNCA MENCIONAR WHATSAPP:\n   - Este texto ES el correo formal de seguimiento que se envía por Gmail/Outlook.\n   - Jamás menciones WhatsApp ni digas 'te envío por WhatsApp'. Los links y recursos van en este mismo correo.\n\n3. SÍNTESIS EJECUTIVA Y CONCISIÓN (MÁXIMO 120-150 PALABRAS):\n   - Saludo_intro: Breve y cálido (ej: 'Hola Lucas, buenas tardes.\\nMuchas gracias por el tiempo en la reunión de hoy para conocer la operación de Camá SRL.').\n   - Desafios_puntos: Máximo 2 a 3 bullets muy concretos de 1 línea cada uno.\n   - Solucion_encaje: Exactamente 1 párrafo corto (2 oraciones) yendo directo al grano de la propuesta de Xtract.\n   - Proximos_pasos: 1 o 2 oraciones directas agendando o proponiendo coordinar videollamada para demo + propuesta.\n   - Cierre_despedida: 'Quedo atento.\\nSaludos y gracias,' (o en PT: 'Fico à disposição.\\nAbraços,').\n\n4. REGLA DE IDIOMA:\n   - Si la conversación fue en PORTUGUÉS (Brasil): 'idioma': 'pt'. Redactar 100% en portugués brasileño corporativo con vocabulario B2B (notas fiscais, conciliação, aprovação, integração via API).\n   - Si fue en ESPAÑOL: 'idioma': 'es'. Redactar en español ejecutivo.\n\n=== CASOS REALES DE REFERENCIA ===\n\n[CASO PORTUGUÊS (BRASIL): VALIDAÇÃO DE API / SUPORTE POR TICKET]\nOlá Flavio, boa tarde! Tudo bem?\nMuito obrigado pelo tempo e pela nossa conversa de hoje sobre a automação de notas fiscais.\n\nCompartilho um breve resumo do que conversamos:\n• Hoje a recepção e o lançamento de notas fiscais no ERP é realizado manualmente pela equipe.\n• O objetivo é automatizar a entrada e a contabilização direta a partir da emissão contra o CNPJ.\n• Para avançar, combinamos de validar com o suporte do ERP a viabilidade de integração via API.\n\nA Xtract realiza a captura, leitura inteligente e validação das notas fiscais, enviando os dados estruturados para contabilização automática no ERP em minutos.\n\nConforme combinamos, assim que o suporte do ERP confirmar o retorno do ticket, agendamos uma demonstração completa da ferramenta e apresentamos a proposta comercial.\n\nFico à disposição e no aguardo do retorno.\nAbraços,\nNicolás\n\n[CASO ESPAÑOL 1: CLIENTE ERP / CAMÁ / DEMO]\nHola Lucas, buenas tardes.\nMuchas gracias por el tiempo en la reunión de hoy para conocer la operación de Camá SRL.\n\nComparto un breve resumen de los puntos principales:\n• Actualmente el ingreso de facturas y la imputación contable se realiza de forma manual en el ERP.\n• Vemos una excelente oportunidad para automatizar la recepción, validación y contabilización de comprobantes en su empresa de transporte sobre Odoo.\n\nLa propuesta de Xtract es centralizar la captura y lectura de los comprobantes, automatizar las imputaciones según sus reglas de negocio y enviar los datos directamente al ERP vía API, eliminando la carga manual.\n\nComo próximo paso, coordinemos una videollamada de 30 minutos la próxima semana para mostrarles la herramienta de punta a punta y presentarles la propuesta comercial adaptada a su operación.\n\nQuedo atento a los horarios que les queden cómodos.\nSaludos y gracias,\nNicolás\n\n=== REGLAS GENERALES ===\n1. Escribí en primera persona (sos Nicolás). Tono profesional, comercialmente positivo y seguro.\n2. Si en la llamada se habló de validación de API del ERP, activá solicito_documentacion_api: true.\n3. Si ya acordaron día y hora para la siguiente reunión: confirmala en proximos_pasos con naturalidad."
+        }
+      },
+      "id": "node-ia-extractor",
+      "name": "IA - Redactar borrador de correo",
+      "type": "@n8n/n8n-nodes-langchain.informationExtractor",
+      "typeVersion": 1.2,
+      "position": [
+        720,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// =====================================================================\n// MODO PRUEBA -- UNICO LUGAR PARA CAMBIARLO\n// Con un valor cargado, TODOS los borradores van a este DM y NUNCA al\n// comercial real. Para pasar a produccion, dejarlo en '' (string vacio).\n// =====================================================================\nconst FORZAR_DESTINATARIO = 'U0BJLTDCAMR';\n\nconst notion = $('Code - Extraer Datos').first().json || {};\nconst iaRaw = $('IA - Redactar borrador de correo').first().json || {};\nconst ia = iaRaw.output || iaRaw;\n\nconst idioma = (ia.idioma || 'es').toLowerCase().trim();\nconst esPt = (idioma === 'pt');\n\n// 1. Resolver Destinatarios (Emails del cliente)\nconst emailsNotion = Array.isArray(notion.emails) ? notion.emails : (notion.emails ? [notion.emails] : []);\nconst emailsIa = Array.isArray(ia.emails_destinatarios) ? ia.emails_destinatarios : (ia.emails_destinatarios ? [ia.emails_destinatarios] : []);\nconst todosEmails = [...new Set([...emailsNotion, ...emailsIa].map(e => String(e || '').trim().toLowerCase()))].filter(e => e && e.includes('@'));\nconst paraTexto = todosEmails.length ? todosEmails.join(', ') : (esPt ? '*(Completar e-mails dos interlocutores)*' : '*(Completar emails de los interlocutores)*');\n\nconst empresa = notion.property_nombre_oportunidad || notion.empresa || 'Cliente';\nconst erpDetectado = (notion.sistema || notion.erp || '').trim();\n\nlet defaultSubject = '';\nif (esPt) {\n  defaultSubject = 'Xtract + ' + empresa + ': Automação de notas fiscais' + (erpDetectado ? ' no ' + erpDetectado : '') + ' e próximos passos';\n} else {\n  defaultSubject = 'Xtract + ' + empresa + ': Automatización de facturas' + (erpDetectado ? ' en ' + erpDetectado : '') + ' y próximos pasos';\n}\nconst subjectPersonalizado = ia.asunto_email || defaultSubject;\n\n// 2. Nombres y Comercial\nconst interlocutores = (ia.interlocutores || notion.persona || (esPt ? 'equipe' : 'equipo')).trim();\nconst rawOwner = (Array.isArray(notion.owner) ? notion.owner[0] : notion.owner) || notion.ownerEmail || '';\nconst ownerLocal = rawOwner.split('@')[0].replace(/[._-]+/g, ' ');\nconst nombreComercial = ownerLocal ? ownerLocal.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ') : 'Nicolás';\n\n// 3. Construir Bloques del Correo (Formato Corto y Ejecutivo)\nlet saludoDefault = '';\nif (esPt) {\n  saludoDefault = 'Olá ' + interlocutores + ', boa tarde!\\nMuito obrigado pelo tempo na nossa conversa de hoje.';\n} else {\n  saludoDefault = 'Hola ' + interlocutores + ', buenas tardes.\\nMuchas gracias por el tiempo en la reunión de hoy.';\n}\nconst saludo = ia.saludo_intro || saludoDefault;\n\n// Bullets de desafíos (máximo 2 o 3 concisos)\nconst puntosRaw = Array.isArray(ia.desafios_puntos) ? ia.desafios_puntos : (ia.desafios_puntos ? [ia.desafios_puntos] : []);\nconst puntos = puntosRaw.slice(0, 3);\nconst bloqueDesafios = puntos.length ? puntos.map(p => '• ' + String(p).replace(/^[•\\-\\*]\\s*/, '').trim()).join('\\n') : (ia.desafio || '');\nconst introDesafios = esPt ? 'Compartilho um breve resumo do que conversamos:' : 'Comparto un breve resumen de los puntos principales:';\n\n// Párrafo de solución (conciso)\nconst bloqueSolucion = ia.solucion_encaje || ia.solucion || '';\n\n// Documentación de API (si aplica)\nlet bloqueApi = '';\nif (ia.solicito_documentacion_api === true || ia.solicito_documentacion_api === 'true') {\n  if (esPt) {\n    bloqueApi = '\\nConforme combinamos, compartilho a documentação da nossa API REST: https://xtractapi.docs.apiary.io/#reference para validação da integração com o suporte do ERP.';\n  } else {\n    bloqueApi = '\\nTal como acordamos, les comparto la documentación de la API Rest: https://xtractapi.docs.apiary.io/#reference para que el equipo técnico pueda validar los endpoints.';\n  }\n}\n\n// Próximos pasos (siempre positivo y proactivo a demo/propuesta, sin WhatsApp)\nlet defaultProximos = '';\nif (esPt) {\n  defaultProximos = 'Como próximo passo, coordenamos uma reunião na próxima semana para demonstrar a ferramenta de ponta a ponta e apresentar a proposta.';\n} else {\n  defaultProximos = 'Como próximo paso, coordinemos una reunión de 30 minutos la próxima semana para mostrarles la herramienta de punta a punta y presentarles la propuesta comercial.';\n}\nlet rawProximos = ia.proximos_pasos || defaultProximos;\nrawProximos = rawProximos.replace(/te env[íi]o por whatsapp[^.\\n]*[.\\n]?/gi, '').replace(/whatsapp/gi, 'correo').trim();\nconst bloqueProximos = rawProximos || defaultProximos;\n\n// Casos de Éxito oficiales (URLs directas para preview/unfurl en Slack)\nconst erpLower = (notion.sistema || notion.erp || '').toLowerCase();\nconst empresaLower = empresa.toLowerCase();\n\nlet videosRelevantes = [];\nif (esPt) {\n  if (erpLower.includes('sap')) {\n    videosRelevantes.push('• Caso de sucesso Pomelo (SAP): https://www.youtube.com/watch?v=yJtHFuTnwSA');\n  } else {\n    videosRelevantes.push('• Caso de sucesso MODO: https://www.youtube.com/watch?v=k2uYl5kSGBQ');\n  }\n} else if (erpLower.includes('netsuite')) {\n  videosRelevantes.push('• Caso InvGate (NetSuite): https://www.youtube.com/watch?v=4xFCkoxat1o');\n} else if (erpLower.includes('sap')) {\n  videosRelevantes.push('• Caso Pomelo (SAP): https://www.youtube.com/watch?v=ikDLA5HjQbs');\n} else if (empresaLower.includes('salud') || empresaLower.includes('sanatorio') || empresaLower.includes('clinica')) {\n  videosRelevantes.push('• Caso SanCor Salud: https://www.youtube.com/watch?v=I8J-vd5U5ck');\n} else {\n  videosRelevantes.push('• Caso MODO: https://www.youtube.com/watch?v=k2uYl5kSGBQ');\n}\nconst bloqueCasosExito = videosRelevantes.join('\\n');\n\n// Cierre y firma\nconst cierreDefault = esPt ? 'Fico à disposição.\\nAbraços,' : 'Quedo atento.\\nSaludos y gracias,';\nconst cierre = (ia.cierre_despedida || cierreDefault) + '\\n' + nombreComercial;\n\n// 4. Ensamble del Borrador Completo\nconst cuerpoEmail = [\n  saludo,\n  (introDesafios + '\\n' + bloqueDesafios).trim(),\n  bloqueSolucion,\n  bloqueApi,\n  bloqueProximos,\n  bloqueCasosExito,\n  cierre\n].map(s => String(s || '').trim()).filter(Boolean).join('\\n\\n');\n\n// 5. Matching en Cascada para encontrar el ID de Slack del Comercial\nconst norm = s => String(s == null ? '' : s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();\nconst emailNorm = norm(rawOwner);\nconst local = norm(rawOwner.split('@')[0]);\nconst comoNombre = local.replace(/[._-]+/g, ' ');\n\nconst KNOWN_OWNERS = {\n  'nicolas.gonzalez@xtract.app': 'U02MCAHHM1T',\n  'wenceslao.hoepner@xtract.app': 'U0BBASA0F60',\n  'damian.deggeller@xtract.app': 'U09PYEWUHGF',\n  'greta.bruno@xtract.app': 'U096BLX5864',\n  'ian.brandan@xtract.app': 'U09FZ5MLF0E'\n};\n\nlet usuarios = [];\ntry {\n  const raw = $('Slack - Traer usuarios').first().json;\n  usuarios = (raw.members || raw.users || []).filter(u => u && u.id && !u.deleted && !u.is_bot);\n} catch(e) {}\n\nconst perfil = u => u.profile || {};\nlet owner = usuarios.find(u => norm(perfil(u).email) === emailNorm) || null;\nif (!owner) owner = usuarios.find(u => norm(u.name) === local) || null;\nif (!owner) owner = usuarios.find(u => norm(perfil(u).display_name) === local) || null;\nif (!owner) owner = usuarios.find(u => norm(u.real_name) === comoNombre) || null;\nif (!owner) owner = usuarios.find(u => norm(perfil(u).real_name) === comoNombre) || null;\n\nconst SLACK_FALLBACK_DM = 'U0BJLTDCAMR';\nconst ownerSlackIdReal = owner ? owner.id : (KNOWN_OWNERS[emailNorm] || SLACK_FALLBACK_DM);\nconst ownerSlackId = FORZAR_DESTINATARIO || ownerSlackIdReal;\nconst enModoPrueba = !!FORZAR_DESTINATARIO;\nconst esFallback = !owner && !KNOWN_OWNERS[emailNorm];\n\n// Link a Notion\nconst rawId = (notion.id || notion.page_id || '').replace(/-/g, '');\nconst notionUrl = notion.url || (rawId ? ('https://www.notion.so/' + rawId) : '');\n\n// 6. Mensaje Formateado para Slack\nconst tagIdioma = esPt ? ' 🇧🇷 *(Português)*' : ' 🌎 *(Español)*';\nconst footerCopia = esPt ? '_Pronto para copiar e enviar no Gmail / Outlook._' : '_Listo para copiar y enviar en Gmail / Outlook._';\n\nconst textoSlack = [\n  (enModoPrueba ? ':test_tube: *MODO PRUEBA* — en producción esto le hubiera llegado a `' + ownerSlackIdReal + '`' : ''),\n  ':incoming_envelope: *Borrador de Email Post-Discovery*' + tagIdioma + ' — ' + empresa,\n  (ia.reunion_ya_agendada ? '📅 *Reunión pactada:* ' + (ia.detalle_reunion_agendada || 'Sí (en la llamada)') : '📅 *Reunión:* Pendiente de coordinar'),\n  (notionUrl ? '• <' + notionUrl + '|Abrir card en Notion>' : ''),\n  (esFallback ? '_Nota: Enviado a fallback de pruebas._' : ''),\n  '',\n  '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',\n  '*Para:* ' + paraTexto,\n  '*Subject:* ' + subjectPersonalizado,\n  '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',\n  '',\n  cuerpoEmail,\n  '',\n  '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',\n  footerCopia\n].filter(Boolean).join('\\n');\n\nreturn [{ json: {\n  texto_slack: textoSlack,\n  cuerpo_email: cuerpoEmail,\n  idioma: idioma,\n  para: paraTexto,\n  subject: subjectPersonalizado,\n  owner_slack_id: ownerSlackId,\n  comercial: nombreComercial,\n  empresa: empresa,\n  notion_url: notionUrl\n} }];\n"
+      },
+      "id": "node-armar-slack",
+      "name": "Armar mensaje de Slack",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        960,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://slack.com/api/chat.postMessage",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "slackApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"channel\": \"{{ $json.owner_slack_id }}\",\n  \"text\": {{ JSON.stringify($json.texto_slack) }},\n  \"mrkdwn\": true,\n  \"unfurl_links\": true,\n  \"unfurl_media\": true\n}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": false
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "id": "node-slack-post",
+      "name": "Slack - Enviar borrador a Santiago",
+      "position": [
+        1180,
+        200
+      ],
+      "webhookId": "0b2ddbd8-c2a1-44f9-bdd6-f64c751a409f",
+      "credentials": {
+        "slackApi": {
+          "id": "y1DaRieOF29GQnxm",
+          "name": "Xtract notifications"
+        }
+      },
+      "notes": "MODO PRUEBA. select='user' (no 'channel'): con un ID de canal Slack intentaba escribir en el DM de OTRO bot y devolvia restricted_action_read_only_channel. Apuntando al USUARIO, Slack abre la conversacion directa con esta app.\nEl destino lo decide FORZAR_DESTINATARIO en 'Armar mensaje de Slack' -- unico interruptor.\nVOLVER A PRODUCCION = credencial a 'Xtract notifications'/accessToken + FORZAR_DESTINATARIO = ''.",
+      "notesInFlow": false
+    },
+    {
+      "parameters": {
+        "authentication": "accessToken",
+        "resource": "user",
+        "operation": "getAll",
+        "returnAll": true
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.3,
+      "id": "slack-traer-usuarios-wf06",
+      "name": "Slack - Traer usuarios",
+      "position": [
+        600,
+        -200
+      ],
+      "webhookId": "e289798b-7c01-497a-b46d-271d8884d66e",
+      "credentials": {
+        "slackApi": {
+          "id": "y1DaRieOF29GQnxm",
+          "name": "Xtract notifications"
+        }
+      },
+      "notes": "Sigue con 'Xtract notifications' A PROPOSITO: tiene que listar el padron del workspace de XTRACT para resolver al comercial real. Si se le pone la credencial personal, resuelve contra el workspace equivocado y los owners no matchean nunca.",
+      "notesInFlow": false,
+      "onError": "continueRegularOutput",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "get",
+        "pageId": {
+          "__rl": true,
+          "value": "={{ $json.body.id || $json.id }}",
+          "mode": "id"
+        },
+        "simple": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "id": "ada6d32a-f027-4d41-bb2f-749d5874b0bb",
+      "name": "Notion - Traer card completa",
+      "position": [
+        -420,
+        200
+      ],
+      "credentials": {
+        "notionApi": {
+          "id": "hCkfHhloIjGdaqmd",
+          "name": "Xtract Notion"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true,
+      "notes": "Trae la card COMPLETA por id. El webhook solo manda unos pocos campos, y la card tiene datos que el flujo estaba adivinando:\n- property_nombre_kdm_sdr: el nombre del interlocutor. Es la segunda señal de la guarda de transcripcion; sin el, cards legitimas se rechazaban (caso Banesco: nadie nombra su propia empresa en la llamada, pero el apellido del KDM aparece 158 veces).\n- property_que_sistema_usan: el ERP como DATO. El modelo lo inferia del audio y le erraba ('Subio' por 'Xubio', 'Walbot' donde la card no tiene nada).\nonError=continue: si Notion falla, el flujo sigue con lo que trajo el webhook.",
+      "notesInFlow": false
+    }
+  ],
+  "connections": {
+    "Link a discovery cargado": {
+      "main": [
+        [
+          {
+            "node": "Notion - Traer card completa",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Extraer Datos": {
+      "main": [
+        [
+          {
+            "node": "JWT",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JWT": {
+      "main": [
+        [
+          {
+            "node": "HTTP - Generar Access Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP - Generar Access Token": {
+      "main": [
+        [
+          {
+            "node": "Drive - export texto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Drive - export texto": {
+      "main": [
+        [
+          {
+            "node": "Preparar transcripcion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar transcripcion": {
+      "main": [
+        [
+          {
+            "node": "IA - Redactar borrador de correo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DeepSeek Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "IA - Redactar borrador de correo",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IA - Redactar borrador de correo": {
+      "main": [
+        [
+          {
+            "node": "Armar mensaje de Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Armar mensaje de Slack": {
+      "main": [
+        [
+          {
+            "node": "Slack - Enviar borrador a Santiago",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notion - Traer card completa": {
+      "main": [
+        [
+          {
+            "node": "Code - Extraer Datos",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Slack - Traer usuarios",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "nodeGroups": [],
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "staticData": null,
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": [],
+  "shared": [
+    {
+      "role": "workflow:owner",
+      "workflowId": "xP2LYks5hHkcmgN5",
+      "projectId": "GcZu9tSo2Hvl3tu1",
+      "project": {
+        "id": "GcZu9tSo2Hvl3tu1",
+        "name": "Santiago Wuerich <santiagow142001@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "customTelemetryTags": [],
+        "creatorId": "aa64b914-db8b-4587-b15e-b195296be28f",
+        "createdAt": "2026-07-30T14:04:56.362Z",
+        "updatedAt": "2026-08-04T21:24:46.921Z"
+      },
+      "createdAt": "2026-08-26T18:30:04.869Z",
+      "updatedAt": "2026-08-26T18:30:04.869Z"
+    }
+  ],
+  "activeVersion": {
+    "versionId": "62f8b784-24eb-46fd-b278-c58503fd5e85",
+    "workflowId": "xP2LYks5hHkcmgN5",
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "discovery-email-slack",
+          "responseMode": "onReceived",
+          "responseData": "allEntries",
+          "options": {}
+        },
+        "id": "node-webhook-trigger",
+        "name": "Link a discovery cargado",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2,
+        "position": [
+          -600,
+          200
+        ],
+        "webhookId": "discovery-email-slack"
+      },
+      {
+        "parameters": {
+          "jsCode": "// =====================================================================\n// FUENTE: LA CARD DE NOTION, CON EL WEBHOOK COMO RESPALDO.\n// El webhook manda solo unos pocos campos; la card tiene el resto. Si\n// Notion falla, ese nodo esta en continueRegularOutput y aca queda lo\n// que trajo el webhook, asi que el flujo no se corta por eso.\n// =====================================================================\nlet wh = {};\ntry {\n  wh = $('Link a discovery cargado').first().json || {};\n  while (wh.body && typeof wh.body === 'object') { wh = wh.body; }\n} catch (e) {}\nconst card = $input.first().json || {};\nlet raw = Object.assign({}, wh, (card && !card.error) ? card : {});\nwhile (raw.body && typeof raw.body === 'object') {\n  raw = raw.body;\n}\n\nconst props = raw.properties || {};\n\nlet linkDiscovery = \"\";\nconst getPropValue = (p) => {\n  if (!p) return \"\";\n  if (typeof p === 'string') return p;\n  if (p.url) return p.url;\n  if (p.email) return p.email;\n  if (p.rich_text && p.rich_text[0]) return p.rich_text[0].plain_text || p.rich_text[0].text?.content || \"\";\n  if (p.title && p.title[0]) return p.title[0].plain_text || p.title[0].text?.content || \"\";\n  return \"\";\n};\n\nconst notionEmails = [];\n\n// =====================================================================\n// LOS CORREOS VIENEN EN CAMPOS PLANOS, NO EN raw.properties.\n//\n// El nodo de Notion usa simple:true, asi que devuelve\n// property_email_kdm_sdr: \"edalvarez@banesco.com\" -- un string suelto.\n// El barrido de mas abajo espera el formato CRUDO de la API\n// ({email: \"...\"}), que con simple:true no existe: raw.properties viene\n// vacio y notionEmails quedaba en [] SIEMPRE. El borrador salia diciendo\n// \"(Completar emails de los interlocutores)\" con el dato ahi al lado.\n//\n// El del KDM va primero porque es el interlocutor real de la llamada.\n// =====================================================================\nconst PRIORIDAD_MAIL = ['property_email_kdm_sdr', 'property_email_2', 'property_email_facturaci_n'];\nfor (const k of PRIORIDAD_MAIL) {\n  const v = raw[k];\n  if (typeof v === 'string' && v.indexOf('@') !== -1 && v.indexOf('@xtract.app') === -1) notionEmails.push(v.trim());\n}\nfor (const [k, v] of Object.entries(raw)) {\n  if (typeof v !== 'string' || v.indexOf('@') === -1) continue;\n  if (!/mail|correo/i.test(k)) continue;\n  if (v.indexOf('@xtract.app') !== -1) continue;\n  if (notionEmails.indexOf(v.trim()) === -1) notionEmails.push(v.trim());\n}\n\nfor (const [k, v] of Object.entries(props)) {\n  if (v.email) notionEmails.push(v.email);\n  if (v.people) {\n    v.people.forEach(p => {\n      if (p.person && p.person.email && !p.person.email.includes('@xtract.app')) {\n        notionEmails.push(p.person.email);\n      }\n    });\n  }\n  if (k.toLowerCase().includes('mail') || k.toLowerCase().includes('correo') || k.toLowerCase().includes('email')) {\n    const val = getPropValue(v);\n    if (val && val.includes('@') && !val.includes('@xtract.app')) notionEmails.push(val);\n  }\n}\n\n// Buscar link de discovery en props\nfor (const [k, v] of Object.entries(props)) {\n  if (k.toLowerCase().includes('discovery') || k.toLowerCase().includes('transcrip') || k.toLowerCase().includes('drive') || k.toLowerCase().includes('doc')) {\n    const val = getPropValue(v);\n    if (val && (val.includes('drive.google.com') || val.includes('docs.google.com'))) {\n      linkDiscovery = val;\n      break;\n    }\n  }\n}\n\n// Buscar link de discovery en campos planos de raw\nif (!linkDiscovery) {\n  for (const [k, v] of Object.entries(raw)) {\n    if (typeof v === 'string' && (v.includes('drive.google.com') || v.includes('docs.google.com'))) {\n      linkDiscovery = v;\n      break;\n    }\n  }\n}\n\nlet fileId = \"\";\nconst match = (linkDiscovery || \"\").match(/\\/d\\/([a-zA-Z0-9_-]+)/);\nif (match) {\n  fileId = match[1];\n} else {\n  const matchId = (linkDiscovery || \"\").match(/id=([a-zA-Z0-9_-]+)/);\n  if (matchId) fileId = matchId[1];\n}\n\nlet empresa = \"\";\nfor (const [k, v] of Object.entries(props)) {\n  if (k.toLowerCase().includes('empresa') || k.toLowerCase().includes('name') || k.toLowerCase().includes('title') || k.toLowerCase().includes('cliente')) {\n    empresa = getPropValue(v);\n    if (empresa) break;\n  }\n}\nif (!empresa) empresa = raw.property_nombre_oportunidad || raw.empresa || raw.name || \"Cliente\";\n\n// property_owner viene de Notion como ARRAY de mails; el webhook lo manda\n// como string suelto. Se aceptan las dos formas antes de caer al default.\nconst ownerCard = Array.isArray(raw.property_owner) ? raw.property_owner[0] : raw.property_owner;\nlet ownerEmail = ownerCard || raw.owner || raw.ownerEmail || \"nicolas.gonzalez@xtract.app\";\nfor (const [k, v] of Object.entries(props)) {\n  if (k.toLowerCase().includes('owner') || k.toLowerCase().includes('responsable')) {\n    if (v.people && v.people[0] && v.people[0].person && v.people[0].person.email) {\n      ownerEmail = v.people[0].person.email;\n      break;\n    }\n  }\n}\n\nlet interlocutor = \"\";\nfor (const [k, v] of Object.entries(props)) {\n  if (k.toLowerCase().includes('contacto') || k.toLowerCase().includes('persona') || k.toLowerCase().includes('asistente')) {\n    interlocutor = getPropValue(v);\n    if (interlocutor) break;\n  }\n}\n\nconst rawId = (raw.id || raw.page_id || \"\").replace(/-/g, \"\");\nconst notionUrl = raw.url || (rawId ? (\"https://www.notion.so/\" + rawId) : \"\");\n\n// Nombre del interlocutor: segunda señal de la guarda de transcripcion.\n// Es mas confiable que el nombre de la empresa, porque la gente NO nombra\n// su propia empresa en su llamada, pero su nombre aparece en cada linea.\nconst nombreKdm = raw.property_nombre_kdm_sdr || interlocutor || \"\";\n\n// El ERP como DATO de la card, no como inferencia del modelo sobre el\n// audio. Medido: el modelo devolvio 'Subio' donde la card dice 'Xubio', y\n// 'Walbot' donde la card no tiene nada cargado.\nconst sistemaCard = raw.property_que_sistema_usan || \"\";\n\n// Volumen de facturas. Si la card NO lo tiene, el mail lo PIDE: es el dato\n// que Nicolas reclama a mano en sus mails reales (\"quedo a la espera del\n// volumen aproximado de documentos que procesan por mes\"). Medido: falta\n// en 4 de cada 12 cards con discovery.\nconst cantidadFacturas = raw.property_cantidad_de_facturas || \"\";\n\nconst transcripcion = raw.transcripcion || \"\";\nreturn [{ json: {\n  transcripcion,\n  fileId,\n  linkDiscovery,\n  empresa,\n  interlocutor,\n  nombreKdm,\n  sistemaCard,\n  cantidadFacturas,\n  ownerEmail,\n  notionUrl,\n  notionEmails,\n  raw\n} }];"
+        },
+        "id": "node-extraer-datos",
+        "name": "Code - Extraer Datos",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          -380,
+          200
+        ]
+      },
+      {
+        "parameters": {
+          "useJson": true,
+          "claimsJson": "={\n  \"iss\": \"transcript-docs-reader@transcripts-reader.iam.gserviceaccount.com\",\n  \"sub\": \"{{ $json.ownerEmail }}\",\n  \"scope\": \"https://www.googleapis.com/auth/drive.readonly\",\n  \"aud\": \"https://oauth2.googleapis.com/token\",\n  \"exp\": {{ Math.floor(Date.now() / 1000) + 3600 }},\n  \"iat\": {{ Math.floor(Date.now() / 1000) }}\n}",
+          "options": {}
+        },
+        "id": "node-jwt",
+        "name": "JWT",
+        "type": "n8n-nodes-base.jwt",
+        "typeVersion": 1,
+        "position": [
+          -160,
+          200
+        ],
+        "credentials": {
+          "jwtAuth": {
+            "id": "B3KwxGmlrCCTgAHk",
+            "name": "Service Account Xtract transcripts-reader"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://oauth2.googleapis.com/token",
+          "sendBody": true,
+          "contentType": "form-urlencoded",
+          "bodyParameters": {
+            "parameters": [
+              {
+                "name": "grant_type",
+                "value": "urn:ietf:params:oauth:grant-type:jwt-bearer"
+              },
+              {
+                "name": "assertion",
+                "value": "={{ $json.token }}"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "node-access-token",
+        "name": "HTTP - Generar Access Token",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          60,
+          200
+        ],
+        "retryOnFail": true,
+        "maxTries": 3,
+        "waitBetweenTries": 2000,
+        "notes": "\nReintenta 3 veces: el token de Google es transitorio.",
+        "notesInFlow": false
+      },
+      {
+        "parameters": {
+          "method": "GET",
+          "url": "=https://www.googleapis.com/drive/v3/files/{{ $('Code - Extraer Datos').first().json.fileId }}/export",
+          "sendQuery": true,
+          "queryParameters": {
+            "parameters": [
+              {
+                "name": "mimeType",
+                "value": "text/plain"
+              },
+              {
+                "name": "supportsAllDrives",
+                "value": "true"
+              }
+            ]
+          },
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "=Bearer {{ $json.access_token }}"
+              }
+            ]
+          },
+          "options": {
+            "response": {
+              "response": {
+                "responseFormat": "text",
+                "outputPropertyName": "data"
+              }
+            }
+          }
+        },
+        "id": "node-drive-export",
+        "name": "Drive - export texto",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          280,
+          200
+        ],
+        "retryOnFail": true,
+        "maxTries": 3,
+        "waitBetweenTries": 2000,
+        "notes": "\nReintenta 3 veces: fallo 2 veces el 28/08 con \"resource could not be found\".",
+        "notesInFlow": false,
+        "onError": "continueRegularOutput"
+      },
+      {
+        "parameters": {
+          "jsCode": "const prevData = $('Code - Extraer Datos').first().json || {};\nlet txt = String($input.first().json.data || prevData.transcripcion || '').trim();\nif (txt.length > 22000) {\n  txt = txt.slice(0, 22000) + '\\n...[transcripción resumida]';\n}\nreturn [{ json: { transcripcion: txt } }];"
+        },
+        "id": "node-preparar-transcripcion",
+        "name": "Preparar transcripcion",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          500,
+          200
+        ]
+      },
+      {
+        "parameters": {
+          "model": "deepseek-chat",
+          "options": {
+            "temperature": 0.2
+          }
+        },
+        "id": "node-deepseek-model",
+        "name": "DeepSeek Chat Model",
+        "type": "@n8n/n8n-nodes-langchain.lmChatDeepSeek",
+        "typeVersion": 1,
+        "position": [
+          720,
+          380
+        ],
+        "credentials": {
+          "deepSeekApi": {
+            "id": "H5fC2aZoNphCCole",
+            "name": "SantiagoApikey"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "text": "={{ $json.transcripcion }}",
+          "schemaType": "manual",
+          "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"idioma\": {\n      \"type\": \"string\",\n      \"enum\": [\n        \"es\",\n        \"pt\"\n      ],\n      \"description\": \"Idioma del cliente y de la conversación: 'pt' si el cliente es de Brasil o habló en portugués; 'es' si habló en español.\"\n    },\n    \"interlocutores\": {\n      \"type\": \"string\",\n      \"description\": \"Nombres de las personas del cliente (ej: Flavio, Lucas, Walter y Federico, Juan Pablo y equipo, Noe)\"\n    },\n    \"emails_destinatarios\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\"\n      },\n      \"description\": \"Emails de los interlocutores del cliente mencionados en la llamada. Si no se mencionaron explícitamente, devolver array vacío [] — no inventar correos.\"\n    },\n    \"saludo_intro\": {\n      \"type\": \"string\",\n      \"description\": \"Frase de saludo inicial y agradecimiento por la reunión en 1 sola línea en el idioma detectado (es o pt).\"\n    },\n    \"desafios_puntos\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\"\n      },\n      \"description\": \"Máximo 2 o 3 bullets ultra concisos (1 línea cada uno) resumiendo los dolores o proceso actual en el idioma detectado.\"\n    },\n    \"solucion_encaje\": {\n      \"type\": \"string\",\n      \"description\": \"1 solo párrafo corto de máximo 2 oraciones explicando concretamente cómo Xtract automatiza el flujo en el idioma detectado.\"\n    },\n    \"proximos_pasos\": {\n      \"type\": \"string\",\n      \"description\": \"1 sola oración directa con el siguiente paso o reunión acordada en el idioma detectado.\"\n    },\n    \"cierre_despedida\": {\n      \"type\": \"string\",\n      \"description\": \"Frase corta de cierre antes de la firma en el idioma detectado.\"\n    },\n    \"reunion_ya_agendada\": {\n      \"type\": \"boolean\",\n      \"description\": \"true si acordaron fecha y hora concreta.\"\n    },\n    \"detalle_reunion_agendada\": {\n      \"type\": \"string\",\n      \"description\": \"Día y hora acordados si reunion_ya_agendada es true.\"\n    },\n    \"asunto_email\": {\n      \"type\": \"string\",\n      \"description\": \"Asunto del correo conciso en el idioma detectado.\"\n    },\n    \"solicito_documentacion_api\": {\n      \"type\": \"boolean\",\n      \"description\": \"true si solicitaron o acordaron enviar la documentación de la API.\"\n    }\n  },\n  \"required\": [\n    \"idioma\",\n    \"interlocutores\",\n    \"saludo_intro\",\n    \"desafios_puntos\",\n    \"solucion_encaje\",\n    \"proximos_pasos\",\n    \"reunion_ya_agendada\",\n    \"detalle_reunion_agendada\",\n    \"asunto_email\",\n    \"solicito_documentacion_api\"\n  ]\n}",
+          "options": {
+            "systemPromptTemplate": "Sos Nicolás González, Account Executive senior de Xtract (plataforma B2B SaaS de automatización de Cuentas a Pagar y procesamiento inteligente de facturas para medianas y grandes empresas).\n\nTu tarea es analizar la transcripción de la Discovery Call y redactar el borrador del correo ejecutivo de seguimiento que le enviarás al cliente para cerrar la oportunidad.\n\n=== REGLAS COMERCIALES Y DE REDACCIÓN (MANDATORIAS) ===\n1. MENTALIDAD DE CIERRE Y PROACTIVIDAD (TIRAR SIEMPRE LA MEJOR PARA CERRAR):\n   - El correo debe ser siempre positivo, enfocado en el valor, la eficiencia y en avanzar con la oportunidad comercial.\n   - NUNCA pongas frenos, dudas ni objeciones (prohibido decir frases como 'si el volumen lo justifica', 'dado el bajo volumen', 'si les parece', etc.).\n   - Si un proceso o empresa del grupo tiene potencial (ej: Odoo, SAP, etc.), destacá el valor de automatizarla con seguridad.\n   - El próximo paso SIEMPRE propone avanzar proactivamente: agendar videollamada de 30 minutos la próxima semana para mostrarles la herramienta de punta a punta y presentarles la propuesta comercial adaptada.\n\n2. NUNCA MENCIONAR WHATSAPP:\n   - Este texto ES el correo formal de seguimiento que se envía por Gmail/Outlook.\n   - Jamás menciones WhatsApp ni digas 'te envío por WhatsApp'. Los links y recursos van en este mismo correo.\n\n3. SÍNTESIS EJECUTIVA Y CONCISIÓN (MÁXIMO 120-150 PALABRAS):\n   - Saludo_intro: Breve y cálido (ej: 'Hola Lucas, buenas tardes.\\nMuchas gracias por el tiempo en la reunión de hoy para conocer la operación de Camá SRL.').\n   - Desafios_puntos: Máximo 2 a 3 bullets muy concretos de 1 línea cada uno.\n   - Solucion_encaje: Exactamente 1 párrafo corto (2 oraciones) yendo directo al grano de la propuesta de Xtract.\n   - Proximos_pasos: 1 o 2 oraciones directas agendando o proponiendo coordinar videollamada para demo + propuesta.\n   - Cierre_despedida: 'Quedo atento.\\nSaludos y gracias,' (o en PT: 'Fico à disposição.\\nAbraços,').\n\n4. REGLA DE IDIOMA:\n   - Si la conversación fue en PORTUGUÉS (Brasil): 'idioma': 'pt'. Redactar 100% en portugués brasileño corporativo con vocabulario B2B (notas fiscais, conciliação, aprovação, integração via API).\n   - Si fue en ESPAÑOL: 'idioma': 'es'. Redactar en español ejecutivo.\n\n=== CASOS REALES DE REFERENCIA ===\n\n[CASO PORTUGUÊS (BRASIL): VALIDAÇÃO DE API / SUPORTE POR TICKET]\nOlá Flavio, boa tarde! Tudo bem?\nMuito obrigado pelo tempo e pela nossa conversa de hoje sobre a automação de notas fiscais.\n\nCompartilho um breve resumo do que conversamos:\n• Hoje a recepção e o lançamento de notas fiscais no ERP é realizado manualmente pela equipe.\n• O objetivo é automatizar a entrada e a contabilização direta a partir da emissão contra o CNPJ.\n• Para avançar, combinamos de validar com o suporte do ERP a viabilidade de integração via API.\n\nA Xtract realiza a captura, leitura inteligente e validação das notas fiscais, enviando os dados estruturados para contabilização automática no ERP em minutos.\n\nConforme combinamos, assim que o suporte do ERP confirmar o retorno do ticket, agendamos uma demonstração completa da ferramenta e apresentamos a proposta comercial.\n\nFico à disposição e no aguardo do retorno.\nAbraços,\nNicolás\n\n[CASO ESPAÑOL 1: CLIENTE ERP / CAMÁ / DEMO]\nHola Lucas, buenas tardes.\nMuchas gracias por el tiempo en la reunión de hoy para conocer la operación de Camá SRL.\n\nComparto un breve resumen de los puntos principales:\n• Actualmente el ingreso de facturas y la imputación contable se realiza de forma manual en el ERP.\n• Vemos una excelente oportunidad para automatizar la recepción, validación y contabilización de comprobantes en su empresa de transporte sobre Odoo.\n\nLa propuesta de Xtract es centralizar la captura y lectura de los comprobantes, automatizar las imputaciones según sus reglas de negocio y enviar los datos directamente al ERP vía API, eliminando la carga manual.\n\nComo próximo paso, coordinemos una videollamada de 30 minutos la próxima semana para mostrarles la herramienta de punta a punta y presentarles la propuesta comercial adaptada a su operación.\n\nQuedo atento a los horarios que les queden cómodos.\nSaludos y gracias,\nNicolás\n\n=== REGLAS GENERALES ===\n1. Escribí en primera persona (sos Nicolás). Tono profesional, comercialmente positivo y seguro.\n2. Si en la llamada se habló de validación de API del ERP, activá solicito_documentacion_api: true.\n3. Si ya acordaron día y hora para la siguiente reunión: confirmala en proximos_pasos con naturalidad."
+          }
+        },
+        "id": "node-ia-extractor",
+        "name": "IA - Redactar borrador de correo",
+        "type": "@n8n/n8n-nodes-langchain.informationExtractor",
+        "typeVersion": 1.2,
+        "position": [
+          720,
+          200
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "// =====================================================================\n// MODO PRUEBA -- UNICO LUGAR PARA CAMBIARLO\n// Con un valor cargado, TODOS los borradores van a este DM y NUNCA al\n// comercial real. Para pasar a produccion, dejarlo en '' (string vacio).\n// =====================================================================\nconst FORZAR_DESTINATARIO = 'U0BJLTDCAMR';\n\nconst notion = $('Code - Extraer Datos').first().json || {};\nconst iaRaw = $('IA - Redactar borrador de correo').first().json || {};\nconst ia = iaRaw.output || iaRaw;\n\nconst idioma = (ia.idioma || 'es').toLowerCase().trim();\nconst esPt = (idioma === 'pt');\n\n// 1. Resolver Destinatarios (Emails del cliente)\nconst emailsNotion = Array.isArray(notion.emails) ? notion.emails : (notion.emails ? [notion.emails] : []);\nconst emailsIa = Array.isArray(ia.emails_destinatarios) ? ia.emails_destinatarios : (ia.emails_destinatarios ? [ia.emails_destinatarios] : []);\nconst todosEmails = [...new Set([...emailsNotion, ...emailsIa].map(e => String(e || '').trim().toLowerCase()))].filter(e => e && e.includes('@'));\nconst paraTexto = todosEmails.length ? todosEmails.join(', ') : (esPt ? '*(Completar e-mails dos interlocutores)*' : '*(Completar emails de los interlocutores)*');\n\nconst empresa = notion.property_nombre_oportunidad || notion.empresa || 'Cliente';\nconst erpDetectado = (notion.sistema || notion.erp || '').trim();\n\nlet defaultSubject = '';\nif (esPt) {\n  defaultSubject = 'Xtract + ' + empresa + ': Automação de notas fiscais' + (erpDetectado ? ' no ' + erpDetectado : '') + ' e próximos passos';\n} else {\n  defaultSubject = 'Xtract + ' + empresa + ': Automatización de facturas' + (erpDetectado ? ' en ' + erpDetectado : '') + ' y próximos pasos';\n}\nconst subjectPersonalizado = ia.asunto_email || defaultSubject;\n\n// 2. Nombres y Comercial\nconst interlocutores = (ia.interlocutores || notion.persona || (esPt ? 'equipe' : 'equipo')).trim();\nconst rawOwner = (Array.isArray(notion.owner) ? notion.owner[0] : notion.owner) || notion.ownerEmail || '';\nconst ownerLocal = rawOwner.split('@')[0].replace(/[._-]+/g, ' ');\nconst nombreComercial = ownerLocal ? ownerLocal.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ') : 'Nicolás';\n\n// 3. Construir Bloques del Correo (Formato Corto y Ejecutivo)\nlet saludoDefault = '';\nif (esPt) {\n  saludoDefault = 'Olá ' + interlocutores + ', boa tarde!\\nMuito obrigado pelo tempo na nossa conversa de hoje.';\n} else {\n  saludoDefault = 'Hola ' + interlocutores + ', buenas tardes.\\nMuchas gracias por el tiempo en la reunión de hoy.';\n}\nconst saludo = ia.saludo_intro || saludoDefault;\n\n// Bullets de desafíos (máximo 2 o 3 concisos)\nconst puntosRaw = Array.isArray(ia.desafios_puntos) ? ia.desafios_puntos : (ia.desafios_puntos ? [ia.desafios_puntos] : []);\nconst puntos = puntosRaw.slice(0, 3);\nconst bloqueDesafios = puntos.length ? puntos.map(p => '• ' + String(p).replace(/^[•\\-\\*]\\s*/, '').trim()).join('\\n') : (ia.desafio || '');\nconst introDesafios = esPt ? 'Compartilho um breve resumo do que conversamos:' : 'Comparto un breve resumen de los puntos principales:';\n\n// Párrafo de solución (conciso)\nconst bloqueSolucion = ia.solucion_encaje || ia.solucion || '';\n\n// Documentación de API (si aplica)\nlet bloqueApi = '';\nif (ia.solicito_documentacion_api === true || ia.solicito_documentacion_api === 'true') {\n  if (esPt) {\n    bloqueApi = '\\nConforme combinamos, compartilho a documentação da nossa API REST: https://xtractapi.docs.apiary.io/#reference para validação da integração com o suporte do ERP.';\n  } else {\n    bloqueApi = '\\nTal como acordamos, les comparto la documentación de la API Rest: https://xtractapi.docs.apiary.io/#reference para que el equipo técnico pueda validar los endpoints.';\n  }\n}\n\n// Próximos pasos (siempre positivo y proactivo a demo/propuesta, sin WhatsApp)\nlet defaultProximos = '';\nif (esPt) {\n  defaultProximos = 'Como próximo passo, coordenamos uma reunião na próxima semana para demonstrar a ferramenta de ponta a ponta e apresentar a proposta.';\n} else {\n  defaultProximos = 'Como próximo paso, coordinemos una reunión de 30 minutos la próxima semana para mostrarles la herramienta de punta a punta y presentarles la propuesta comercial.';\n}\nlet rawProximos = ia.proximos_pasos || defaultProximos;\nrawProximos = rawProximos.replace(/te env[íi]o por whatsapp[^.\\n]*[.\\n]?/gi, '').replace(/whatsapp/gi, 'correo').trim();\nconst bloqueProximos = rawProximos || defaultProximos;\n\n// Casos de Éxito oficiales (URLs directas para preview/unfurl en Slack)\nconst erpLower = (notion.sistema || notion.erp || '').toLowerCase();\nconst empresaLower = empresa.toLowerCase();\n\nlet videosRelevantes = [];\nif (esPt) {\n  if (erpLower.includes('sap')) {\n    videosRelevantes.push('• Caso de sucesso Pomelo (SAP): https://www.youtube.com/watch?v=yJtHFuTnwSA');\n  } else {\n    videosRelevantes.push('• Caso de sucesso MODO: https://www.youtube.com/watch?v=k2uYl5kSGBQ');\n  }\n} else if (erpLower.includes('netsuite')) {\n  videosRelevantes.push('• Caso InvGate (NetSuite): https://www.youtube.com/watch?v=4xFCkoxat1o');\n} else if (erpLower.includes('sap')) {\n  videosRelevantes.push('• Caso Pomelo (SAP): https://www.youtube.com/watch?v=ikDLA5HjQbs');\n} else if (empresaLower.includes('salud') || empresaLower.includes('sanatorio') || empresaLower.includes('clinica')) {\n  videosRelevantes.push('• Caso SanCor Salud: https://www.youtube.com/watch?v=I8J-vd5U5ck');\n} else {\n  videosRelevantes.push('• Caso MODO: https://www.youtube.com/watch?v=k2uYl5kSGBQ');\n}\nconst bloqueCasosExito = videosRelevantes.join('\\n');\n\n// Cierre y firma\nconst cierreDefault = esPt ? 'Fico à disposição.\\nAbraços,' : 'Quedo atento.\\nSaludos y gracias,';\nconst cierre = (ia.cierre_despedida || cierreDefault) + '\\n' + nombreComercial;\n\n// 4. Ensamble del Borrador Completo\nconst cuerpoEmail = [\n  saludo,\n  (introDesafios + '\\n' + bloqueDesafios).trim(),\n  bloqueSolucion,\n  bloqueApi,\n  bloqueProximos,\n  bloqueCasosExito,\n  cierre\n].map(s => String(s || '').trim()).filter(Boolean).join('\\n\\n');\n\n// 5. Matching en Cascada para encontrar el ID de Slack del Comercial\nconst norm = s => String(s == null ? '' : s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();\nconst emailNorm = norm(rawOwner);\nconst local = norm(rawOwner.split('@')[0]);\nconst comoNombre = local.replace(/[._-]+/g, ' ');\n\nconst KNOWN_OWNERS = {\n  'nicolas.gonzalez@xtract.app': 'U02MCAHHM1T',\n  'wenceslao.hoepner@xtract.app': 'U0BBASA0F60',\n  'damian.deggeller@xtract.app': 'U09PYEWUHGF',\n  'greta.bruno@xtract.app': 'U096BLX5864',\n  'ian.brandan@xtract.app': 'U09FZ5MLF0E'\n};\n\nlet usuarios = [];\ntry {\n  const raw = $('Slack - Traer usuarios').first().json;\n  usuarios = (raw.members || raw.users || []).filter(u => u && u.id && !u.deleted && !u.is_bot);\n} catch(e) {}\n\nconst perfil = u => u.profile || {};\nlet owner = usuarios.find(u => norm(perfil(u).email) === emailNorm) || null;\nif (!owner) owner = usuarios.find(u => norm(u.name) === local) || null;\nif (!owner) owner = usuarios.find(u => norm(perfil(u).display_name) === local) || null;\nif (!owner) owner = usuarios.find(u => norm(u.real_name) === comoNombre) || null;\nif (!owner) owner = usuarios.find(u => norm(perfil(u).real_name) === comoNombre) || null;\n\nconst SLACK_FALLBACK_DM = 'U0BJLTDCAMR';\nconst ownerSlackIdReal = owner ? owner.id : (KNOWN_OWNERS[emailNorm] || SLACK_FALLBACK_DM);\nconst ownerSlackId = FORZAR_DESTINATARIO || ownerSlackIdReal;\nconst enModoPrueba = !!FORZAR_DESTINATARIO;\nconst esFallback = !owner && !KNOWN_OWNERS[emailNorm];\n\n// Link a Notion\nconst rawId = (notion.id || notion.page_id || '').replace(/-/g, '');\nconst notionUrl = notion.url || (rawId ? ('https://www.notion.so/' + rawId) : '');\n\n// 6. Mensaje Formateado para Slack\nconst tagIdioma = esPt ? ' 🇧🇷 *(Português)*' : ' 🌎 *(Español)*';\nconst footerCopia = esPt ? '_Pronto para copiar e enviar no Gmail / Outlook._' : '_Listo para copiar y enviar en Gmail / Outlook._';\n\nconst textoSlack = [\n  (enModoPrueba ? ':test_tube: *MODO PRUEBA* — en producción esto le hubiera llegado a `' + ownerSlackIdReal + '`' : ''),\n  ':incoming_envelope: *Borrador de Email Post-Discovery*' + tagIdioma + ' — ' + empresa,\n  (ia.reunion_ya_agendada ? '📅 *Reunión pactada:* ' + (ia.detalle_reunion_agendada || 'Sí (en la llamada)') : '📅 *Reunión:* Pendiente de coordinar'),\n  (notionUrl ? '• <' + notionUrl + '|Abrir card en Notion>' : ''),\n  (esFallback ? '_Nota: Enviado a fallback de pruebas._' : ''),\n  '',\n  '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',\n  '*Para:* ' + paraTexto,\n  '*Subject:* ' + subjectPersonalizado,\n  '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',\n  '',\n  cuerpoEmail,\n  '',\n  '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',\n  footerCopia\n].filter(Boolean).join('\\n');\n\nreturn [{ json: {\n  texto_slack: textoSlack,\n  cuerpo_email: cuerpoEmail,\n  idioma: idioma,\n  para: paraTexto,\n  subject: subjectPersonalizado,\n  owner_slack_id: ownerSlackId,\n  comercial: nombreComercial,\n  empresa: empresa,\n  notion_url: notionUrl\n} }];\n"
+        },
+        "id": "node-armar-slack",
+        "name": "Armar mensaje de Slack",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          960,
+          200
+        ]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://slack.com/api/chat.postMessage",
+          "authentication": "predefinedCredentialType",
+          "nodeCredentialType": "slackApi",
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={\n  \"channel\": \"{{ $json.owner_slack_id }}\",\n  \"text\": {{ JSON.stringify($json.texto_slack) }},\n  \"mrkdwn\": true,\n  \"unfurl_links\": true,\n  \"unfurl_media\": true\n}",
+          "options": {
+            "response": {
+              "response": {
+                "neverError": false
+              }
+            }
+          }
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "id": "node-slack-post",
+        "name": "Slack - Enviar borrador a Santiago",
+        "position": [
+          1180,
+          200
+        ],
+        "webhookId": "0b2ddbd8-c2a1-44f9-bdd6-f64c751a409f",
+        "credentials": {
+          "slackApi": {
+            "id": "y1DaRieOF29GQnxm",
+            "name": "Xtract notifications"
+          }
+        },
+        "notes": "MODO PRUEBA. select='user' (no 'channel'): con un ID de canal Slack intentaba escribir en el DM de OTRO bot y devolvia restricted_action_read_only_channel. Apuntando al USUARIO, Slack abre la conversacion directa con esta app.\nEl destino lo decide FORZAR_DESTINATARIO en 'Armar mensaje de Slack' -- unico interruptor.\nVOLVER A PRODUCCION = credencial a 'Xtract notifications'/accessToken + FORZAR_DESTINATARIO = ''.",
+        "notesInFlow": false
+      },
+      {
+        "parameters": {
+          "authentication": "accessToken",
+          "resource": "user",
+          "operation": "getAll",
+          "returnAll": true
+        },
+        "type": "n8n-nodes-base.slack",
+        "typeVersion": 2.3,
+        "id": "slack-traer-usuarios-wf06",
+        "name": "Slack - Traer usuarios",
+        "position": [
+          600,
+          -200
+        ],
+        "webhookId": "e289798b-7c01-497a-b46d-271d8884d66e",
+        "credentials": {
+          "slackApi": {
+            "id": "y1DaRieOF29GQnxm",
+            "name": "Xtract notifications"
+          }
+        },
+        "notes": "Sigue con 'Xtract notifications' A PROPOSITO: tiene que listar el padron del workspace de XTRACT para resolver al comercial real. Si se le pone la credencial personal, resuelve contra el workspace equivocado y los owners no matchean nunca.",
+        "notesInFlow": false,
+        "onError": "continueRegularOutput",
+        "retryOnFail": true,
+        "maxTries": 3,
+        "waitBetweenTries": 2000,
+        "alwaysOutputData": true
+      },
+      {
+        "parameters": {
+          "resource": "databasePage",
+          "operation": "get",
+          "pageId": {
+            "__rl": true,
+            "value": "={{ $json.body.id || $json.id }}",
+            "mode": "id"
+          },
+          "simple": true,
+          "options": {}
+        },
+        "type": "n8n-nodes-base.notion",
+        "typeVersion": 2.2,
+        "id": "ada6d32a-f027-4d41-bb2f-749d5874b0bb",
+        "name": "Notion - Traer card completa",
+        "position": [
+          -420,
+          200
+        ],
+        "credentials": {
+          "notionApi": {
+            "id": "hCkfHhloIjGdaqmd",
+            "name": "Xtract Notion"
+          }
+        },
+        "retryOnFail": true,
+        "maxTries": 3,
+        "waitBetweenTries": 2000,
+        "onError": "continueRegularOutput",
+        "alwaysOutputData": true,
+        "notes": "Trae la card COMPLETA por id. El webhook solo manda unos pocos campos, y la card tiene datos que el flujo estaba adivinando:\n- property_nombre_kdm_sdr: el nombre del interlocutor. Es la segunda señal de la guarda de transcripcion; sin el, cards legitimas se rechazaban (caso Banesco: nadie nombra su propia empresa en la llamada, pero el apellido del KDM aparece 158 veces).\n- property_que_sistema_usan: el ERP como DATO. El modelo lo inferia del audio y le erraba ('Subio' por 'Xubio', 'Walbot' donde la card no tiene nada).\nonError=continue: si Notion falla, el flujo sigue con lo que trajo el webhook.",
+        "notesInFlow": false
+      }
+    ],
+    "connections": {
+      "Link a discovery cargado": {
+        "main": [
+          [
+            {
+              "node": "Notion - Traer card completa",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Code - Extraer Datos": {
+        "main": [
+          [
+            {
+              "node": "JWT",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "JWT": {
+        "main": [
+          [
+            {
+              "node": "HTTP - Generar Access Token",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "HTTP - Generar Access Token": {
+        "main": [
+          [
+            {
+              "node": "Drive - export texto",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Drive - export texto": {
+        "main": [
+          [
+            {
+              "node": "Preparar transcripcion",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Preparar transcripcion": {
+        "main": [
+          [
+            {
+              "node": "IA - Redactar borrador de correo",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "DeepSeek Chat Model": {
+        "ai_languageModel": [
+          [
+            {
+              "node": "IA - Redactar borrador de correo",
+              "type": "ai_languageModel",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "IA - Redactar borrador de correo": {
+        "main": [
+          [
+            {
+              "node": "Armar mensaje de Slack",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Armar mensaje de Slack": {
+        "main": [
+          [
+            {
+              "node": "Slack - Enviar borrador a Santiago",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Notion - Traer card completa": {
+        "main": [
+          [
+            {
+              "node": "Code - Extraer Datos",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Slack - Traer usuarios",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "nodeGroups": [],
+    "authors": "Santiago Wuerich",
+    "name": null,
+    "description": null,
+    "autosaved": false,
+    "createdAt": "2026-09-07T18:52:05.432Z",
+    "updatedAt": "2026-09-07T18:52:05.432Z",
+    "workflowPublishHistory": [
+      {
+        "id": 2327,
+        "workflowId": "xP2LYks5hHkcmgN5",
+        "versionId": "62f8b784-24eb-46fd-b278-c58503fd5e85",
+        "event": "activated",
+        "userId": "aa64b914-db8b-4587-b15e-b195296be28f",
+        "createdAt": "2026-09-07T18:52:05.588Z"
+      }
+    ]
+  }
+}

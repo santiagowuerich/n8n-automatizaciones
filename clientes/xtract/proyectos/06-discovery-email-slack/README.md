@@ -51,29 +51,33 @@ Workflow independiente diseñado para procesar llamadas de Discovery desde Googl
 
 ---
 
-## 3. Estructura del Borrador Generado
+## 3. Estructura del Borrador Generado y Soporte Multilingüe (ES / PT)
 
-El modelo sigue estrictamente el formato comercial enriquecido con recursos de Apiary y testimonios de YouTube:
+El modelo detecta automáticamente el idioma nativo de la llamada y adapta todo el contenido y estilo comercial de Nicolás González:
 
-1. **Cabecera `*Para:*`** Detección automática de emails en Notion y en la transcripción.
-2. **`*Subject:*`** `Resumen de nuestra reunión + Próximos pasos — Xtract`.
-3. **Saludo e Intro:** Saludo cercano y agradecimiento ejecutivo por el tiempo.
-4. **`Diagnóstico en Bullets`:** Diagnóstico estructurado con datos duros reales (volumen mensual de facturas, estacionalidad, ERP actual, canales de recepción, validación contra OC/remito, rendiciones de gastos, aprobadores, retenciones y carga manual).
-5. **`Solución y Encaje`:** Párrafo continuo detallando conexión API/nativa con su ERP, ingesta por repositorio único, lectura inteligente, reglas contables y plazos de implementación (30 a 60 días).
-6. **`Documentación API (Condicional)`:** Si se habló de integraciones técnicas, incluye el link a la **[Documentación de la API Rest de Xtract](https://xtractapi.docs.apiary.io/#)**.
-7. **`Próximos pasos`:** Coordinación de videollamada / demo de 30 min + propuesta comercial adaptada.
-8. **`Casos de Éxito`:**
-   * `• <https://www.youtube.com/watch?v=k2uYl5kSGBQ|MODO x Xtract: la experiencia real de un equipo contable en Fintech>`
-   * `• <https://www.youtube.com/watch?v=k2uYl5kSGBQ|Pomelo + Xtract: Contabilización Automática de Facturas en SAP con IA>`
-9. **Despedida y Firma:** Despedida ejecutiva y firma con el nombre del comercial responsable.
+* **Español (`es` - Hispanoamérica):**
+  - **`*Subject:*`** `Xtract + [Empresa]: Automatización de facturas en [ERP] y próximos pasos`
+  - **Saludo:** `Hola [Interlocutores], buenas tardes.`
+  - **Bullets:** Diagnóstico estructurado de dolores en Accounts Payable.
+  - **Solución y Encaje:** Integración nativa/API con su ERP, centralización y reglas contables.
+  - **Doc API (Condicional):** `[Documentación de la API Rest de Xtract](https://xtractapi.docs.apiary.io/#reference)`.
+  - **Casos de Éxito:** MODO, Pomelo, InvGate, SanCor Salud.
+
+* **Portugués (`pt` - Brasil / Ej. Flavio Melo):**
+  - **`*Subject:*`** `Xtract + [Empresa]: Automação de notas fiscais no [ERP] e próximos passos`
+  - **Saludo:** `Olá [Interlocutores], boa tarde! Tudo bem?`
+  - **Bullets:** `Pelo que conversamos, hoje o principal desafio está em:` (recepção de notas fiscais contra CNPJ, validação, etc.).
+  - **Solución y Encaje:** Automação de leitura e contabilização no ERP em até 5 minutos.
+  - **Doc API (Condicional):** `[Documentação da API REST da Xtract](https://xtractapi.docs.apiary.io/#reference)` para validação de ticket/suporte técnico.
+  - **Casos de Éxito:** MODO y Pomelo en portugués.
 
 ---
 
-## 4. Historial de Pruebas y Validaciones en Producción
+## 4. Historial de Pruebas y Validaciones
 
-* **Ejecución 547114 (Rotunda):** Verificación de conexión directa a bot personal `Xtract n8n`.
-* **Ejecución 547157 (Formato exacto):** Adopción de la estructura de `ejemplo.md`.
-* **Ejecución 547352 (Naturaceites):** Extracción de correo `miguel.crispin@naturaceites.com`.
-* **Ejecución 547356 (Tecnoedil):** Extracción de correo `marcio.lima@tecnoedil.com.py` y detección de SAP 4 Hana.
-* **Ejecución 547363 (Procter & Gamble):** Extracción de correo `tomas.gonzalez@pg.com` y parametrización a 3 niveles.
-* **Ejecución 557273 (Comercializadora Andina - Intec):** Validación exitosa con entrega directa al Slack de Nicolás González (`U02MCAHHM1T`), inclusión de link de Apiary y bloque de casos de éxito de YouTube.
+* **`ejemplo1.md` (Flavio Melo - Brasil):** Detección `idioma: pt`, generación 100% en portugués brasileño corporativo, inclusión de API Rest para soporte vía ticket.
+* **`Ejemplo2-.md` (Lucas Mamolite - Argentina):** Detección `idioma: es`, relevamiento sobre Calipso (facturas de flete, rendiciones, órdenes de compra).
+* **`ejemplo3.md` (Walter Sudich / Federico Bottino - Caldén):** Detección `idioma: es`, propuesta sobre compras y gestión de proveedores.
+* **`ejemplo4.md` (Juan Pablo Zubiri / Luji Costa):** Detección `idioma: es`, validación de circuito de aprobaciones y reglas contables.
+* **Ejecución 557273 (Comercializadora Andina - Intec):** Validación exitosa con entrega directa al Slack de Nicolás González (`U02MCAHHM1T`).
+

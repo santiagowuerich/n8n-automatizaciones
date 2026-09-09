@@ -30,3 +30,11 @@ scratch/*
 # Remotion renders
 **/remotion-video/out/
 
+# Data files & large datasets
+*.csv
+*.zip
+data/
+
+# Local Pi runtime state
+.atl/
+

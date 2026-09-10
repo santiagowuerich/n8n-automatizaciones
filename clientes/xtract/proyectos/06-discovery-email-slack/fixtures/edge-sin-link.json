@@ -1,0 +1,8 @@
+{
+  "properties": {
+    "Nombre oportunidad": { "title": [{ "plain_text": "Lead sin link" }] },
+    "Comercial": { "people": [{ "person": { "email": "nico.test@xtract.app" } }] }
+  },
+  "property_owner": ["nico.test@xtract.app"],
+  "transcripcion": "Texto corto de fallback sin link de Drive en el payload."
+}

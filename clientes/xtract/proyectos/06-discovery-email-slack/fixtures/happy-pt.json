@@ -1,0 +1,10 @@
+{
+  "properties": {
+    "Nome oportunidade": { "title": [{ "plain_text": "Padaria Pao Dourado LTDA" }] },
+    "Link transcricao": { "url": "https://docs.google.com/document/d/1PtBr9xYzAbCdEfGhIjKlMnOpQrStUv/edit" },
+    "Email cliente": { "email": "contato@paodourado.test" },
+    "Comercial": { "people": [{ "person": { "email": "nico.test@xtract.app" } }] }
+  },
+  "property_owner": ["nico.test@xtract.app"],
+  "transcripcion": "Nicolás: Olá, obrigado pela reunião. Hoje o principal desafio está na recepção de notas fiscais contra CNPJ e na validação manual. Me manda então esse e-mail com a especificação da API. Até mais."
+}

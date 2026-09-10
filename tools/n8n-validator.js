@@ -325,12 +325,16 @@ function findWorkflowFiles(dir, options = {}, fileList = []) {
   for (const file of files) {
     const fullPath = path.join(dir, file);
     if (fs.statSync(fullPath).isDirectory()) {
-      if (file !== 'node_modules' && file !== '.git' && file !== 'scratch' && (options.includeBackups || file !== 'backups')) {
+      if (file !== 'node_modules' && file !== '.git' && file !== 'scratch' && file !== 'datos' && file !== 'demos' && file !== 'Ejemplos' && (options.includeBackups || file !== 'backups')) {
         findWorkflowFiles(fullPath, options, fileList);
       }
-    } else if (file.endsWith('.json') && (file === 'workflow.json' || file.includes('workflow') || fullPath.includes('/proyectos/'))) {
+    } else if (file.endsWith('.json') && (file === 'workflow.json' || file.includes('workflow') || /Closed Lost WhatsApp — \d/.test(file) || /Xtract - 05/.test(file))) {
       if (options.includeBackups || !fullPath.includes('/backups/')) {
-        fileList.push(fullPath);
+        // Solo archivos que realmente son workflows n8n (tienen array nodes)
+        try {
+          const content = JSON.parse(fs.readFileSync(fullPath, 'utf8'));
+          if (Array.isArray(content.nodes)) fileList.push(fullPath);
+        } catch (e) { /* no es JSON válido de workflow, se ignora */ }
       }
     }
   }
@@ -357,7 +361,10 @@ if (require.main === module) {
   let filesToValidate = [];
 
   if (args.includes('--all')) {
-    filesToValidate = findWorkflowFiles(path.join(process.cwd(), 'clientes'), { includeBackups });
+    const roots = [path.join(process.cwd(), 'clientes'), path.join(process.cwd(), 'personal')];
+    for (const root of roots) {
+      findWorkflowFiles(root, { includeBackups }, filesToValidate);
+    }
     if (filesToValidate.length === 0) {
       filesToValidate = findWorkflowFiles(process.cwd(), { includeBackups });
     }

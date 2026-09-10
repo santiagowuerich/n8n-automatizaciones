@@ -1,0 +1,10 @@
+{
+  "properties": {
+    "Nombre oportunidad": { "title": [{ "plain_text": "Acme Foods SA" }] },
+    "Link discovery": { "url": "https://drive.google.com/file/d/1AbC2dEfGhIjKlMnOpQrStUvWxYz/view" },
+    "Email cliente": { "email": "compras@acmefoods.test" },
+    "Comercial": { "people": [{ "person": { "email": "nico.test@xtract.app" } }] }
+  },
+  "property_owner": ["nico.test@xtract.app"],
+  "transcripcion": "Nicolás: Hola, gracias por la reunión. Nos contaron que procesan 500-600 facturas mensuales que llegan por correo, WhatsApp y portales de proveedores. Tienen picos de trabajo durante el cierre de cada mes. Quedamos en vernos el jueves a la misma hora para la demostración de Xtract."
+}

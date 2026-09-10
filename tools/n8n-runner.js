@@ -54,7 +54,7 @@ function parseArgs() {
     webhook: null,
     method: 'POST',
     isTestWebhook: false,
-    env: 'prod',
+    env: 'dev',
     nodeName: null,
     payload: null,
     fixturePath: null,

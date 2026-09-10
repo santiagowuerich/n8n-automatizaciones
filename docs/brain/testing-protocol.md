@@ -104,3 +104,23 @@ El reporte que cierra el ciclo debe incluir, como mínimo:
 - Errores encontrados y qué se corrigió.
 - Artefactos temporales creados **y si fueron borrados**.
 - Veredicto explícito: listo para pase a PROD, o qué falta.
+
+---
+
+## 5. Fixtures y contract tests versionados (2026-09-09)
+
+`scratch/*.json` está ignorado por git: sirve para un dump puntual, **no** como
+base de pruebas. Todo payload que un test necesite para correr en CI o en otra
+máquina vive versionado en el proyecto:
+
+- `clientes/xtract/proyectos/<id>/fixtures/` — `happy-es.json`, `happy-pt.json`,
+  `edge-*.json`. Datos 100% sintéticos (dominios `.test`, nada de transcripciones
+  reales). Ver ejemplo: [06 `fixtures/README.md`](../../clientes/xtract/proyectos/06-discovery-email-slack/fixtures/README.md).
+- `clientes/xtract/proyectos/<id>/tests/contract.test.js` — test local con
+  `node` puro (sin dependencias): extrae el `jsCode` del `workflow.json`, lo corre
+  en `vm` con cada fixture y valida el contrato. Exit 0/1, apto para CI.
+- Los bugs que el test exponga en un workflow **activo en PROD** se documentan
+  en `HALLAZGOS-<id>.md` del proyecto y se corrigen por DEV + aprobación —
+  nunca editando el JSON productivo a mano (referencia: [06 `HALLAZGOS-06.md`](../../clientes/xtract/proyectos/06-discovery-email-slack/HALLAZGOS-06.md)).
+- El runner (`tools/n8n-runner.js`) opera por defecto en **DEV**; PROD solo con
+  `--env prod` explícito.

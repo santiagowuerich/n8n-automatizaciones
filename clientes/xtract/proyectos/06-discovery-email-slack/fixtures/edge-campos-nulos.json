@@ -1,0 +1,12 @@
+{
+  "properties": {
+    "Nombre oportunidad": { "title": [] },
+    "Link discovery": { "url": "" },
+    "Email cliente": null,
+    "Telefono": { "rich_text": [{ "plain_text": "" }] },
+    "Comercial": { "people": [] }
+  },
+  "ownerEmail": "",
+  "owner": null,
+  "transcripcion": ""
+}

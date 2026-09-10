@@ -3,12 +3,12 @@
   "name": "Xtract - 05 Generador de slides desde Discovery call",
   "description": null,
   "active": true,
-  "activeVersionId": "22d7c04e-2960-4ce0-90a8-9421ce9082ef",
+  "activeVersionId": "1439d51b-c579-432a-9ef0-aec89b82a219",
   "createdAt": "2026-08-19T15:13:06.780Z",
-  "updatedAt": "2026-09-09T17:53:36.173Z",
+  "updatedAt": "2026-09-09T17:34:41.324Z",
   "isArchived": false,
-  "versionId": "22d7c04e-2960-4ce0-90a8-9421ce9082ef",
-  "versionCounter": 245,
+  "versionId": "1439d51b-c579-432a-9ef0-aec89b82a219",
+  "versionCounter": 244,
   "sourceWorkflowId": null,
   "triggerCount": 3,
   "nodes": [
@@ -146,9 +146,9 @@
         "operation": "copy",
         "fileId": {
           "__rl": true,
-          "value": "1gBVHSw5fNldXWHJZniYCRfs2ARI_UUHmITL85anul_o",
+          "value": "1jNY4NtpT_9oCSOffYozXC8c_XypeBxIXVlVXnVZzWXE",
           "mode": "id",
-          "cachedResultName": "Propuesta Xtract (Nueva Plantilla)"
+          "cachedResultName": "Propuesta Xtract (plantilla) [Google Slides]"
         },
         "name": "=Propuesta - {{ $json.empresa }} - {{ $json.fecha }} (EDITAR ACA)",
         "sameFolder": false,
@@ -185,7 +185,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const raw = $input.first().json;\nconst d = raw.output || raw;\nconst notion = $('Code - Extraer Datos').first().json;\nconst empresa = (notion.property_nombre_oportunidad || notion.name || '').trim() || (d.empresa || 'Cliente');\nconst fecha = new Date().toLocaleDateString('es-AR');\n\n// ---------------------------------------------------------------------\n// ERP -- primero el CRM, despues la transcripcion.\n//\n// El orden importa: 'property_que_sistema_usan' lo carga una persona a\n// mano; 'erp_actual' lo interpreta el modelo desde el audio, y Fathom\n// transcribe pesimo los nombres de ERP. En una discovery real \"Finnegans\"\n// aparecio como Finance, Finex, Fan, Finegan y Fin -- cinco variantes en\n// la misma llamada. Escribir cualquiera de esas en una propuesta es que\n// el cliente lea su propio sistema mal escrito.\n//\n// Si no se sabe cual usa, el placeholder queda en la palabra generica\n// 'ERP': la frase del slide sigue leyendose bien (\"...con su ERP\"),\n// mientras que \"No informado\" ahi adentro queda roto. En la ficha de\n// datos de mas abajo si se escribe 'No mencionado', porque es una lista\n// de campos y no una oracion.\n// ---------------------------------------------------------------------\nconst erpNotion = (notion.property_que_sistema_usan || '').toString().trim();\nconst erpIa = (d.erp_actual || '').toString().trim();\nconst erpReal = erpNotion || erpIa;\nconst erp = erpReal || 'ERP';\n\nconst puntos = Array.isArray(d.puntos_mejora) ? d.puntos_mejora.slice(0, 4) : [];\nconst beneficios = Array.isArray(d.beneficios) ? d.beneficios.slice(0, 4) : [];\nconst out = { empresa, fecha, erp };\nfor (let i = 0; i < 4; i++) {\n  const p = puntos[i];\n  out['punto' + (i + 1) + 'Titulo'] = p ? p.titulo : '';\n  out['punto' + (i + 1) + 'Texto'] = p ? p.texto : '';\n  const b = beneficios[i];\n  out['ben' + (i + 1) + 'Nombre'] = b ? b.beneficio : '';\n  out['ben' + (i + 1) + 'Actual'] = b ? b.situacion_actual : '';\n  out['ben' + (i + 1) + 'Xtract'] = b ? b.con_xtract : '';\n  out['ben' + (i + 1) + 'Mejora'] = b ? b.mejora : '';\n}\nout.fichaTexto = [\n  'Empresa: ' + (d.empresa || 'No mencionado'),\n  'Industria: ' + (d.industria || 'No mencionado'),\n  'Tamano: ' + (d.tamano || 'No mencionado'),\n  'Pais: ' + (d.pais || 'No mencionado'),\n  'ERP actual: ' + (erpReal || 'No mencionado'),\n  'Volumen de facturas mensual: ' + (d.volumen_facturas_mensual || 'No mencionado'),\n  'Gasto anual en compras: ' + (d.gasto_anual_compras || 'No mencionado'),\n  'Personas dedicadas a carga de facturas: ' + (d.personas_carga_facturas || 'No mencionado'),\n  'Como gestionan hoy las facturas: ' + (d.gestion_actual_facturas || 'No mencionado'),\n  'Problemas identificados: ' + (d.problemas_identificados || 'No mencionado'),\n  'Fit con Xtract: ' + (d.fit_xtract || 'No mencionado'),\n  'Nivel de interes: ' + (d.nivel_interes || 'No mencionado'),\n  'Proximos pasos: ' + (d.proximos_pasos || 'No mencionado'),\n  'Notas adicionales: ' + (d.notas_adicionales || 'No mencionado')\n].join('\\n');\nout.puntosTexto = puntos.length ? puntos.map((p, i) => (i + 1) + '. ' + p.titulo + '\\n' + p.texto).join('\\n\\n') : 'Sin puntos detectados';\nout.beneficiosTexto = beneficios.length ? beneficios.map((b) => b.beneficio + ' | Antes: ' + b.situacion_actual + ' | Con Xtract: ' + b.con_xtract + ' | Mejora: ' + b.mejora).join('\\n') : 'Sin beneficios detectados';\nreturn [{ json: out }];"
+        "jsCode": "const raw = $input.first().json;\nconst d = raw.output || raw;\nconst notion = $('Code - Extraer Datos').first().json;\nconst empresa = d.empresa || 'Cliente';\nconst fecha = new Date().toLocaleDateString('es-AR');\n\n// ---------------------------------------------------------------------\n// ERP -- primero el CRM, despues la transcripcion.\n//\n// El orden importa: 'property_que_sistema_usan' lo carga una persona a\n// mano; 'erp_actual' lo interpreta el modelo desde el audio, y Fathom\n// transcribe pesimo los nombres de ERP. En una discovery real \"Finnegans\"\n// aparecio como Finance, Finex, Fan, Finegan y Fin -- cinco variantes en\n// la misma llamada. Escribir cualquiera de esas en una propuesta es que\n// el cliente lea su propio sistema mal escrito.\n//\n// Si no se sabe cual usa, el placeholder queda en la palabra generica\n// 'ERP': la frase del slide sigue leyendose bien (\"...con su ERP\"),\n// mientras que \"No informado\" ahi adentro queda roto. En la ficha de\n// datos de mas abajo si se escribe 'No mencionado', porque es una lista\n// de campos y no una oracion.\n// ---------------------------------------------------------------------\nconst erpNotion = (notion.property_que_sistema_usan || '').toString().trim();\nconst erpIa = (d.erp_actual || '').toString().trim();\nconst erpReal = erpNotion || erpIa;\nconst erp = erpReal || 'ERP';\n\nconst puntos = Array.isArray(d.puntos_mejora) ? d.puntos_mejora.slice(0, 4) : [];\nconst beneficios = Array.isArray(d.beneficios) ? d.beneficios.slice(0, 4) : [];\nconst out = { empresa, fecha, erp };\nfor (let i = 0; i < 4; i++) {\n  const p = puntos[i];\n  out['punto' + (i + 1) + 'Titulo'] = p ? p.titulo : '';\n  out['punto' + (i + 1) + 'Texto'] = p ? p.texto : '';\n  const b = beneficios[i];\n  out['ben' + (i + 1) + 'Nombre'] = b ? b.beneficio : '';\n  out['ben' + (i + 1) + 'Actual'] = b ? b.situacion_actual : '';\n  out['ben' + (i + 1) + 'Xtract'] = b ? b.con_xtract : '';\n  out['ben' + (i + 1) + 'Mejora'] = b ? b.mejora : '';\n}\nout.fichaTexto = [\n  'Empresa: ' + (d.empresa || 'No mencionado'),\n  'Industria: ' + (d.industria || 'No mencionado'),\n  'Tamano: ' + (d.tamano || 'No mencionado'),\n  'Pais: ' + (d.pais || 'No mencionado'),\n  'ERP actual: ' + (erpReal || 'No mencionado'),\n  'Volumen de facturas mensual: ' + (d.volumen_facturas_mensual || 'No mencionado'),\n  'Gasto anual en compras: ' + (d.gasto_anual_compras || 'No mencionado'),\n  'Personas dedicadas a carga de facturas: ' + (d.personas_carga_facturas || 'No mencionado'),\n  'Como gestionan hoy las facturas: ' + (d.gestion_actual_facturas || 'No mencionado'),\n  'Problemas identificados: ' + (d.problemas_identificados || 'No mencionado'),\n  'Fit con Xtract: ' + (d.fit_xtract || 'No mencionado'),\n  'Nivel de interes: ' + (d.nivel_interes || 'No mencionado'),\n  'Proximos pasos: ' + (d.proximos_pasos || 'No mencionado'),\n  'Notas adicionales: ' + (d.notas_adicionales || 'No mencionado')\n].join('\\n');\nout.puntosTexto = puntos.length ? puntos.map((p, i) => (i + 1) + '. ' + p.titulo + '\\n' + p.texto).join('\\n\\n') : 'Sin puntos detectados';\nout.beneficiosTexto = beneficios.length ? beneficios.map((b) => b.beneficio + ' | Antes: ' + b.situacion_actual + ' | Con Xtract: ' + b.con_xtract + ' | Mejora: ' + b.mejora).join('\\n') : 'Sin beneficios detectados';\nreturn [{ json: out }];"
       },
       "id": "c0df696d-3bd1-4551-ae5b-fde6ea97ff45",
       "name": "Armar placeholders del slide",
@@ -229,7 +229,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// =====================================================================\n// CALCULO AUTOMATICO DE IMPACTO ECONOMICO Y ROI (SLIDE DELOITTE / XTRACT)\n// =====================================================================\nconst RATES = {\n  \"Argentina\": 7.15,\n  \"Uruguay\": 7.40,\n  \"Costa Rica\": 6.45,\n  \"Honduras\": 5.80,\n  \"Panamá\": 4.70,\n  \"Chile\": 4.60,\n  \"Ecuador\": 4.58,\n  \"México\": 4.43,\n  \"Guatemala\": 4.13,\n  \"Bolivia\": 4.07,\n  \"Brasil\": 3.93,\n  \"Perú\": 3.73,\n  \"Paraguay\": 3.60,\n  \"Colombia\": 3.25,\n  \"Rep. Dominicana\": 3.20,\n  \"El Salvador\": 3.13,\n  \"Venezuela\": 2.45\n};\nconst PREFIJOS = [\n  [\"549\", \"Argentina\"], [\"54\", \"Argentina\"], [\"598\", \"Uruguay\"], [\"56\", \"Chile\"],\n  [\"57\", \"Colombia\"], [\"52\", \"México\"], [\"51\", \"Perú\"], [\"593\", \"Ecuador\"],\n  [\"506\", \"Costa Rica\"], [\"507\", \"Panamá\"], [\"502\", \"Guatemala\"], [\"504\", \"Honduras\"],\n  [\"503\", \"El Salvador\"], [\"591\", \"Bolivia\"], [\"595\", \"Paraguay\"], [\"1809\", \"Rep. Dominicana\"],\n  [\"1829\", \"Rep. Dominicana\"], [\"1849\", \"Rep. Dominicana\"], [\"55\", \"Brasil\"], [\"58\", \"Venezuela\"]\n];\n\nconst FACTURAS_POR_PERSONA_MES = 300;\nconst USD_POR_FACTURA = 400;\nconst HS_ANIO_FULLTIME = 1200;\nconst HS_ANIO_PARTTIME = 600;\n\nconst norm = (s) => (s || \"\").toString().normalize(\"NFD\").replace(/[\\u0300-\\u036f]/g, \"\").toLowerCase().trim();\nconst fmtUSD = (n) => Math.round(n).toLocaleString(\"es-AR\");\n\nconst notion = $(\"Code - Extraer Datos\").first().json;\nconst iaRaw = $(\"IA - Extraer datos de la llamada\").first().json;\nconst ia = iaRaw.output || iaRaw;\nconst presentationId = $(\"Copiar plantilla de propuesta\").first().json.id;\nconst slideUrl = \"https://docs.google.com/presentation/d/\" + presentationId + \"/edit\";\nconst empresa = (notion.property_nombre_oportunidad || notion.name || \"\").trim() || (ia.empresa || \"Cliente\");\n\n// PAIS\nconst PAISES = Object.keys(RATES);\nconst matchPais = (v) => {\n  const n = norm(v);\n  if (!n) return \"\";\n  return PAISES.find((p) => norm(p) === n) || PAISES.find((p) => n.indexOf(norm(p)) !== -1) || \"\";\n};\n\nconst paisNotion = matchPais(Array.isArray(notion.property_pais) ? notion.property_pais[0] : notion.property_pais);\nconst paisIa = matchPais(ia.pais);\nlet paisTel = \"\";\nconst telDigitos = String(notion.property_whatsapp_kdm || \"\").replace(/\\D/g, \"\");\nfor (const [pref, p] of PREFIJOS) {\n  if (telDigitos.indexOf(pref) === 0) { paisTel = p; break; }\n}\nconst pais = paisNotion || paisIa || paisTel || \"Argentina\";\nconst hora = RATES[pais] || 7.15;\n\n// DEDICACION\nconst dedicRaw = norm(ia.dedicacion_personas);\nconst esPartTime = dedicRaw.indexOf(\"part\") !== -1;\nconst dedicacion = esPartTime ? \"part-time\" : \"full-time\";\nconst hsPorPersona = esPartTime ? HS_ANIO_PARTTIME : HS_ANIO_FULLTIME;\n\n// FACTURAS\nconst facturasMes = parseFloat(notion.property_cantidad_de_facturas || notion.facturas_notion || ia.volumen_facturas_mensual) || 450;\nconst personas = Math.max(1, Math.ceil(facturasMes / FACTURAS_POR_PERSONA_MES));\nconst gasto = facturasMes * 12 * USD_POR_FACTURA;\n\n// HORAS Y CAPACIDAD\nconst hsAnio = personas * hsPorPersona;\nconst hsMes = Math.round(hsAnio / 12);\nconst capacidadPct = Math.round((hsPorPersona / 2000) * 100);\n\n// 3 PILARES\n// 1. Tiempo liberado\nconst valTiempo = Math.round(hsAnio * hora);\nconst horaFmt = hora.toFixed(2).replace(\".\", \",\");\n\n// 2. Crecimiento sin sumar personal\nconst equivFT = personas;\nconst valCrecim = Math.round(equivFT * 2000 * hora);\n\n// 3. Errores y perdidas evitables (1.5% del gasto anual)\nconst pctErrFmt = \"1,5%\";\nconst valErrores = Math.round(gasto * 0.015);\n\n// TOTALES\nconst ahorroAnio = valTiempo + valCrecim + valErrores;\n\n// INVERSION Y ROI\nconst oneshot = parseFloat(notion.oneshot || notion.property_one_shot) || 0;\nconst fee = parseFloat(notion.fee || notion.property_mrr) || 0;\nconst inversion = oneshot + fee * 12;\nconst tienePrecio = (oneshot > 0 || fee > 0);\nconst roi1 = (inversion > 0) ? (\"+\" + Math.round(((ahorroAnio - inversion) / inversion) * 100) + \"%\") : \"N/A\";\n\nreturn [{ json: {\n  calculable: true,\n  tiene_precio: tienePrecio,\n  presentationId: presentationId,\n  slideUrl: slideUrl,\n  empresa: empresa,\n  pais: pais,\n  facturasMes: Math.round(facturasMes).toLocaleString(\"es-AR\"),\n  personas: String(personas),\n  gastoFmt: fmtUSD(gasto),\n  hsAnio: fmtUSD(hsAnio),\n  hsMes: fmtUSD(hsMes),\n  capacidad: capacidadPct + \"%\",\n  ahorroAnio: fmtUSD(ahorroAnio),\n  valTiempo: fmtUSD(valTiempo),\n  horaFmt: horaFmt,\n  valCrecim: fmtUSD(valCrecim),\n  equivFT: String(equivFT),\n  valErrores: fmtUSD(valErrores),\n  pctErr: pctErrFmt,\n  inversion: fmtUSD(inversion),\n  roi1: roi1,\n\n  // Campos retrocompatibles\n  perdErrores: fmtUSD(valErrores),\n  perdRrhh: fmtUSD(valTiempo),\n  perdTotal: fmtUSD(ahorroAnio),\n  impactoTotal: fmtUSD(ahorroAnio),\n  impactoMensual: fmtUSD(ahorroAnio / 12)\n} }];"
+        "jsCode": "// =====================================================================\n// CALCULO AUTOMATICO DE IMPACTO ECONOMICO Y ROI (PAGINA 4 Y GOOGLE DOC)\n// =====================================================================\nconst RATES = { \"Argentina\": 10.10, \"Uruguay\": 9.30, \"Ecuador\": 5.45, \"Costa Rica\": 8.10, \"Honduras\": 5.80, \"Panamá\": 5.40, \"México\": 5.25, \"Bolivia\": 5.13, \"Guatemala\": 5.25, \"Chile\": 5.00, \"Perú\": 4.35, \"Paraguay\": 4.40, \"Rep. Dominicana\": 3.90, \"Colombia\": 3.60, \"Brasil\": 4.05, \"El Salvador\": 3.65, \"Venezuela\": 2.70 };\nconst PREFIJOS = [ [\"549\", \"Argentina\"], [\"54\", \"Argentina\"], [\"598\", \"Uruguay\"], [\"56\", \"Chile\"], [\"57\", \"Colombia\"], [\"52\", \"México\"], [\"51\", \"Perú\"], [\"593\", \"Ecuador\"], [\"506\", \"Costa Rica\"], [\"507\", \"Panamá\"], [\"502\", \"Guatemala\"], [\"504\", \"Honduras\"], [\"503\", \"El Salvador\"], [\"591\", \"Bolivia\"], [\"595\", \"Paraguay\"], [\"1809\", \"Rep. Dominicana\"], [\"1829\", \"Rep. Dominicana\"], [\"1849\", \"Rep. Dominicana\"], [\"55\", \"Brasil\"], [\"58\", \"Venezuela\"] ];\n\nconst FACTURAS_POR_PERSONA_MES = 300;\nconst USD_POR_FACTURA = 400;\nconst HS_ANIO_FULLTIME = 1200;\nconst HS_ANIO_PARTTIME = 600;\nconst PCT = { A: 1.0, B: 0.3, C: 1.0, D: 1.0, E: 1.5 };\n\nconst norm = (s) => (s || \"\").toString().normalize(\"NFD\").replace(/[̀-ͯ]/g, \"\").toLowerCase().trim();\nconst fmtUSD = (n) => Math.round(n).toLocaleString(\"es-AR\");\nconst fmtPct1 = (n) => n.toLocaleString(\"es-AR\", { minimumFractionDigits: 1, maximumFractionDigits: 1 });\nconst fmt = (n) => \"USD \" + fmtUSD(n);\n\nconst notion = $(\"Code - Extraer Datos\").first().json;\nconst iaRaw = $(\"IA - Extraer datos de la llamada\").first().json;\nconst ia = iaRaw.output || iaRaw;\nconst presentationId = $(\"Copiar plantilla de propuesta\").first().json.id;\nconst slideUrl = \"https://docs.google.com/presentation/d/\" + presentationId + \"/edit\";\nconst empresa = ia.empresa || notion.property_nombre_oportunidad || \"Cliente\";\n\n// PAIS\nconst PAISES = Object.keys(RATES);\nconst matchPais = (v) => {\n  const n = norm(v);\n  if (!n) return \"\";\n  return PAISES.find((p) => norm(p) === n) || PAISES.find((p) => n.indexOf(norm(p)) !== -1) || \"\";\n};\n\nconst paisNotion = matchPais(Array.isArray(notion.property_pais) ? notion.property_pais[0] : notion.property_pais);\nconst paisIa = matchPais(ia.pais);\nlet paisTel = \"\";\nlet prefTel = \"\";\nconst telDigitos = String(notion.property_whatsapp_kdm || \"\").replace(/\\D/g, \"\");\nfor (const [pref, p] of PREFIJOS) {\n  if (telDigitos.indexOf(pref) === 0) { paisTel = p; prefTel = pref; break; }\n}\nconst pais = paisNotion || paisIa || paisTel || \"\";\nconst paisOrigen = paisNotion ? \"card de Notion\" : (paisIa ? \"la transcripcion\" : (paisTel ? \"el prefijo del telefono (+\" + prefTel + \")\" : \"\"));\n\n// DEDICACION\nconst dedicRaw = norm(ia.dedicacion_personas);\nconst esPartTime = dedicRaw.indexOf(\"part\") !== -1;\nconst dedicacionConocida = esPartTime || dedicRaw.indexOf(\"full\") !== -1;\nconst dedicacion = esPartTime ? \"part-time\" : \"full-time\";\nconst hsPorPersona = esPartTime ? HS_ANIO_PARTTIME : HS_ANIO_FULLTIME;\n\n// FACTURAS\nconst aFacturasMes = (v) => {\n  if (v == null || v === \"\") return null;\n  if (typeof v === \"number\") return v > 0 ? v : null;\n  const s = String(v);\n  const nums = (s.replace(/[.,](?=\\d{3}\\b)/g, \"\").match(/\\d+/g) || []).map(Number).filter((n) => n > 0);\n  if (!nums.length) return null;\n  let n = Math.max.apply(null, nums);\n  if (/anual|al año|por año|\\/año|anuales/i.test(s)) n = n / 12;\n  return n > 0 ? n : null;\n};\n\nconst factNotion = aFacturasMes(notion.property_cantidad_de_facturas || notion.facturas_notion);\nconst factIa = aFacturasMes(ia.volumen_facturas_mensual);\nlet facturasMes = factNotion || factIa;\nlet facturasOrigen = factNotion ? \"card de Notion\" : (factIa ? \"la transcripcion\" : \"\");\n\n// =====================================================================\n// ULTIMO RECURSO: estimar las facturas a partir de las PERSONAS que la\n// llamada menciono cargando facturas, invirtiendo la misma regla que se\n// usa en el sentido normal (1 persona cada FACTURAS_POR_PERSONA_MES).\n//\n// Es para evitarle al comercial un ida y vuelta por formulario cuando el\n// dato exacto no esta en ningun lado pero la llamada si dijo cuanta gente\n// hay en el proceso.\n//\n// OJO -- ESTO NO ES UN DATO, ES UNA INFERENCIA, y arrastra mas de lo que\n// parece: el GASTO ANUAL sale de las facturas (facturas x 12 x\n// USD_POR_FACTURA), y toda la tabla de perdidas de la pagina 4 son\n// porcentajes de ese gasto. O sea que la pagina 4 entera termina apoyada\n// en este numero. Por eso se marca 'facturasEstimadas' y el aviso de\n// Slack lo grita: el comercial TIENE que poder distinguir un numero que\n// vino del CRM de uno que dedujo la automatizacion.\n// =====================================================================\nconst aPersonas = (v) => {\n  if (v == null || v === \"\") return null;\n  if (typeof v === \"number\") return v > 0 ? Math.round(v) : null;\n  const s = String(v);\n  if (/no mencionad|no informad|sin dato|no aclar/i.test(s)) return null;\n  const nums = (s.match(/\\d+/g) || []).map(Number).filter((n) => n > 0 && n < 500);\n  if (nums.length) return Math.max.apply(null, nums);\n  const PALABRAS = { un: 1, una: 1, uno: 1, dos: 2, tres: 3, cuatro: 4, cinco: 5, seis: 6, siete: 7, ocho: 8, nueve: 9, diez: 10 };\n  const n = norm(s);\n  for (const k of Object.keys(PALABRAS)) {\n    if (new RegExp(\"\\\\b\" + k + \"\\\\b\").test(n)) return PALABRAS[k];\n  }\n  return null;\n};\n\nconst personasIa = aPersonas(ia.personas_carga_facturas);\nlet facturasEstimadas = false;\nlet estimacionSinBase = false;\nif (!facturasMes && personasIa) {\n  facturasMes = personasIa * FACTURAS_POR_PERSONA_MES;\n  facturasOrigen = \"estimado a partir de \" + personasIa + \" persona\" + (personasIa !== 1 ? \"s\" : \"\") + \" mencionada\" + (personasIa !== 1 ? \"s\" : \"\") + \" en la llamada\";\n  facturasEstimadas = true;\n}\n\n// =====================================================================\n// ULTIMO ESCALON DE LA CASCADA -- la propuesta SIEMPRE sale completa.\n//\n// Si la llamada no menciono ni volumen de facturas ni cuanta gente las\n// carga, se asume el minimo (1 persona) en vez de frenar la pagina 4 y\n// mandar al comercial a completar un formulario. Decision explicita del\n// negocio: el caso es raro y el ida y vuelta cuesta mas que el riesgo.\n//\n// PERO ESTE NUMERO NO LO DIJO NADIE. El gasto anual sale de aca, y toda\n// la tabla de perdidas de la pagina 4 son porcentajes de ese gasto. Por\n// eso 'estimacionSinBase' hace dos cosas que los otros escalones no:\n//   1. el aviso de Slack lo marca como el nivel mas debil de todos;\n//   2. el PROPIO SLIDE queda con la leyenda de estimacion preliminar,\n//      asi el numero no se lee como un dato relevado en la discovery --\n//      ni por el comercial ni por el cliente que lo tiene enfrente.\n// =====================================================================\nif (!facturasMes) {\n  facturasMes = FACTURAS_POR_PERSONA_MES;\n  facturasOrigen = \"valor por defecto: la llamada no menciono ni volumen de facturas ni personas en el proceso\";\n  facturasEstimadas = true;\n  estimacionSinBase = true;\n}\n\nconst personas = facturasMes ? Math.max(1, Math.ceil(facturasMes / FACTURAS_POR_PERSONA_MES)) : null;\nconst gasto = facturasMes ? facturasMes * 12 * USD_POR_FACTURA : null;\n\nconst faltan = [];\nif (!facturasMes) faltan.push(\"la cantidad de facturas\");\nif (!pais) faltan.push(\"el pais\");\n\nif (faltan.length) {\n  return [{ json: {\n    calculable: false,\n    tiene_precio: false,\n    presentationId: presentationId,\n    slideUrl: slideUrl,\n    empresa: empresa,\n    pais: pais,\n    paisOrigen: paisOrigen,\n    gastoPrefill: gasto ? String(Math.round(gasto)) : \"\",\n    personasPrefill: personas ? String(personas) : \"\",\n    dedicacion: dedicacion,\n    dedicacionConocida: dedicacionConocida,\n    facturasMes: facturasMes ? Math.round(facturasMes) : null,\n    facturasOrigen: facturasOrigen,\n    facturasEstimadas: facturasEstimadas,\n    estimacionSinBase: estimacionSinBase,\n    motivo: \"Falta \" + faltan.join(\" y \") + \".\"\n  } }];\n}\n\n// PERDIDAS Y CALCULOS\nconst hora = RATES[pais] || 8.74;\nconst valA = gasto * PCT.A / 100;\nconst valB = gasto * PCT.B / 100;\nconst valC = gasto * PCT.C / 100;\nconst valD = gasto * PCT.D / 100;\nconst valE = gasto * PCT.E / 100;\nconst subtotal = valA + valB + valC + valD + valE;\nconst hsAnio = personas * hsPorPersona;\nconst rrhh = Math.round(hsAnio * hora);\nconst total = subtotal + rrhh;\nconst mensual = total / 12;\n\nconst oneshot = parseFloat(notion.oneshot || notion.property_one_shot) || 0;\nconst fee = parseFloat(notion.fee || notion.property_mrr) || 0;\nconst tienePrecio = (oneshot > 0 || fee > 0);\n\nconst s = personas !== 1 ? \"s\" : \"\";\nconst feeAnual = fee * 12;\nconst costo1 = oneshot + feeAnual;\nconst costo2 = feeAnual;\nconst roi1 = costo1 > 0 ? ((total - costo1) / costo1 * 100) : 0;\nconst roi2 = costo2 > 0 ? ((total - costo2) / costo2 * 100) : 0;\n\nreturn [{ json: {\n  calculable: true,\n  tiene_precio: tienePrecio,\n  presentationId: presentationId,\n  slideUrl: slideUrl,\n  empresa: empresa,\n  docName: \"ROI Xtract - \" + empresa,\n  owner_slack: String(notion.ownerEmail || notion.owner_slack || \"\").trim(),\n  facturasMes: Math.round(facturasMes),\n  facturasOrigen: facturasOrigen,\n  facturasEstimadas: facturasEstimadas,\n  estimacionSinBase: estimacionSinBase,\n  paisOrigen: paisOrigen,\n  dedicacion: dedicacion,\n  dedicacionConocida: dedicacionConocida,\n  hsPorPersona: hsPorPersona,\n\n  // Pagina 4 Slides\n  gastoFmt: Math.round(gasto).toLocaleString(\"es-AR\"),\n  pais: pais,\n  personas: String(personas),\n  perdErrores: fmt(valA),\n  perdFiscal: fmt(valB),\n  perdDesc: fmt(valC),\n  perdSobre: fmt(valD),\n  perdDupes: fmt(valE),\n  perdRrhh: fmt(rrhh),\n  perdTotal: fmt(total),\n  impactoTotal: fmtUSD(total),\n  impactoMensual: fmtUSD(mensual),\n  rrhhDetalle: personas + \" persona\" + s + \" \" + dedicacion + \" × \" + hsPorPersona.toLocaleString(\"es-AR\") + \" hs/año × USD \" + hora.toFixed(2) + \"/h (incluye leyes sociales)\"\n    + (estimacionSinBase ? \"  —  Estimación preliminar sobre un volumen de referencia de \" + facturasMes + \" facturas/mes, a confirmar con el cliente.\" : \"\"),\n\n  // Documento ROI Google Docs\n  docFacturasMencion: facturasMes > 0 ? fmtUSD(facturasMes) + \" facturas mensuales\" : \"un volumen relevante de facturas\",\n  docBaseLaboral: personas + \" analista\" + s + \" asignado\" + s + \" al proceso de AP en \" + pais,\n  docRrhhBase: personas + \" persona\" + s + \" × \" + hsPorPersona.toLocaleString(\"es-AR\") + \" hs/año × USD \" + hora.toFixed(2) + \"/h en \" + pais + \", incl. cargas sociales\",\n  docVolumen: fmtUSD(gasto),\n  docPctA: fmtPct1(PCT.A),\n  docPctB: fmtPct1(PCT.B),\n  docPctC: fmtPct1(PCT.C),\n  docPctD: fmtPct1(PCT.D),\n  docPctE: fmtPct1(PCT.E),\n  docValA: fmtUSD(valA),\n  docValB: fmtUSD(valB),\n  docValC: fmtUSD(valC),\n  docValD: fmtUSD(valD),\n  docValE: fmtUSD(valE),\n  docSubtotalAE: fmtUSD(subtotal),\n  docValRrhh: fmtUSD(rrhh),\n  docRecupero: fmtUSD(total),\n  docOneshot: fmtUSD(oneshot),\n  docFeeAnual: fmtUSD(feeAnual),\n  docCosto1: fmtUSD(costo1),\n  docCosto2: fmtUSD(costo2),\n  docRoi1: Math.round(roi1) + \"%\",\n  docRoi2: Math.round(roi2) + \"%\"\n} }];"
       },
       "id": "66f2db6c-c704-4ec7-b15e-904e6fe4c038",
       "name": "Calcular impacto economico",
@@ -281,64 +281,56 @@
         "textUi": {
           "textValues": [
             {
-              "text": "{{FACTURAS}}",
-              "replaceText": "={{ $json.facturasMes }}"
+              "text": "{{GASTO_ANUAL}}",
+              "replaceText": "={{ $json.gastoFmt }}"
+            },
+            {
+              "text": "{{PAIS}}",
+              "replaceText": "={{ $json.pais }}"
             },
             {
               "text": "{{PERSONAS}}",
               "replaceText": "={{ $json.personas }}"
             },
             {
-              "text": "{{GASTO_ANUAL}}",
-              "replaceText": "={{ $json.gastoFmt }}"
+              "text": "{{PERD_ERRORES}}",
+              "replaceText": "={{ $json.perdErrores }}"
             },
             {
-              "text": "{{HS_ANIO}}",
-              "replaceText": "={{ $json.hsAnio }}"
+              "text": "{{PERD_FISCAL}}",
+              "replaceText": "={{ $json.perdFiscal }}"
             },
             {
-              "text": "{{HS_MES}}",
-              "replaceText": "={{ $json.hsMes }}"
+              "text": "{{PERD_DESC}}",
+              "replaceText": "={{ $json.perdDesc }}"
             },
             {
-              "text": "{{CAPACIDAD}}",
-              "replaceText": "={{ $json.capacidad }}"
+              "text": "{{PERD_SOBRE}}",
+              "replaceText": "={{ $json.perdSobre }}"
             },
             {
-              "text": "{{AHORRO_ANIO}}",
-              "replaceText": "={{ $json.ahorroAnio }}"
+              "text": "{{PERD_DUPES}}",
+              "replaceText": "={{ $json.perdDupes }}"
             },
             {
-              "text": "{{VAL_TIEMPO}}",
-              "replaceText": "={{ $json.valTiempo }}"
+              "text": "{{PERD_RRHH}}",
+              "replaceText": "={{ $json.perdRrhh }}"
             },
             {
-              "text": "{{HORA}}",
-              "replaceText": "={{ $json.horaFmt }}"
+              "text": "{{PERD_TOTAL}}",
+              "replaceText": "={{ $json.perdTotal }}"
             },
             {
-              "text": "{{VAL_CRECIM}}",
-              "replaceText": "={{ $json.valCrecim }}"
+              "text": "{{IMPACTO_TOTAL}}",
+              "replaceText": "={{ $json.impactoTotal }}"
             },
             {
-              "text": "{{EQUIV_FT}}",
-              "replaceText": "={{ $json.equivFT }}"
+              "text": "{{IMPACTO_MENSUAL}}",
+              "replaceText": "={{ $json.impactoMensual }}"
             },
             {
-              "text": "{{VAL_ERRORES}}",
-              "replaceText": "={{ $json.valErrores }}"
-            },
-            {
-              "text": "{{PCT_ERR}}",
-              "replaceText": "={{ $json.pctErr }}"
-            },
-            {
-              "text": "{{INVERSION}}",
-              "replaceText": "={{ $json.inversion }}"
-            },
-            {
-              "text": "{{ROI_1}}",
-              "replaceText": "={{ $json.roi1 }}"
+              "text": "{{RRHH_DETALLE}}",
+              "replaceText": "={{ $json.rrhhDetalle }}"
             }
           ]
         },
@@ -361,7 +353,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// =====================================================================\n// MODO PRUEBA -- VACIAR ESTA CONSTANTE PARA VOLVER A LO NORMAL\n// =====================================================================\nconst FORZAR_DESTINATARIO = '';\nconst extraerNode = $('Code - Extraer Datos').first().json || {};\nconst rawId = (extraerNode.id || extraerNode.page_id || '').replace(/-/g, '');\nconst notionUrl = extraerNode.url || (rawId ? ('https://www.notion.so/' + rawId) : '');\n\nconst FORM_COMPLETO = 'https://n8n.xtract.app/form/pagina-4-impacto';\nconst FORM_SOLO_PRECIO = 'https://n8n.xtract.app/form/roi-precio';\n\nconst c = $('Calcular impacto economico').first().json;\nconst notion = $('Code - Extraer Datos').first().json;\n\nconst norm = (s) => String(s == null ? '' : s)\n  .normalize('NFD').replace(/[\\u0300-\\u036f]/g, '')\n  .toLowerCase().trim();\n\nconst ownerEmail = (Array.isArray(notion.property_owner) ? notion.property_owner[0] : notion.property_owner) || '';\nconst local = norm(ownerEmail.split('@')[0]);\n\n// Tabla estática de resguardo con IDs de Slack conocidos en Xtract\nconst KNOWN_OWNERS = {\n  // Principales Ejecutivos\n  'nicolas.gonzalez@xtract.app': 'U02MCAHHM1T',\n  'nicolas@xtract.app': 'U02MCAHHM1T',\n  'nicolas gonzalez': 'U02MCAHHM1T',\n  'nicolás gonzalez': 'U02MCAHHM1T',\n  'tomas@xtract.app': 'U01AC8ARHG8',\n  'tomas.marconi@xtract.app': 'U01AC8ARHG8',\n  'tomas marconi': 'U01AC8ARHG8',\n  'wenceslao.hoepner@xtract.app': 'U0BBASA0F60',\n  'wenceslao@xtract.app': 'U0BBASA0F60',\n  'wenceslao hoepner': 'U0BBASA0F60',\n  'juan.alvarez@xtract.app': 'U094FGA9VEF',\n  'juan@xtract.app': 'U094FGA9VEF',\n  'juan alvarez': 'U094FGA9VEF',\n  'damian.deggeller@xtract.app': 'U09PYEWUHGF',\n  'damian@xtract.app': 'U09PYEWUHGF',\n  'damian deggeller': 'U09PYEWUHGF',\n  'damián deggeller': 'U09PYEWUHGF',\n  'greta.bruno@xtract.app': 'U096BLX5864',\n  'greta@xtract.app': 'U096BLX5864',\n  'greta bruno': 'U096BLX5864',\n  'ian.brandan@xtract.app': 'U09FZ5MLF0E',\n  'ian@xtract.app': 'U09FZ5MLF0E',\n  'ian brandan': 'U09FZ5MLF0E',\n  \n  // Equipo Comercial Ampliado & SDRs\n  'jesus@xtract.app': 'U01A12169ND',\n  'jesus.degruttola@xtract.app': 'U01A12169ND',\n  'jesús de gruttola': 'U01A12169ND',\n  'jesus.soria@xtract.app': 'U0AM7HGHQTB',\n  'jesús soria': 'U0AM7HGHQTB',\n  'matias.febre@xtract.app': 'U07JW0A2AL9',\n  'matias@xtract.app': 'U07JW0A2AL9',\n  'matías febré': 'U07JW0A2AL9',\n  'neiber@xtract.app': 'U06R7TRQKV1',\n  'neiber monti': 'U06R7TRQKV1',\n  'gaston.moriconi@xtract.app': 'U093XP1LAUC',\n  'gastón moriconi': 'U093XP1LAUC',\n  'bruno.corrao@xtract.app': 'U064UNXJZ7F',\n  'franco.argibel@xtract.app': 'U08BMGJDT7F',\n  'santiago.paredes@xtract.app': 'U0AQMAM2ZB9',\n  'alejandro@xtract.app': 'U01A11YN7SM',\n  'alejandro.bezdjian@xtract.app': 'U01A11YN7SM',\n  'ezequiel.nievas@xtract.app': 'U09CY8PBPSN',\n  'sofia.ferro@xtract.app': 'U0BE9AQHFPV'\n};\n\nlet usuarios = [];\ntry {\n  usuarios = $input.all().map((i) => i.json)\n    .filter((u) => u && u.id && !u.deleted && !u.is_bot);\n} catch (e) {}\n\nlet owner = null;\nlet comoSeResolvio = '';\n\nif (ownerEmail && KNOWN_OWNERS[norm(ownerEmail)]) {\n  owner = { id: KNOWN_OWNERS[norm(ownerEmail)], name: local };\n  comoSeResolvio = 'known_owners';\n} else if (local && usuarios.length) {\n  // 1) handle exacto: 'nicolas.gonzalez'\n  owner = usuarios.find((u) => norm(u.name) === local) || null;\n  if (owner) comoSeResolvio = 'handle exacto';\n  // 2) nombre real: 'nicolas.gonzalez' -> 'nicolas gonzalez'\n  if (!owner) {\n    const comoNombre = local.replace(/[._-]+/g, ' ');\n    owner = usuarios.find((u) => norm(u.real_name) === comoNombre) || null;\n    if (owner) comoSeResolvio = 'nombre real derivado';\n  }\n}\n\n// Fallback general al bot/canal operativo si no se encuentra\nconst SLACK_FALLBACK_DM = 'U0BJLTDCAMR';\n\nconst dedicLabel = c.dedicacion === 'part-time' ? 'Part-time' : 'Full-time';\nconst qs = [];\nqs.push('presentacion=' + encodeURIComponent(c.slideUrl || ''));\nif (c.empresa) qs.push('empresa=' + encodeURIComponent(c.empresa));\nif (c.pais) qs.push('pais=' + encodeURIComponent(c.pais));\nif (c.gastoPrefill) qs.push('gasto=' + encodeURIComponent(c.gastoPrefill));\nelse if (c.calculable && c.gastoFmt) qs.push('gasto=' + encodeURIComponent(String(c.gastoFmt).replace(/\\./g, '')));\nif (c.personasPrefill) qs.push('personas=' + encodeURIComponent(c.personasPrefill));\nelse if (c.calculable && c.personas) qs.push('personas=' + encodeURIComponent(c.personas));\nif (c.facturasMes) qs.push('facturas=' + encodeURIComponent(c.facturasMes));\nqs.push('dedicacion=' + encodeURIComponent(dedicLabel));\n\nconst esFallback = !FORZAR_DESTINATARIO && !owner;\nconst destinatario = FORZAR_DESTINATARIO || (owner ? owner.id : SLACK_FALLBACK_DM);\nif (destinatario) qs.push('owner_slack=' + encodeURIComponent(destinatario));\n\nconst query = '?' + qs.join('&');\nconst urlCompleto = FORM_COMPLETO + query;\nconst urlSoloPrecio = FORM_SOLO_PRECIO + query;\n\nlet bloque;\nif (c.calculable) {\n  bloque = [\n    '*Impacto economico (pagina 4)* — ya escrito en el slide',\n    '• Facturas: ' + c.facturasMes + '/mes  →  gasto anual estimado USD ' + c.gastoFmt,\n    '• Pais: ' + c.pais + '  •  Personas en el proceso: ' + c.personas + ' (' + c.dedicacion + ', ' + c.hsPorPersona + ' hs/año c/u)',\n    '• Perdida anual estimada: ' + c.perdTotal + '  (USD ' + c.impactoMensual + '/mes)'\n  ];\n  const alertas = [];\n  if (c.estimacionSinBase) {\n    alertas.push(':rotating_light: *ATENCION — la pagina 4 se armo SIN NINGUN DATO de volumen.*');\n    alertas.push('   La llamada no menciono ni cuantas facturas procesan ni cuanta gente las carga, asi que se asumio el minimo: 1 persona / ' + c.facturasMes + ' facturas por mes.');\n    alertas.push('   De ahi sale el gasto anual de USD ' + c.gastoFmt + ' y TODA la tabla de perdidas. El slide lleva la leyenda \"Estimación preliminar... a confirmar\", pero si sabes el volumen real conviene regenerar la propuesta antes de mostrarla.');\n  } else if (c.facturasEstimadas) {\n    alertas.push(':rotating_light: *Las facturas no estaban cargadas: se ESTIMARON en ' + c.facturasMes + '/mes* (' + c.facturasOrigen + ').');\n    alertas.push('   El gasto anual de USD ' + c.gastoFmt + ' y toda la tabla de perdidas de la pagina 4 salen de ese numero. Si tenes el dato real, conviene regenerar la propuesta antes de mandarla.');\n  } else if (c.facturasOrigen !== 'card de Notion') {\n    alertas.push(':warning: Las facturas (' + c.facturasMes + '/mes) salieron de ' + c.facturasOrigen + ', no del CRM. Verificalas.');\n  }\n  if (c.paisOrigen !== 'card de Notion') {\n    alertas.push(':warning: El pais (' + c.pais + ') se dedujo de ' + c.paisOrigen + '. Verificalo.');\n  }\n  if (alertas.length) {\n    bloque = bloque.concat(['']).concat(alertas)\n      .concat(['_Si un numero esta mal, hay que volver a generar la propuesta: la pagina 4 ya quedo escrita y no se puede reescribir desde el formulario._']);\n  }\n} else {\n  bloque = [\n    ':pushpin: *La pagina 4 quedo pendiente.* ' + (c.motivo || ''),\n    'El slide esta sin tocar a proposito: los marcadores siguen ahi, asi el formulario los puede completar.'\n  ];\n  const yaCargado = [];\n  if (c.gastoPrefill) yaCargado.push('gasto USD ' + Number(c.gastoPrefill).toLocaleString('es-AR'));\n  if (c.personasPrefill) yaCargado.push(c.personasPrefill + ' persona(s) ' + c.dedicacion);\n  if (c.pais) yaCargado.push('pais ' + c.pais);\n  bloque.push(yaCargado.length\n    ? '_Ya va precargado: el link del Slides, ' + yaCargado.join(', ') + '. Solo falta lo demas._'\n    : '_Va precargado el link del Slides. El resto hay que completarlo._');\n  if (!c.dedicacionConocida) {\n    bloque.push('_La llamada no aclaro la dedicacion, asi que el formulario viene en Full-time. Cambialo si corresponde._');\n  }\n}\n\nlet bloqueRoi;\nif (c.calculable) {\n  bloqueRoi = [\n    '',\n    ':bar_chart: *Documento ROI* — todavia no esta generado.',\n    'Falta solo el precio cotizado. Los datos de arriba ya van cargados.',\n    '',\n    ':pencil: <' + urlSoloPrecio + '|Cargar el precio y generar el ROI>',\n    '_Son dos campos: implementacion y fee mensual._',\n    '_Si alguno de los datos de arriba esta mal, <' + urlCompleto + '|usa el formulario completo> — ojo que la pagina 4 del slide ya quedo escrita y no se reescribe._'\n  ];\n} else {\n  bloqueRoi = [\n    '',\n    ':bar_chart: *Documento ROI* — todavia no esta generado.',\n    'Necesita el precio cotizado (implementacion y fee mensual), que la automatizacion no puede saber.',\n    '',\n    ':pencil: <' + urlCompleto + '|Completar la pagina 4 y generar el ROI>',\n    '_El mismo envio hace las dos cosas._'\n  ];\n}\nbloqueRoi.push('_Cuando esten los dos, te llega otro aviso por aca._');\n\nconst notaPrueba = esFallback ? [\n  ':warning: *Este aviso era para el owner de la card, pero no se lo pudo identificar en Slack.*',\n  '   Owner en Notion: `' + (ownerEmail || 'sin owner cargado') + '`',\n  '   Revisa que esa persona exista en el workspace de Xtract y que su mail o handle coincida.'\n] : [];\n\nconst texto = [\n  ':page_facing_up: *Propuesta generada* — ' + c.empresa,\n  '<' + c.slideUrl + '|Propuesta con puntos de Mejoras Relevados>' + (notionUrl ? ' • <' + notionUrl + '|Abrir card en Notion>' : ''),\n  ''\n].concat(bloque)\n .concat(bloqueRoi)\n .concat(notaPrueba.length ? [''].concat(notaPrueba) : [])\n .concat(['', '_Revisala antes de mandarla: los textos los redacto un modelo._'])\n .join('\\n');\n\nreturn [{ json: {\n  texto_slack: texto,\n  owner_email: ownerEmail,\n  form_url: c.calculable ? urlSoloPrecio : urlCompleto,\n  pagina4_completada: !!c.calculable,\n  owner_slack_id_real: owner ? owner.id : '',\n  owner_encontrado: !!owner,\n  como_se_resolvio: comoSeResolvio,\n  es_fallback: esFallback,\n  owner_slack_id: destinatario\n} }];"
+        "jsCode": "// =====================================================================\n// MODO PRUEBA -- VACIAR ESTA CONSTANTE PARA VOLVER A LO NORMAL\n// =====================================================================\nconst FORZAR_DESTINATARIO = '';\nconst extraerNode = $('Code - Extraer Datos').first().json || {};\nconst rawId = (extraerNode.id || extraerNode.page_id || '').replace(/-/g, '');\nconst notionUrl = extraerNode.url || (rawId ? ('https://www.notion.so/' + rawId) : '');\n\nconst FORM_COMPLETO = 'https://n8n.xtract.app/form/pagina-4-impacto';\nconst FORM_SOLO_PRECIO = 'https://n8n.xtract.app/form/roi-precio';\n\nconst c = $('Calcular impacto economico').first().json;\nconst notion = $('Code - Extraer Datos').first().json;\n\nconst norm = (s) => String(s == null ? '' : s)\n  .normalize('NFD').replace(/[\\u0300-\\u036f]/g, '')\n  .toLowerCase().trim();\n\nconst ownerEmail = (Array.isArray(notion.property_owner) ? notion.property_owner[0] : notion.property_owner) || '';\nconst local = norm(ownerEmail.split('@')[0]);\n\n// Tabla estática de resguardo con IDs de Slack conocidos en Xtract\nconst KNOWN_OWNERS = {\n  'nicolas.gonzalez@xtract.app': 'U02MCAHHM1T',\n  'wenceslao.hoepner@xtract.app': 'U0BBASA0F60',\n  'damian.deggeller@xtract.app': 'U09PYEWUHGF',\n  'greta.bruno@xtract.app': 'U096BLX5864',\n  'ian.brandan@xtract.app': 'U09FZ5MLF0E'\n};\n\nlet usuarios = [];\ntry {\n  usuarios = $input.all().map((i) => i.json)\n    .filter((u) => u && u.id && !u.deleted && !u.is_bot);\n} catch (e) {}\n\nlet owner = null;\nlet comoSeResolvio = '';\n\nif (ownerEmail && KNOWN_OWNERS[norm(ownerEmail)]) {\n  owner = { id: KNOWN_OWNERS[norm(ownerEmail)], name: local };\n  comoSeResolvio = 'known_owners';\n} else if (local && usuarios.length) {\n  // 1) handle exacto: 'nicolas.gonzalez'\n  owner = usuarios.find((u) => norm(u.name) === local) || null;\n  if (owner) comoSeResolvio = 'handle exacto';\n  // 2) nombre real: 'nicolas.gonzalez' -> 'nicolas gonzalez'\n  if (!owner) {\n    const comoNombre = local.replace(/[._-]+/g, ' ');\n    owner = usuarios.find((u) => norm(u.real_name) === comoNombre) || null;\n    if (owner) comoSeResolvio = 'nombre real derivado';\n  }\n}\n\n// Fallback general al bot/canal operativo si no se encuentra\nconst SLACK_FALLBACK_DM = 'U0BJLTDCAMR';\n\nconst dedicLabel = c.dedicacion === 'part-time' ? 'Part-time' : 'Full-time';\nconst qs = [];\nqs.push('presentacion=' + encodeURIComponent(c.slideUrl || ''));\nif (c.empresa) qs.push('empresa=' + encodeURIComponent(c.empresa));\nif (c.pais) qs.push('pais=' + encodeURIComponent(c.pais));\nif (c.gastoPrefill) qs.push('gasto=' + encodeURIComponent(c.gastoPrefill));\nelse if (c.calculable && c.gastoFmt) qs.push('gasto=' + encodeURIComponent(String(c.gastoFmt).replace(/\\./g, '')));\nif (c.personasPrefill) qs.push('personas=' + encodeURIComponent(c.personasPrefill));\nelse if (c.calculable && c.personas) qs.push('personas=' + encodeURIComponent(c.personas));\nif (c.facturasMes) qs.push('facturas=' + encodeURIComponent(c.facturasMes));\nqs.push('dedicacion=' + encodeURIComponent(dedicLabel));\n\nconst esFallback = !FORZAR_DESTINATARIO && !owner;\nconst destinatario = FORZAR_DESTINATARIO || (owner ? owner.id : SLACK_FALLBACK_DM);\nif (destinatario) qs.push('owner_slack=' + encodeURIComponent(destinatario));\n\nconst query = '?' + qs.join('&');\nconst urlCompleto = FORM_COMPLETO + query;\nconst urlSoloPrecio = FORM_SOLO_PRECIO + query;\n\nlet bloque;\nif (c.calculable) {\n  bloque = [\n    '*Impacto economico (pagina 4)* — ya escrito en el slide',\n    '• Facturas: ' + c.facturasMes + '/mes  →  gasto anual estimado USD ' + c.gastoFmt,\n    '• Pais: ' + c.pais + '  •  Personas en el proceso: ' + c.personas + ' (' + c.dedicacion + ', ' + c.hsPorPersona + ' hs/año c/u)',\n    '• Perdida anual estimada: ' + c.perdTotal + '  (USD ' + c.impactoMensual + '/mes)'\n  ];\n  const alertas = [];\n  if (c.estimacionSinBase) {\n    alertas.push(':rotating_light: *ATENCION — la pagina 4 se armo SIN NINGUN DATO de volumen.*');\n    alertas.push('   La llamada no menciono ni cuantas facturas procesan ni cuanta gente las carga, asi que se asumio el minimo: 1 persona / ' + c.facturasMes + ' facturas por mes.');\n    alertas.push('   De ahi sale el gasto anual de USD ' + c.gastoFmt + ' y TODA la tabla de perdidas. El slide lleva la leyenda \"Estimación preliminar... a confirmar\", pero si sabes el volumen real conviene regenerar la propuesta antes de mostrarla.');\n  } else if (c.facturasEstimadas) {\n    alertas.push(':rotating_light: *Las facturas no estaban cargadas: se ESTIMARON en ' + c.facturasMes + '/mes* (' + c.facturasOrigen + ').');\n    alertas.push('   El gasto anual de USD ' + c.gastoFmt + ' y toda la tabla de perdidas de la pagina 4 salen de ese numero. Si tenes el dato real, conviene regenerar la propuesta antes de mandarla.');\n  } else if (c.facturasOrigen !== 'card de Notion') {\n    alertas.push(':warning: Las facturas (' + c.facturasMes + '/mes) salieron de ' + c.facturasOrigen + ', no del CRM. Verificalas.');\n  }\n  if (c.paisOrigen !== 'card de Notion') {\n    alertas.push(':warning: El pais (' + c.pais + ') se dedujo de ' + c.paisOrigen + '. Verificalo.');\n  }\n  if (alertas.length) {\n    bloque = bloque.concat(['']).concat(alertas)\n      .concat(['_Si un numero esta mal, hay que volver a generar la propuesta: la pagina 4 ya quedo escrita y no se puede reescribir desde el formulario._']);\n  }\n} else {\n  bloque = [\n    ':pushpin: *La pagina 4 quedo pendiente.* ' + (c.motivo || ''),\n    'El slide esta sin tocar a proposito: los marcadores siguen ahi, asi el formulario los puede completar.'\n  ];\n  const yaCargado = [];\n  if (c.gastoPrefill) yaCargado.push('gasto USD ' + Number(c.gastoPrefill).toLocaleString('es-AR'));\n  if (c.personasPrefill) yaCargado.push(c.personasPrefill + ' persona(s) ' + c.dedicacion);\n  if (c.pais) yaCargado.push('pais ' + c.pais);\n  bloque.push(yaCargado.length\n    ? '_Ya va precargado: el link del Slides, ' + yaCargado.join(', ') + '. Solo falta lo demas._'\n    : '_Va precargado el link del Slides. El resto hay que completarlo._');\n  if (!c.dedicacionConocida) {\n    bloque.push('_La llamada no aclaro la dedicacion, asi que el formulario viene en Full-time. Cambialo si corresponde._');\n  }\n}\n\nlet bloqueRoi;\nif (c.calculable) {\n  bloqueRoi = [\n    '',\n    ':bar_chart: *Documento ROI* — todavia no esta generado.',\n    'Falta solo el precio cotizado. Los datos de arriba ya van cargados.',\n    '',\n    ':pencil: <' + urlSoloPrecio + '|Cargar el precio y generar el ROI>',\n    '_Son dos campos: implementacion y fee mensual._',\n    '_Si alguno de los datos de arriba esta mal, <' + urlCompleto + '|usa el formulario completo> — ojo que la pagina 4 del slide ya quedo escrita y no se reescribe._'\n  ];\n} else {\n  bloqueRoi = [\n    '',\n    ':bar_chart: *Documento ROI* — todavia no esta generado.',\n    'Necesita el precio cotizado (implementacion y fee mensual), que la automatizacion no puede saber.',\n    '',\n    ':pencil: <' + urlCompleto + '|Completar la pagina 4 y generar el ROI>',\n    '_El mismo envio hace las dos cosas._'\n  ];\n}\nbloqueRoi.push('_Cuando esten los dos, te llega otro aviso por aca._');\n\nconst notaPrueba = esFallback ? [\n  ':warning: *Este aviso era para el owner de la card, pero no se lo pudo identificar en Slack.*',\n  '   Owner en Notion: `' + (ownerEmail || 'sin owner cargado') + '`',\n  '   Revisa que esa persona exista en el workspace de Xtract y que su mail o handle coincida.'\n] : [];\n\nconst texto = [\n  ':page_facing_up: *Propuesta generada* — ' + c.empresa,\n  '<' + c.slideUrl + '|Propuesta con puntos de Mejoras Relevados>' + (notionUrl ? ' • <' + notionUrl + '|Abrir card en Notion>' : ''),\n  ''\n].concat(bloque)\n .concat(bloqueRoi)\n .concat(notaPrueba.length ? [''].concat(notaPrueba) : [])\n .concat(['', '_Revisala antes de mandarla: los textos los redacto un modelo._'])\n .join('\\n');\n\nreturn [{ json: {\n  texto_slack: texto,\n  owner_email: ownerEmail,\n  form_url: c.calculable ? urlSoloPrecio : urlCompleto,\n  pagina4_completada: !!c.calculable,\n  owner_slack_id_real: owner ? owner.id : '',\n  owner_encontrado: !!owner,\n  como_se_resolvio: comoSeResolvio,\n  es_fallback: esFallback,\n  owner_slack_id: destinatario\n} }];"
       },
       "id": "fbd4431a-15d4-4f1e-b5d6-a521c15fdb74",
       "name": "Armar aviso de propuesta",
@@ -569,64 +561,56 @@
         "textUi": {
           "textValues": [
             {
-              "text": "{{FACTURAS}}",
-              "replaceText": "={{ $json.facturasMes }}"
+              "text": "{{GASTO_ANUAL}}",
+              "replaceText": "={{ $json.gastoFmt }}"
+            },
+            {
+              "text": "{{PAIS}}",
+              "replaceText": "={{ $json.pais }}"
             },
             {
               "text": "{{PERSONAS}}",
               "replaceText": "={{ $json.personas }}"
             },
             {
-              "text": "{{GASTO_ANUAL}}",
-              "replaceText": "={{ $json.gastoFmt }}"
+              "text": "{{PERD_ERRORES}}",
+              "replaceText": "={{ $json.perdErrores }}"
             },
             {
-              "text": "{{HS_ANIO}}",
-              "replaceText": "={{ $json.hsAnio }}"
+              "text": "{{PERD_FISCAL}}",
+              "replaceText": "={{ $json.perdFiscal }}"
             },
             {
-              "text": "{{HS_MES}}",
-              "replaceText": "={{ $json.hsMes }}"
+              "text": "{{PERD_DESC}}",
+              "replaceText": "={{ $json.perdDesc }}"
             },
             {
-              "text": "{{CAPACIDAD}}",
-              "replaceText": "={{ $json.capacidad }}"
+              "text": "{{PERD_SOBRE}}",
+              "replaceText": "={{ $json.perdSobre }}"
             },
             {
-              "text": "{{AHORRO_ANIO}}",
-              "replaceText": "={{ $json.ahorroAnio }}"
+              "text": "{{PERD_DUPES}}",
+              "replaceText": "={{ $json.perdDupes }}"
             },
             {
-              "text": "{{VAL_TIEMPO}}",
-              "replaceText": "={{ $json.valTiempo }}"
+              "text": "{{PERD_RRHH}}",
+              "replaceText": "={{ $json.perdRrhh }}"
             },
             {
-              "text": "{{HORA}}",
-              "replaceText": "={{ $json.horaFmt }}"
+              "text": "{{PERD_TOTAL}}",
+              "replaceText": "={{ $json.perdTotal }}"
             },
             {
-              "text": "{{VAL_CRECIM}}",
-              "replaceText": "={{ $json.valCrecim }}"
+              "text": "{{IMPACTO_TOTAL}}",
+              "replaceText": "={{ $json.impactoTotal }}"
             },
             {
-              "text": "{{EQUIV_FT}}",
-              "replaceText": "={{ $json.equivFT }}"
+              "text": "{{IMPACTO_MENSUAL}}",
+              "replaceText": "={{ $json.impactoMensual }}"
             },
             {
-              "text": "{{VAL_ERRORES}}",
-              "replaceText": "={{ $json.valErrores }}"
-            },
-            {
-              "text": "{{PCT_ERR}}",
-              "replaceText": "={{ $json.pctErr }}"
-            },
-            {
-              "text": "{{INVERSION}}",
-              "replaceText": "={{ $json.inversion }}"
-            },
-            {
-              "text": "{{ROI_1}}",
-              "replaceText": "={{ $json.roi1 }}"
+              "text": "{{RRHH_DETALLE}}",
+              "replaceText": "={{ $json.rrhhDetalle }}"
             }
           ]
         },
@@ -876,7 +860,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const FORZAR_DESTINATARIO = \"\";\n\nconst KNOWN_OWNERS = {\n  // Principales Ejecutivos\n  'nicolas.gonzalez@xtract.app': 'U02MCAHHM1T',\n  'nicolas@xtract.app': 'U02MCAHHM1T',\n  'nicolas gonzalez': 'U02MCAHHM1T',\n  'nicolás gonzalez': 'U02MCAHHM1T',\n  'tomas@xtract.app': 'U01AC8ARHG8',\n  'tomas.marconi@xtract.app': 'U01AC8ARHG8',\n  'tomas marconi': 'U01AC8ARHG8',\n  'wenceslao.hoepner@xtract.app': 'U0BBASA0F60',\n  'wenceslao@xtract.app': 'U0BBASA0F60',\n  'wenceslao hoepner': 'U0BBASA0F60',\n  'juan.alvarez@xtract.app': 'U094FGA9VEF',\n  'juan@xtract.app': 'U094FGA9VEF',\n  'juan alvarez': 'U094FGA9VEF',\n  'damian.deggeller@xtract.app': 'U09PYEWUHGF',\n  'damian@xtract.app': 'U09PYEWUHGF',\n  'damian deggeller': 'U09PYEWUHGF',\n  'damián deggeller': 'U09PYEWUHGF',\n  'greta.bruno@xtract.app': 'U096BLX5864',\n  'greta@xtract.app': 'U096BLX5864',\n  'greta bruno': 'U096BLX5864',\n  'ian.brandan@xtract.app': 'U09FZ5MLF0E',\n  'ian@xtract.app': 'U09FZ5MLF0E',\n  'ian brandan': 'U09FZ5MLF0E',\n  \n  // Equipo Comercial Ampliado & SDRs\n  'jesus@xtract.app': 'U01A12169ND',\n  'jesus.degruttola@xtract.app': 'U01A12169ND',\n  'jesús de gruttola': 'U01A12169ND',\n  'jesus.soria@xtract.app': 'U0AM7HGHQTB',\n  'jesús soria': 'U0AM7HGHQTB',\n  'matias.febre@xtract.app': 'U07JW0A2AL9',\n  'matias@xtract.app': 'U07JW0A2AL9',\n  'matías febré': 'U07JW0A2AL9',\n  'neiber@xtract.app': 'U06R7TRQKV1',\n  'neiber monti': 'U06R7TRQKV1',\n  'gaston.moriconi@xtract.app': 'U093XP1LAUC',\n  'gastón moriconi': 'U093XP1LAUC',\n  'bruno.corrao@xtract.app': 'U064UNXJZ7F',\n  'franco.argibel@xtract.app': 'U08BMGJDT7F',\n  'santiago.paredes@xtract.app': 'U0AQMAM2ZB9',\n  'alejandro@xtract.app': 'U01A11YN7SM',\n  'alejandro.bezdjian@xtract.app': 'U01A11YN7SM',\n  'ezequiel.nievas@xtract.app': 'U09CY8PBPSN',\n  'sofia.ferro@xtract.app': 'U0BE9AQHFPV'\n};\n\nfunction resolverOwnerSlack(ownerEmail) {\n  if (!ownerEmail) return { id: \"\", method: \"\" };\n  const norm = s => String(s == null ? \"\" : s).normalize(\"NFD\").replace(/[\\u0300-\\u036f]/g, \"\").toLowerCase().trim();\n  const emailNorm = norm(ownerEmail);\n  if (KNOWN_OWNERS[emailNorm]) {\n    return { id: KNOWN_OWNERS[emailNorm], method: \"known_owners\" };\n  }\n\n  let usuarios = [];\n  try {\n    const raw = $(\"Slack - Traer usuarios (Falta facturas)\").first().json;\n    usuarios = (raw.members || raw.users || []).filter(u => u && u.id && !u.deleted && !u.is_bot);\n  } catch(e) {}\n  \n  if (!usuarios.length) {\n    try {\n      const raw2 = $(\"Slack - Traer usuarios\").first().json;\n      usuarios = (raw2.members || raw2.users || []).filter(u => u && u.id && !u.deleted && !u.is_bot);\n    } catch(e) {}\n  }\n\n  const local = norm(ownerEmail.split(\"@\")[0]);\n  const comoNombre = local.replace(/[._-]+/g, \" \");\n  const perfil = u => u.profile || {};\n\n  let owner = usuarios.find(u => norm(perfil(u).email) === emailNorm) || null;\n  if (owner) return { id: owner.id, method: \"email\" };\n\n  owner = usuarios.find(u => norm(u.name) === local) || null;\n  if (owner) return { id: owner.id, method: \"handle\" };\n\n  owner = usuarios.find(u => norm(perfil(u).display_name) === local) || null;\n  if (owner) return { id: owner.id, method: \"display_name\" };\n\n  owner = usuarios.find(u => norm(u.real_name) === comoNombre) || null;\n  if (owner) return { id: owner.id, method: \"real_name\" };\n\n  owner = usuarios.find(u => norm(perfil(u).real_name) === comoNombre) || null;\n  if (owner) return { id: owner.id, method: \"profile.real_name\" };\n\n  return { id: \"\", method: \"none\" };\n}\n\nconst isOneShot = $(\"Calcular impacto economico\").isExecuted && $(\"Tiene precio?\").first().json.tiene_precio;\nconst c = isOneShot ? $(\"Calcular impacto economico\").first().json : $(\"Calcular impacto y ROI (formulario)\").first().json;\n\nconst slideUrl = \"https://docs.google.com/presentation/d/\" + c.presentationId + \"/edit\";\n\nconst extraerNode = $(\"Code - Extraer Datos\").first().json || {};\nconst rawId = (extraerNode.id || extraerNode.page_id || \"\").replace(/-/g, \"\");\nconst notionUrl = extraerNode.url || (rawId ? (\"https://www.notion.so/\" + rawId) : \"\");\n\nconst ownerEmail = (Array.isArray(extraerNode.property_owner) ? extraerNode.property_owner[0] : extraerNode.property_owner) || extraerNode.ownerEmail || \"\";\nconst res = resolverOwnerSlack(ownerEmail);\nconst resolvedOwnerId = res.id;\n\nconst SLACK_FALLBACK_DM = \"U0BJLTDCAMR\";\n\n// Validar que el destinatario sea un ID de Slack valido (no un email)\nconst rawOwnerSlack = String(c.owner_slack || \"\").trim();\nconst validOwnerSlack = (rawOwnerSlack && !rawOwnerSlack.includes(\"@\") && /^[UDC][A-Z0-9]+$/.test(rawOwnerSlack)) ? rawOwnerSlack : \"\";\nconst destinatario = FORZAR_DESTINATARIO || validOwnerSlack || resolvedOwnerId || SLACK_FALLBACK_DM;\nconst esFallback = !destinatario || destinatario === SLACK_FALLBACK_DM;\n\nconst links = [\n  \":page_facing_up: <\" + slideUrl + \"|Propuesta con puntos de Mejoras Relevados>\"\n];\nif (notionUrl) {\n  links.push(\":link: <\" + notionUrl + \"|Abrir card en Notion>\");\n}\n\nconst texto = [\n  \":white_check_mark: *Propuesta generada (Página 4 completada)* — \" + c.empresa,\n  \"\",\n  ...links,\n  \"\",\n  \"• Gasto anual en proveedores: USD \" + (c.docVolumen || c.gastoFmt || \"\"),\n  \"• Facturas: \" + (c.facturasMes || \"\") + \"/mes\",\n  \"\",\n  \"_\" + (c.docBaseLaboral || \"\") + \"._\",\n  \"\",\n  \"_Revisala antes de mandarla: los textos los redacto un modelo._\"\n].join(\"\\n\");\n\nreturn [{ json: {\n  texto_slack: texto,\n  owner_slack_id: destinatario,\n  es_fallback: esFallback,\n  hay_destinatario: !!destinatario,\n  doc_url: \"\",\n  slide_url: slideUrl,\n  notion_url: notionUrl\n} }];"
+        "jsCode": "const FORZAR_DESTINATARIO = \"\";\n\nconst KNOWN_OWNERS = {\n  'tomas@xtract.app': 'U01AC8ARHG8',\n  'nicolas.gonzalez@xtract.app': 'U02MCAHHM1T',\n  'wenceslao.hoepner@xtract.app': 'U0BBASA0F60',\n  'damian.deggeller@xtract.app': 'U09PYEWUHGF',\n  'greta.bruno@xtract.app': 'U096BLX5864',\n  'ian.brandan@xtract.app': 'U09FZ5MLF0E'\n};\n\n\nfunction resolverOwnerSlack(ownerEmail) {\n  if (!ownerEmail) return { id: \"\", method: \"\" };\n  const norm = s => String(s == null ? \"\" : s).normalize(\"NFD\").replace(/[\\u0300-\\u036f]/g, \"\").toLowerCase().trim();\n  const emailNorm = norm(ownerEmail);\n  if (KNOWN_OWNERS[emailNorm]) {\n    return { id: KNOWN_OWNERS[emailNorm], method: \"known_owners\" };\n  }\n\n  let usuarios = [];\n  try {\n    const raw = $(\"Slack - Traer usuarios (Falta facturas)\").first().json;\n    usuarios = (raw.members || raw.users || []).filter(u => u && u.id && !u.deleted && !u.is_bot);\n  } catch(e) {}\n  \n  if (!usuarios.length) {\n    try {\n      const raw2 = $(\"Slack - Traer usuarios\").first().json;\n      usuarios = (raw2.members || raw2.users || []).filter(u => u && u.id && !u.deleted && !u.is_bot);\n    } catch(e) {}\n  }\n\n  const local = norm(ownerEmail.split(\"@\")[0]);\n  const comoNombre = local.replace(/[._-]+/g, \" \");\n  const perfil = u => u.profile || {};\n\n  let owner = usuarios.find(u => norm(perfil(u).email) === emailNorm) || null;\n  if (owner) return { id: owner.id, method: \"email\" };\n\n  owner = usuarios.find(u => norm(u.name) === local) || null;\n  if (owner) return { id: owner.id, method: \"handle\" };\n\n  owner = usuarios.find(u => norm(perfil(u).display_name) === local) || null;\n  if (owner) return { id: owner.id, method: \"display_name\" };\n\n  owner = usuarios.find(u => norm(u.real_name) === comoNombre) || null;\n  if (owner) return { id: owner.id, method: \"real_name\" };\n\n  owner = usuarios.find(u => norm(perfil(u).real_name) === comoNombre) || null;\n  if (owner) return { id: owner.id, method: \"profile.real_name\" };\n\n  return { id: \"\", method: \"none\" };\n}\n\nconst isOneShot = $(\"Calcular impacto economico\").isExecuted && $(\"Tiene precio?\").first().json.tiene_precio;\nconst c = isOneShot ? $(\"Calcular impacto economico\").first().json : $(\"Calcular impacto y ROI (formulario)\").first().json;\nconst docNode = isOneShot ? $(\"Copiar plantilla del ROI (OneShot)\") : $(\"Copiar plantilla del ROI\");\nconst docId = docNode.first().json.id;\n\nconst slideUrl = \"https://docs.google.com/presentation/d/\" + c.presentationId + \"/edit\";\nconst docUrl = \"https://docs.google.com/document/d/\" + docId + \"/edit\";\n\nconst extraerNode = $(\"Code - Extraer Datos\").first().json || {};\nconst rawId = (extraerNode.id || extraerNode.page_id || \"\").replace(/-/g, \"\");\nconst notionUrl = extraerNode.url || (rawId ? (\"https://www.notion.so/\" + rawId) : \"\");\n\nconst ownerEmail = (Array.isArray(extraerNode.property_owner) ? extraerNode.property_owner[0] : extraerNode.property_owner) || extraerNode.ownerEmail || \"\";\nconst res = resolverOwnerSlack(ownerEmail);\nconst resolvedOwnerId = res.id;\n\nconst SLACK_FALLBACK_DM = \"U0BJLTDCAMR\";\n\n// Validar que el destinatario sea un ID de Slack valido (no un email)\nconst rawOwnerSlack = String(c.owner_slack || \"\").trim();\nconst validOwnerSlack = (rawOwnerSlack && !rawOwnerSlack.includes(\"@\") && /^[UDC][A-Z0-9]+$/.test(rawOwnerSlack)) ? rawOwnerSlack : \"\";\nconst destinatario = FORZAR_DESTINATARIO || validOwnerSlack || resolvedOwnerId || SLACK_FALLBACK_DM;\nconst esFallback = !destinatario || destinatario === SLACK_FALLBACK_DM;\n\nconst links = [\n  \":bar_chart: <\" + docUrl + \"|Abrir el documento ROI>\",\n  \":page_facing_up: <\" + slideUrl + \"|Propuesta con puntos de Mejoras Relevados>\"\n];\nif (notionUrl) {\n  links.push(\":link: <\" + notionUrl + \"|Abrir card en Notion>\");\n}\n\nconst texto = [\n  \":white_check_mark: *Los dos documentos ya estan generados* — \" + c.empresa,\n  \"\",\n  ...links,\n  \"\",\n  \"• Gasto anual en proveedores: USD \" + c.docVolumen,\n  \"• Recupero potencial: USD \" + c.docRecupero + \" / año\",\n  \"• Costo Xtract año 1: USD \" + c.docCosto1 + \"  →  ROI \" + c.docRoi1,\n  \"• Año 2 en adelante: USD \" + c.docCosto2 + \"  →  ROI \" + c.docRoi2,\n  \"\",\n  \"_\" + c.docBaseLaboral + \"._\",\n  \"\",\n  \"_Revisa los dos antes de mandarlos: los textos los redacto un modelo._\"\n].join(\"\\n\");\n\nreturn [{ json: {\n  texto_slack: texto,\n  owner_slack_id: destinatario,\n  es_fallback: esFallback,\n  hay_destinatario: !!destinatario,\n  doc_url: docUrl,\n  slide_url: slideUrl,\n  notion_url: notionUrl\n} }];"
       },
       "id": "68754bda-86ff-464e-92c9-44f3c7de9776",
       "name": "Armar aviso del ROI",
@@ -1062,64 +1046,56 @@
         "textUi": {
           "textValues": [
             {
-              "text": "{{FACTURAS}}",
-              "replaceText": "={{ $json.facturasMes }}"
+              "text": "{{GASTO_ANUAL}}",
+              "replaceText": "={{ $json.gastoFmt }}"
+            },
+            {
+              "text": "{{PAIS}}",
+              "replaceText": "={{ $json.pais }}"
             },
             {
               "text": "{{PERSONAS}}",
               "replaceText": "={{ $json.personas }}"
             },
             {
-              "text": "{{GASTO_ANUAL}}",
-              "replaceText": "={{ $json.gastoFmt }}"
+              "text": "{{PERD_ERRORES}}",
+              "replaceText": "={{ $json.perdErrores }}"
             },
             {
-              "text": "{{HS_ANIO}}",
-              "replaceText": "={{ $json.hsAnio }}"
+              "text": "{{PERD_FISCAL}}",
+              "replaceText": "={{ $json.perdFiscal }}"
             },
             {
-              "text": "{{HS_MES}}",
-              "replaceText": "={{ $json.hsMes }}"
+              "text": "{{PERD_DESC}}",
+              "replaceText": "={{ $json.perdDesc }}"
             },
             {
-              "text": "{{CAPACIDAD}}",
-              "replaceText": "={{ $json.capacidad }}"
+              "text": "{{PERD_SOBRE}}",
+              "replaceText": "={{ $json.perdSobre }}"
             },
             {
-              "text": "{{AHORRO_ANIO}}",
-              "replaceText": "={{ $json.ahorroAnio }}"
+              "text": "{{PERD_DUPES}}",
+              "replaceText": "={{ $json.perdDupes }}"
             },
             {
-              "text": "{{VAL_TIEMPO}}",
-              "replaceText": "={{ $json.valTiempo }}"
+              "text": "{{PERD_RRHH}}",
+              "replaceText": "={{ $json.perdRrhh }}"
             },
             {
-              "text": "{{HORA}}",
-              "replaceText": "={{ $json.horaFmt }}"
+              "text": "{{PERD_TOTAL}}",
+              "replaceText": "={{ $json.perdTotal }}"
             },
             {
-              "text": "{{VAL_CRECIM}}",
-              "replaceText": "={{ $json.valCrecim }}"
+              "text": "{{IMPACTO_TOTAL}}",
+              "replaceText": "={{ $json.impactoTotal }}"
             },
             {
-              "text": "{{EQUIV_FT}}",
-              "replaceText": "={{ $json.equivFT }}"
+              "text": "{{IMPACTO_MENSUAL}}",
+              "replaceText": "={{ $json.impactoMensual }}"
             },
             {
-              "text": "{{VAL_ERRORES}}",
-              "replaceText": "={{ $json.valErrores }}"
-            },
-            {
-              "text": "{{PCT_ERR}}",
-              "replaceText": "={{ $json.pctErr }}"
-            },
-            {
-              "text": "{{INVERSION}}",
-              "replaceText": "={{ $json.inversion }}"
-            },
-            {
-              "text": "{{ROI_1}}",
-              "replaceText": "={{ $json.roi1 }}"
+              "text": "{{RRHH_DETALLE}}",
+              "replaceText": "={{ $json.rrhhDetalle }}"
             }
           ]
         },
@@ -1368,7 +1344,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({\n  parent: {\n    page_id: $('Code - Extraer Datos').first().json.id || $('Code - Extraer Datos').first().json.page_id\n  },\n  rich_text: [\n    {\n      type: \"text\",\n      text: {\n        content: \"Propuesta con puntos de Mejoras Relevados: \"\n      }\n    },\n    {\n      type: \"text\",\n      text: {\n        content: $json.slide_url,\n        link: {\n          url: $json.slide_url\n        }\n      }\n    }\n  ]\n}) }}",
+        "jsonBody": "={{ JSON.stringify({\n  parent: {\n    page_id: $('Code - Extraer Datos').first().json.id || $('Code - Extraer Datos').first().json.page_id\n  },\n  rich_text: [\n    {\n      type: \"text\",\n      text: {\n        content: \"Propuesta con puntos de Mejoras Relevados: \"\n      }\n    },\n    {\n      type: \"text\",\n      text: {\n        content: $json.slide_url,\n        link: {\n          url: $json.slide_url\n        }\n      }\n    },\n    {\n      type: \"text\",\n      text: {\n        content: \"\\nDocumento ROI: \"\n      }\n    },\n    {\n      type: \"text\",\n      text: {\n        content: $json.doc_url,\n        link: {\n          url: $json.doc_url\n        }\n      }\n    }\n  ]\n}) }}",
         "options": {
           "response": {
             "response": {
@@ -1395,21 +1371,21 @@
     },
     {
       "parameters": {
-        "model": "deepseek-chat",
+        "model": "deepseek/deepseek-v4-flash",
         "options": {}
       },
-      "type": "@n8n/n8n-nodes-langchain.lmChatDeepSeek",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
       "typeVersion": 1,
       "position": [
         5296,
         2080
       ],
-      "id": "7be22c57-34a5-41c3-86e8-b8b336a9697d",
-      "name": "DeepSeek Chat Model",
+      "id": "f51e6e76-791b-414c-a8df-54ca7d81c3f8",
+      "name": "OpenRouter Chat Model",
       "credentials": {
-        "deepSeekApi": {
-          "id": "H5fC2aZoNphCCole",
-          "name": "SantiagoApikey"
+        "openRouterApi": {
+          "id": "LW8I48MvSQglFqrJ",
+          "name": "OpenRouter Xtract"
         }
       }
     },
@@ -1958,6 +1934,11 @@
             "node": "Completar pagina 4 (OneShot)",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "Copiar plantilla del ROI (OneShot)",
+            "type": "main",
+            "index": 0
           }
         ],
         []
@@ -1967,7 +1948,7 @@
       "main": [
         [
           {
-            "node": "Armar aviso del ROI",
+            "node": "Esperar a que esten los dos",
             "type": "main",
             "index": 0
           }
@@ -1991,6 +1972,17 @@
           {
             "node": "Completar el documento ROI (OneShot)",
             "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "IA - Extraer datos de la llamada",
+            "type": "ai_languageModel",
             "index": 0
           }
         ]
@@ -2093,17 +2085,6 @@
           {
             "node": "JWT1",
             "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DeepSeek Chat Model": {
-      "ai_languageModel": [
-        [
-          {
-            "node": "IA - Extraer datos de la llamada",
-            "type": "ai_languageModel",
             "index": 0
           }
         ]
@@ -2634,7 +2615,7 @@
     }
   ],
   "activeVersion": {
-    "versionId": "22d7c04e-2960-4ce0-90a8-9421ce9082ef",
+    "versionId": "1439d51b-c579-432a-9ef0-aec89b82a219",
     "workflowId": "bAh0FYSFTM0UeXSc",
     "nodes": [
       {
@@ -2771,7 +2752,7 @@
           "operation": "copy",
           "fileId": {
             "__rl": true,
-            "value": "1gBVHSw5fNldXWHJZniYCRfs2ARI_UUHmITL85anul_o",
+            "value": "1jNY4NtpT_9oCSOffYozXC8c_XypeBxIXVlVXnVZzWXE",
             "mode": "id",
             "cachedResultName": "Propuesta Xtract (plantilla) [Google Slides]"
           },
@@ -3485,7 +3466,7 @@
       },
       {
         "parameters": {
-          "jsCode": "const FORZAR_DESTINATARIO = \"\";\n\nconst KNOWN_OWNERS = {\n  'tomas@xtract.app': 'U01AC8ARHG8',\n  'nicolas.gonzalez@xtract.app': 'U02MCAHHM1T',\n  'wenceslao.hoepner@xtract.app': 'U0BBASA0F60',\n  'damian.deggeller@xtract.app': 'U09PYEWUHGF',\n  'greta.bruno@xtract.app': 'U096BLX5864',\n  'ian.brandan@xtract.app': 'U09FZ5MLF0E'\n};\n\nfunction resolverOwnerSlack(ownerEmail) {\n  if (!ownerEmail) return { id: \"\", method: \"\" };\n  const norm = s => String(s == null ? \"\" : s).normalize(\"NFD\").replace(/[\\u0300-\\u036f]/g, \"\").toLowerCase().trim();\n  const emailNorm = norm(ownerEmail);\n  if (KNOWN_OWNERS[emailNorm]) {\n    return { id: KNOWN_OWNERS[emailNorm], method: \"known_owners\" };\n  }\n\n  let usuarios = [];\n  try {\n    const raw = $(\"Slack - Traer usuarios (Falta facturas)\").first().json;\n    usuarios = (raw.members || raw.users || []).filter(u => u && u.id && !u.deleted && !u.is_bot);\n  } catch(e) {}\n  \n  if (!usuarios.length) {\n    try {\n      const raw2 = $(\"Slack - Traer usuarios\").first().json;\n      usuarios = (raw2.members || raw2.users || []).filter(u => u && u.id && !u.deleted && !u.is_bot);\n    } catch(e) {}\n  }\n\n  const local = norm(ownerEmail.split(\"@\")[0]);\n  const comoNombre = local.replace(/[._-]+/g, \" \");\n  const perfil = u => u.profile || {};\n\n  let owner = usuarios.find(u => norm(perfil(u).email) === emailNorm) || null;\n  if (owner) return { id: owner.id, method: \"email\" };\n\n  owner = usuarios.find(u => norm(u.name) === local) || null;\n  if (owner) return { id: owner.id, method: \"handle\" };\n\n  owner = usuarios.find(u => norm(perfil(u).display_name) === local) || null;\n  if (owner) return { id: owner.id, method: \"display_name\" };\n\n  owner = usuarios.find(u => norm(u.real_name) === comoNombre) || null;\n  if (owner) return { id: owner.id, method: \"real_name\" };\n\n  owner = usuarios.find(u => norm(perfil(u).real_name) === comoNombre) || null;\n  if (owner) return { id: owner.id, method: \"profile.real_name\" };\n\n  return { id: \"\", method: \"none\" };\n}\n\nconst isOneShot = $(\"Calcular impacto economico\").isExecuted && $(\"Tiene precio?\").first().json.tiene_precio;\nconst c = isOneShot ? $(\"Calcular impacto economico\").first().json : $(\"Calcular impacto y ROI (formulario)\").first().json;\n\nconst slideUrl = \"https://docs.google.com/presentation/d/\" + c.presentationId + \"/edit\";\n\nconst extraerNode = $(\"Code - Extraer Datos\").first().json || {};\nconst rawId = (extraerNode.id || extraerNode.page_id || \"\").replace(/-/g, \"\");\nconst notionUrl = extraerNode.url || (rawId ? (\"https://www.notion.so/\" + rawId) : \"\");\n\nconst ownerEmail = (Array.isArray(extraerNode.property_owner) ? extraerNode.property_owner[0] : extraerNode.property_owner) || extraerNode.ownerEmail || \"\";\nconst res = resolverOwnerSlack(ownerEmail);\nconst resolvedOwnerId = res.id;\n\nconst SLACK_FALLBACK_DM = \"U0BJLTDCAMR\";\n\n// Validar que el destinatario sea un ID de Slack valido (no un email)\nconst rawOwnerSlack = String(c.owner_slack || \"\").trim();\nconst validOwnerSlack = (rawOwnerSlack && !rawOwnerSlack.includes(\"@\") && /^[UDC][A-Z0-9]+$/.test(rawOwnerSlack)) ? rawOwnerSlack : \"\";\nconst destinatario = FORZAR_DESTINATARIO || validOwnerSlack || resolvedOwnerId || SLACK_FALLBACK_DM;\nconst esFallback = !destinatario || destinatario === SLACK_FALLBACK_DM;\n\nconst links = [\n  \":page_facing_up: <\" + slideUrl + \"|Propuesta con puntos de Mejoras Relevados>\"\n];\nif (notionUrl) {\n  links.push(\":link: <\" + notionUrl + \"|Abrir card en Notion>\");\n}\n\nconst texto = [\n  \":white_check_mark: *Propuesta generada (Página 4 completada)* — \" + c.empresa,\n  \"\",\n  ...links,\n  \"\",\n  \"• Gasto anual en proveedores: USD \" + (c.docVolumen || c.gastoFmt || \"\"),\n  \"• Facturas: \" + (c.facturasMes || \"\") + \"/mes\",\n  \"\",\n  \"_\" + (c.docBaseLaboral || \"\") + \"._\",\n  \"\",\n  \"_Revisala antes de mandarla: los textos los redacto un modelo._\"\n].join(\"\\n\");\n\nreturn [{ json: {\n  texto_slack: texto,\n  owner_slack_id: destinatario,\n  es_fallback: esFallback,\n  hay_destinatario: !!destinatario,\n  doc_url: \"\",\n  slide_url: slideUrl,\n  notion_url: notionUrl\n} }];"
+          "jsCode": "const FORZAR_DESTINATARIO = \"\";\n\nconst KNOWN_OWNERS = {\n  'tomas@xtract.app': 'U01AC8ARHG8',\n  'nicolas.gonzalez@xtract.app': 'U02MCAHHM1T',\n  'wenceslao.hoepner@xtract.app': 'U0BBASA0F60',\n  'damian.deggeller@xtract.app': 'U09PYEWUHGF',\n  'greta.bruno@xtract.app': 'U096BLX5864',\n  'ian.brandan@xtract.app': 'U09FZ5MLF0E'\n};\n\n\nfunction resolverOwnerSlack(ownerEmail) {\n  if (!ownerEmail) return { id: \"\", method: \"\" };\n  const norm = s => String(s == null ? \"\" : s).normalize(\"NFD\").replace(/[\\u0300-\\u036f]/g, \"\").toLowerCase().trim();\n  const emailNorm = norm(ownerEmail);\n  if (KNOWN_OWNERS[emailNorm]) {\n    return { id: KNOWN_OWNERS[emailNorm], method: \"known_owners\" };\n  }\n\n  let usuarios = [];\n  try {\n    const raw = $(\"Slack - Traer usuarios (Falta facturas)\").first().json;\n    usuarios = (raw.members || raw.users || []).filter(u => u && u.id && !u.deleted && !u.is_bot);\n  } catch(e) {}\n  \n  if (!usuarios.length) {\n    try {\n      const raw2 = $(\"Slack - Traer usuarios\").first().json;\n      usuarios = (raw2.members || raw2.users || []).filter(u => u && u.id && !u.deleted && !u.is_bot);\n    } catch(e) {}\n  }\n\n  const local = norm(ownerEmail.split(\"@\")[0]);\n  const comoNombre = local.replace(/[._-]+/g, \" \");\n  const perfil = u => u.profile || {};\n\n  let owner = usuarios.find(u => norm(perfil(u).email) === emailNorm) || null;\n  if (owner) return { id: owner.id, method: \"email\" };\n\n  owner = usuarios.find(u => norm(u.name) === local) || null;\n  if (owner) return { id: owner.id, method: \"handle\" };\n\n  owner = usuarios.find(u => norm(perfil(u).display_name) === local) || null;\n  if (owner) return { id: owner.id, method: \"display_name\" };\n\n  owner = usuarios.find(u => norm(u.real_name) === comoNombre) || null;\n  if (owner) return { id: owner.id, method: \"real_name\" };\n\n  owner = usuarios.find(u => norm(perfil(u).real_name) === comoNombre) || null;\n  if (owner) return { id: owner.id, method: \"profile.real_name\" };\n\n  return { id: \"\", method: \"none\" };\n}\n\nconst isOneShot = $(\"Calcular impacto economico\").isExecuted && $(\"Tiene precio?\").first().json.tiene_precio;\nconst c = isOneShot ? $(\"Calcular impacto economico\").first().json : $(\"Calcular impacto y ROI (formulario)\").first().json;\nconst docNode = isOneShot ? $(\"Copiar plantilla del ROI (OneShot)\") : $(\"Copiar plantilla del ROI\");\nconst docId = docNode.first().json.id;\n\nconst slideUrl = \"https://docs.google.com/presentation/d/\" + c.presentationId + \"/edit\";\nconst docUrl = \"https://docs.google.com/document/d/\" + docId + \"/edit\";\n\nconst extraerNode = $(\"Code - Extraer Datos\").first().json || {};\nconst rawId = (extraerNode.id || extraerNode.page_id || \"\").replace(/-/g, \"\");\nconst notionUrl = extraerNode.url || (rawId ? (\"https://www.notion.so/\" + rawId) : \"\");\n\nconst ownerEmail = (Array.isArray(extraerNode.property_owner) ? extraerNode.property_owner[0] : extraerNode.property_owner) || extraerNode.ownerEmail || \"\";\nconst res = resolverOwnerSlack(ownerEmail);\nconst resolvedOwnerId = res.id;\n\nconst SLACK_FALLBACK_DM = \"U0BJLTDCAMR\";\n\n// Validar que el destinatario sea un ID de Slack valido (no un email)\nconst rawOwnerSlack = String(c.owner_slack || \"\").trim();\nconst validOwnerSlack = (rawOwnerSlack && !rawOwnerSlack.includes(\"@\") && /^[UDC][A-Z0-9]+$/.test(rawOwnerSlack)) ? rawOwnerSlack : \"\";\nconst destinatario = FORZAR_DESTINATARIO || validOwnerSlack || resolvedOwnerId || SLACK_FALLBACK_DM;\nconst esFallback = !destinatario || destinatario === SLACK_FALLBACK_DM;\n\nconst links = [\n  \":bar_chart: <\" + docUrl + \"|Abrir el documento ROI>\",\n  \":page_facing_up: <\" + slideUrl + \"|Propuesta con puntos de Mejoras Relevados>\"\n];\nif (notionUrl) {\n  links.push(\":link: <\" + notionUrl + \"|Abrir card en Notion>\");\n}\n\nconst texto = [\n  \":white_check_mark: *Los dos documentos ya estan generados* — \" + c.empresa,\n  \"\",\n  ...links,\n  \"\",\n  \"• Gasto anual en proveedores: USD \" + c.docVolumen,\n  \"• Recupero potencial: USD \" + c.docRecupero + \" / año\",\n  \"• Costo Xtract año 1: USD \" + c.docCosto1 + \"  →  ROI \" + c.docRoi1,\n  \"• Año 2 en adelante: USD \" + c.docCosto2 + \"  →  ROI \" + c.docRoi2,\n  \"\",\n  \"_\" + c.docBaseLaboral + \"._\",\n  \"\",\n  \"_Revisa los dos antes de mandarlos: los textos los redacto un modelo._\"\n].join(\"\\n\");\n\nreturn [{ json: {\n  texto_slack: texto,\n  owner_slack_id: destinatario,\n  es_fallback: esFallback,\n  hay_destinatario: !!destinatario,\n  doc_url: docUrl,\n  slide_url: slideUrl,\n  notion_url: notionUrl\n} }];"
         },
         "id": "68754bda-86ff-464e-92c9-44f3c7de9776",
         "name": "Armar aviso del ROI",
@@ -3969,7 +3950,7 @@
           },
           "sendBody": true,
           "specifyBody": "json",
-          "jsonBody": "={{ JSON.stringify({\n  parent: {\n    page_id: $('Code - Extraer Datos').first().json.id || $('Code - Extraer Datos').first().json.page_id\n  },\n  rich_text: [\n    {\n      type: \"text\",\n      text: {\n        content: \"Propuesta con puntos de Mejoras Relevados: \"\n      }\n    },\n    {\n      type: \"text\",\n      text: {\n        content: $json.slide_url,\n        link: {\n          url: $json.slide_url\n        }\n      }\n    }\n  ]\n}) }}",
+          "jsonBody": "={{ JSON.stringify({\n  parent: {\n    page_id: $('Code - Extraer Datos').first().json.id || $('Code - Extraer Datos').first().json.page_id\n  },\n  rich_text: [\n    {\n      type: \"text\",\n      text: {\n        content: \"Propuesta con puntos de Mejoras Relevados: \"\n      }\n    },\n    {\n      type: \"text\",\n      text: {\n        content: $json.slide_url,\n        link: {\n          url: $json.slide_url\n        }\n      }\n    },\n    {\n      type: \"text\",\n      text: {\n        content: \"\\nDocumento ROI: \"\n      }\n    },\n    {\n      type: \"text\",\n      text: {\n        content: $json.doc_url,\n        link: {\n          url: $json.doc_url\n        }\n      }\n    }\n  ]\n}) }}",
           "options": {
             "response": {
               "response": {
@@ -4559,6 +4540,11 @@
               "node": "Completar pagina 4 (OneShot)",
               "type": "main",
               "index": 0
+            },
+            {
+              "node": "Copiar plantilla del ROI (OneShot)",
+              "type": "main",
+              "index": 0
             }
           ],
           []
@@ -4568,7 +4554,7 @@
         "main": [
           [
             {
-              "node": "Armar aviso del ROI",
+              "node": "Esperar a que esten los dos",
               "type": "main",
               "index": 0
             }
@@ -4713,19 +4699,19 @@
     },
     "nodeGroups": [],
     "authors": "Santiago Wuerich",
-    "name": null,
-    "description": null,
-    "autosaved": false,
-    "createdAt": "2026-09-09T17:53:36.177Z",
-    "updatedAt": "2026-09-09T17:53:36.177Z",
+    "name": "Version 1439d51b",
+    "description": "",
+    "autosaved": true,
+    "createdAt": "2026-09-09T17:34:21.944Z",
+    "updatedAt": "2026-09-09T17:37:20.543Z",
     "workflowPublishHistory": [
       {
-        "id": 2461,
+        "id": 2457,
         "workflowId": "bAh0FYSFTM0UeXSc",
-        "versionId": "22d7c04e-2960-4ce0-90a8-9421ce9082ef",
+        "versionId": "1439d51b-c579-432a-9ef0-aec89b82a219",
         "event": "activated",
         "userId": "aa64b914-db8b-4587-b15e-b195296be28f",
-        "createdAt": "2026-09-09T17:53:36.716Z"
+        "createdAt": "2026-09-09T17:37:20.524Z"
       }
     ]
   }

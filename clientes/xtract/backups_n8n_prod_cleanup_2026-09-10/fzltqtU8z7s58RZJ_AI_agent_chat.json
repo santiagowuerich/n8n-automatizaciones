@@ -1,0 +1,138 @@
+{
+  "id": "fzltqtU8z7s58RZJ",
+  "name": "AI agent chat",
+  "description": null,
+  "active": false,
+  "activeVersionId": null,
+  "createdAt": "2026-08-06T02:48:24.319Z",
+  "updatedAt": "2026-08-28T01:16:25.963Z",
+  "isArchived": true,
+  "versionId": "075094cf-f099-4b67-8c86-aa2039fcc681",
+  "versionCounter": 34,
+  "sourceWorkflowId": null,
+  "triggerCount": 0,
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -160,
+        32
+      ],
+      "id": "bf48d68a-9e3d-46ef-b74b-2b5777f82802",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "url": "https://api.calendly.com/users/me",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "calendlyOAuth2Api",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        208,
+        0
+      ],
+      "id": "3e83f981-5a18-4e54-8d0d-00450012d505",
+      "name": "HTTP Request",
+      "credentials": {
+        "calendlyOAuth2Api": {
+          "id": "VJnAlINTOaMmBHc6",
+          "name": "Calendly micaela.marcos"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://api.calendly.com/event_types",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "calendlyOAuth2Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "=user",
+              "value": "={{ $json.resource.uri }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        416,
+        0
+      ],
+      "id": "bef6d625-4b29-499b-bd8b-d8c85ed0c62b",
+      "name": "HTTP Request1",
+      "credentials": {
+        "calendlyOAuth2Api": {
+          "id": "VJnAlINTOaMmBHc6",
+          "name": "Calendly micaela.marcos"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "nodeGroups": [],
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "pinData": {},
+  "meta": {
+    "templateId": "1954",
+    "templateCredsSetupCompleted": true
+  },
+  "tags": [],
+  "shared": [
+    {
+      "role": "workflow:owner",
+      "workflowId": "fzltqtU8z7s58RZJ",
+      "projectId": "GcZu9tSo2Hvl3tu1",
+      "project": {
+        "id": "GcZu9tSo2Hvl3tu1",
+        "name": "Santiago Wuerich <santiagow142001@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "customTelemetryTags": [],
+        "creatorId": "aa64b914-db8b-4587-b15e-b195296be28f",
+        "createdAt": "2026-07-30T14:04:56.362Z",
+        "updatedAt": "2026-08-04T21:24:46.921Z"
+      },
+      "createdAt": "2026-08-06T02:48:24.319Z",
+      "updatedAt": "2026-08-06T02:48:24.319Z"
+    }
+  ],
+  "activeVersion": null
+}

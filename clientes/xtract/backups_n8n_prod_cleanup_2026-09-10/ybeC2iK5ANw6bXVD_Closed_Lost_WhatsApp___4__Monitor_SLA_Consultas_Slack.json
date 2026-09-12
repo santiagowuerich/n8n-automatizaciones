@@ -1,0 +1,599 @@
+{
+  "id": "ybeC2iK5ANw6bXVD",
+  "name": "Closed Lost WhatsApp — 4. Monitor SLA Consultas Slack",
+  "description": null,
+  "active": true,
+  "activeVersionId": "7c286fe1-faf9-42b6-a374-39ecdd2a6743",
+  "createdAt": "2026-09-09T19:14:48.452Z",
+  "updatedAt": "2026-09-09T19:14:48.452Z",
+  "isArchived": false,
+  "versionId": "7c286fe1-faf9-42b6-a374-39ecdd2a6743",
+  "versionCounter": 1,
+  "sourceWorkflowId": null,
+  "triggerCount": 1,
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 5
+            }
+          ]
+        }
+      },
+      "id": "node-cron-sla",
+      "name": "Cron SLA (cada 5 min)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Configuración centralizada de Monitor SLA\nreturn [{\n  json: {\n    CHATWOOT_URL: 'https://chatwoot.xtract.app',\n    CHATWOOT_ACCOUNT_ID: '1',\n    CHATWOOT_INBOX_ID: '1',\n    SLACK_CHANNEL_ID: 'C0BKE2PE7B3', // #consultas-whatsapp\n    HORARIO_INICIO_MIN: 9 * 60,       // 09:00 hs\n    HORARIO_FIN_MIN: 18 * 60 + 30     // 18:30 hs\n  }\n}];"
+      },
+      "id": "node-config-sla",
+      "name": "Config",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// =====================================================================\n// FILTRO DE HORARIO LABORAL (Hora Argentina UTC-3)\n// Lunes (1) a Viernes (5) de 09:00 a 18:30 hs.\n// Fuera de horario laboral no se envían alertas por Slack.\n// =====================================================================\nconst cfg = $('Config').first().json;\nconst ahora = new Date();\nconst fechaArtStr = ahora.toLocaleString(\"en-US\", { timeZone: \"America/Argentina/Buenos_Aires\" });\nconst fechaArt = new Date(fechaArtStr);\nconst diaSemana = fechaArt.getDay(); // 0 = Dom, 1 = Lun ... 6 = Sab\nconst hora = fechaArt.getHours();\nconst min = fechaArt.getMinutes();\nconst minutosDelDia = hora * 60 + min;\n\nconst esDiaHabil = diaSemana >= 1 && diaSemana <= 5;\nconst esHorarioLaboral = esDiaHabil && (minutosDelDia >= cfg.HORARIO_INICIO_MIN && minutosDelDia <= cfg.HORARIO_FIN_MIN);\n\nconst FORZAR_EJECUCION_TEST = false; // cambiar solo para pruebas fuera de hora\n\nif (!FORZAR_EJECUCION_TEST && !esHorarioLaboral) {\n  return []; // Detiene el flujo silenciosamente fuera de horario\n}\n\nreturn [{\n  json: {\n    es_horario_laboral: true,\n    hora_actual_art: hora + \":\" + (min < 10 ? \"0\" + min : min),\n    dia_semana: diaSemana\n  }\n}];"
+      },
+      "id": "node-validar-horario",
+      "name": "Validar Horario Laboral",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Config').first().json.CHATWOOT_URL }}/api/v1/accounts/{{ $('Config').first().json.CHATWOOT_ACCOUNT_ID }}/conversations?status=open&inbox_id={{ $('Config').first().json.CHATWOOT_INBOX_ID }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "node-get-conversations",
+      "name": "Chatwoot - Obtener Conversaciones Abiertas",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        660,
+        0
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "BjYt68eHeT61ihqb",
+          "name": "Chatwoot API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// =====================================================================\n// AUDITAR DEMORAS DE SLA EN CONVERSACIONES DERIVADAS\n// Escalones: 10, 20, 30, 40, 50 (en hilo) y 60 min (broadcast a todos).\n// =====================================================================\nconst raw = $input.first().json || {};\nconst payload = raw.data?.payload || raw.payload || [];\nconst lista = Array.isArray(payload) ? payload : [];\n\nconst ESCALONES = [10, 20, 30, 40, 50, 60];\nconst ahoraMs = Date.now();\n\nconst SLACK_MEMBERS = {\n  'damian.deggeller@xtract.app': 'U09PYEWUHGF',\n  'damian deggeller': 'U09PYEWUHGF',\n  'damian': 'U09PYEWUHGF',\n  'greta.bruno@xtract.app': 'U096BLX5864',\n  'greta bruno': 'U096BLX5864',\n  'greta': 'U096BLX5864',\n  'nicolas.gonzalez@xtract.app': 'U02MCAHHM1T',\n  'nicolas gonzalez': 'U02MCAHHM1T',\n  'nicolas': 'U02MCAHHM1T',\n  'nico': 'U02MCAHHM1T',\n  'tomas@xtract.app': 'U01AC8ARHG8',\n  'tomas.marconi@xtract.app': 'U01AC8ARHG8',\n  'tomas marconi': 'U01AC8ARHG8',\n  'tomas': 'U01AC8ARHG8',\n  'wenceslao.hoepner@xtract.app': 'U0BBASA0F60',\n  'wenceslao hoepner': 'U0BBASA0F60',\n  'wenceslao': 'U0BBASA0F60',\n  'juan.alvarez@xtract.app': 'U094FGA9VEF',\n  'juan alvarez': 'U094FGA9VEF',\n  'ian.brandan@xtract.app': 'U09FZ5MLF0E',\n  'ian brandan': 'U09FZ5MLF0E'\n};\n\nfunction resolverSlackId(email, nombre) {\n  const e = (email || '').toString().toLowerCase().trim();\n  const n = (nombre || '').toString().toLowerCase().trim();\n  return SLACK_MEMBERS[e] || SLACK_MEMBERS[n] || null;\n}\n\nfunction determinarTier(minutos) {\n  for (let i = ESCALONES.length - 1; i >= 0; i--) {\n    if (minutos >= ESCALONES[i]) return ESCALONES[i];\n  }\n  return null;\n}\n\nconst alertas = [];\n\nfor (const conv of lista) {\n  const labels = Array.isArray(conv.labels) ? conv.labels : [];\n  const assignee = conv.meta?.assignee;\n  \n  // Condición: SOLO conversaciones derivadas a humano\n  const esDerivado = labels.includes('necesita-humano') || !!assignee;\n  if (!esDerivado) continue;\n\n  const lastMsg = conv.last_non_activity_message;\n  if (!lastMsg || lastMsg.private) continue;\n\n  // Si el último mensaje es saliente (message_type === 1 o sender.type === 'user'),\n  // significa que el comercial YA contestó -> no alertar.\n  if (lastMsg.message_type === 1 || lastMsg.sender?.type === 'user') continue;\n\n  // Mensaje entrante del cliente\n  const msgTs = typeof lastMsg.created_at === 'number' ? lastMsg.created_at * 1000 : new Date(lastMsg.created_at).getTime();\n  if (isNaN(msgTs)) continue;\n\n  const diffMin = Math.floor((ahoraMs - msgTs) / 60000);\n  const tierMin = determinarTier(diffMin);\n  if (!tierMin) continue; // Menos de 10 min\n\n  const tierTag = 'sla-aviso-' + tierMin + 'm';\n\n  // Verificar si ya emitimos aviso para este escalón en esta conversación\n  if (labels.includes(tierTag)) continue;\n\n  const senderObj = conv.meta?.sender || lastMsg.sender || {};\n  const clienteNombre = senderObj.name || 'Cliente';\n  const clienteTel = senderObj.phone_number || '';\n  const ownerNombre = assignee?.name || (conv.custom_attributes?.owner) || 'Comercial asignado';\n  const ownerEmail = assignee?.email || '';\n\n  const slackId = resolverSlackId(ownerEmail, ownerNombre);\n  const ownerMencion = slackId ? '<@' + slackId + '>' : ownerNombre;\n\n  let textoMsg = (lastMsg.content || '').toString().trim();\n  if (textoMsg.length > 200) textoMsg = textoMsg.slice(0, 200) + '…';\n\n  const linkCw = 'https://chatwoot.xtract.app/app/accounts/1/conversations/' + conv.id;\n  const threadTs = conv.custom_attributes?.slack_thread_ts || null;\n\n  const esCriticoHora = tierMin >= 60;\n  let textoSlack = '';\n\n  if (esCriticoHora) {\n    textoSlack = [\n      '🚨 <!here> *[SLA CRÍTICO: 1 hora sin respuesta]*',\n      '👤 *Cliente:* ' + clienteNombre + (clienteTel ? ' (' + clienteTel + ')' : ''),\n      '💼 *Asignado a:* ' + ownerMencion,\n      '💬 _\"' + (textoMsg || '(Adjunto/audio)') + '\"_',\n      '',\n      '⚠️ *Por favor que cualquiera del equipo ingrese a responder:* <' + linkCw + '|Abrir en Chatwoot>'\n    ].join('\\n');\n  } else {\n    textoSlack = [\n      '⏱️ *[SLA: ' + tierMin + ' min sin responder]* ' + ownerMencion + ', el cliente sigue esperando respuesta en Chatwoot.',\n      '💬 _\"' + (textoMsg || '(Adjunto/audio)') + '\"_',\n      '🔗 <' + linkCw + '|Responder ahora>'\n    ].join('\\n');\n  }\n\n  // Merge de etiquetas preservando todas las anteriores\n  const nuevasLabels = [...new Set([...labels, tierTag])];\n\n  alertas.push({\n    json: {\n      conversation_id: conv.id,\n      tier_min: tierMin,\n      tier_tag: tierTag,\n      minutos_transcurridos: diffMin,\n      cliente_nombre: clienteNombre,\n      cliente_tel: clienteTel,\n      owner_nombre: ownerNombre,\n      owner_slack_id: slackId,\n      owner_mencion: ownerMencion,\n      thread_ts: threadTs,\n      is_broadcast: esCriticoHora,\n      texto_slack: textoSlack,\n      all_labels: nuevasLabels,\n      link_chatwoot: linkCw\n    }\n  });\n}\n\nreturn alertas;"
+      },
+      "id": "node-auditar-sla",
+      "name": "Auditar Demoras de SLA",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.conversation_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "number",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "node-hay-alertas",
+      "name": "¿Hay alertas de SLA?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1100,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://slack.com/api/chat.postMessage",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "slackApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"channel\": \"C0BKE2PE7B3\",\n  \"text\": {{ JSON.stringify($json.texto_slack) }},\n  \"thread_ts\": {{ $json.thread_ts ? JSON.stringify($json.thread_ts) : undefined }},\n  \"reply_broadcast\": {{ $json.is_broadcast ? true : undefined }},\n  \"mrkdwn\": true\n}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "node-slack-alert",
+      "name": "Slack - Avisar en Hilo o Canal",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1320,
+        -100
+      ],
+      "credentials": {
+        "slackApi": {
+          "id": "y1DaRieOF29GQnxm",
+          "name": "Xtract notifications"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Config').first().json.CHATWOOT_URL }}/api/v1/accounts/{{ $('Config').first().json.CHATWOOT_ACCOUNT_ID }}/conversations/{{ $json.conversation_id }}/labels",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ labels: $json.all_labels }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "node-chatwoot-tag-sla",
+      "name": "Chatwoot - Marcar Escalón Notificado",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1320,
+        100
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "BjYt68eHeT61ihqb",
+          "name": "Chatwoot API"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Cron SLA (cada 5 min)": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Validar Horario Laboral",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validar Horario Laboral": {
+      "main": [
+        [
+          {
+            "node": "Chatwoot - Obtener Conversaciones Abiertas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chatwoot - Obtener Conversaciones Abiertas": {
+      "main": [
+        [
+          {
+            "node": "Auditar Demoras de SLA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Auditar Demoras de SLA": {
+      "main": [
+        [
+          {
+            "node": "¿Hay alertas de SLA?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Hay alertas de SLA?": {
+      "main": [
+        [
+          {
+            "node": "Slack - Avisar en Hilo o Canal",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Chatwoot - Marcar Escalón Notificado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "nodeGroups": [],
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/Argentina/Buenos_Aires"
+  },
+  "staticData": {
+    "node:Cron SLA (cada 5 min)": {
+      "recurrenceRules": [
+        null
+      ],
+      "recurrenceRuleSignatures": [
+        null
+      ]
+    }
+  },
+  "pinData": null,
+  "meta": null,
+  "tags": [],
+  "shared": [
+    {
+      "role": "workflow:owner",
+      "workflowId": "ybeC2iK5ANw6bXVD",
+      "projectId": "GcZu9tSo2Hvl3tu1",
+      "project": {
+        "id": "GcZu9tSo2Hvl3tu1",
+        "name": "Santiago Wuerich <santiagow142001@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "customTelemetryTags": [],
+        "creatorId": "aa64b914-db8b-4587-b15e-b195296be28f",
+        "createdAt": "2026-07-30T14:04:56.362Z",
+        "updatedAt": "2026-08-04T21:24:46.921Z"
+      },
+      "createdAt": "2026-09-09T19:14:48.452Z",
+      "updatedAt": "2026-09-09T19:14:48.452Z"
+    }
+  ],
+  "activeVersion": {
+    "versionId": "7c286fe1-faf9-42b6-a374-39ecdd2a6743",
+    "workflowId": "ybeC2iK5ANw6bXVD",
+    "nodes": [
+      {
+        "parameters": {
+          "rule": {
+            "interval": [
+              {
+                "field": "minutes",
+                "minutesInterval": 5
+              }
+            ]
+          }
+        },
+        "id": "node-cron-sla",
+        "name": "Cron SLA (cada 5 min)",
+        "type": "n8n-nodes-base.scheduleTrigger",
+        "typeVersion": 1.2,
+        "position": [
+          0,
+          0
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "// Configuración centralizada de Monitor SLA\nreturn [{\n  json: {\n    CHATWOOT_URL: 'https://chatwoot.xtract.app',\n    CHATWOOT_ACCOUNT_ID: '1',\n    CHATWOOT_INBOX_ID: '1',\n    SLACK_CHANNEL_ID: 'C0BKE2PE7B3', // #consultas-whatsapp\n    HORARIO_INICIO_MIN: 9 * 60,       // 09:00 hs\n    HORARIO_FIN_MIN: 18 * 60 + 30     // 18:30 hs\n  }\n}];"
+        },
+        "id": "node-config-sla",
+        "name": "Config",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          220,
+          0
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "// =====================================================================\n// FILTRO DE HORARIO LABORAL (Hora Argentina UTC-3)\n// Lunes (1) a Viernes (5) de 09:00 a 18:30 hs.\n// Fuera de horario laboral no se envían alertas por Slack.\n// =====================================================================\nconst cfg = $('Config').first().json;\nconst ahora = new Date();\nconst fechaArtStr = ahora.toLocaleString(\"en-US\", { timeZone: \"America/Argentina/Buenos_Aires\" });\nconst fechaArt = new Date(fechaArtStr);\nconst diaSemana = fechaArt.getDay(); // 0 = Dom, 1 = Lun ... 6 = Sab\nconst hora = fechaArt.getHours();\nconst min = fechaArt.getMinutes();\nconst minutosDelDia = hora * 60 + min;\n\nconst esDiaHabil = diaSemana >= 1 && diaSemana <= 5;\nconst esHorarioLaboral = esDiaHabil && (minutosDelDia >= cfg.HORARIO_INICIO_MIN && minutosDelDia <= cfg.HORARIO_FIN_MIN);\n\nconst FORZAR_EJECUCION_TEST = false; // cambiar solo para pruebas fuera de hora\n\nif (!FORZAR_EJECUCION_TEST && !esHorarioLaboral) {\n  return []; // Detiene el flujo silenciosamente fuera de horario\n}\n\nreturn [{\n  json: {\n    es_horario_laboral: true,\n    hora_actual_art: hora + \":\" + (min < 10 ? \"0\" + min : min),\n    dia_semana: diaSemana\n  }\n}];"
+        },
+        "id": "node-validar-horario",
+        "name": "Validar Horario Laboral",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          440,
+          0
+        ]
+      },
+      {
+        "parameters": {
+          "url": "={{ $('Config').first().json.CHATWOOT_URL }}/api/v1/accounts/{{ $('Config').first().json.CHATWOOT_ACCOUNT_ID }}/conversations?status=open&inbox_id={{ $('Config').first().json.CHATWOOT_INBOX_ID }}",
+          "authentication": "genericCredentialType",
+          "genericAuthType": "httpHeaderAuth",
+          "options": {
+            "response": {
+              "response": {
+                "neverError": true
+              }
+            },
+            "timeout": 30000
+          }
+        },
+        "id": "node-get-conversations",
+        "name": "Chatwoot - Obtener Conversaciones Abiertas",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          660,
+          0
+        ],
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "BjYt68eHeT61ihqb",
+            "name": "Chatwoot API"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "// =====================================================================\n// AUDITAR DEMORAS DE SLA EN CONVERSACIONES DERIVADAS\n// Escalones: 10, 20, 30, 40, 50 (en hilo) y 60 min (broadcast a todos).\n// =====================================================================\nconst raw = $input.first().json || {};\nconst payload = raw.data?.payload || raw.payload || [];\nconst lista = Array.isArray(payload) ? payload : [];\n\nconst ESCALONES = [10, 20, 30, 40, 50, 60];\nconst ahoraMs = Date.now();\n\nconst SLACK_MEMBERS = {\n  'damian.deggeller@xtract.app': 'U09PYEWUHGF',\n  'damian deggeller': 'U09PYEWUHGF',\n  'damian': 'U09PYEWUHGF',\n  'greta.bruno@xtract.app': 'U096BLX5864',\n  'greta bruno': 'U096BLX5864',\n  'greta': 'U096BLX5864',\n  'nicolas.gonzalez@xtract.app': 'U02MCAHHM1T',\n  'nicolas gonzalez': 'U02MCAHHM1T',\n  'nicolas': 'U02MCAHHM1T',\n  'nico': 'U02MCAHHM1T',\n  'tomas@xtract.app': 'U01AC8ARHG8',\n  'tomas.marconi@xtract.app': 'U01AC8ARHG8',\n  'tomas marconi': 'U01AC8ARHG8',\n  'tomas': 'U01AC8ARHG8',\n  'wenceslao.hoepner@xtract.app': 'U0BBASA0F60',\n  'wenceslao hoepner': 'U0BBASA0F60',\n  'wenceslao': 'U0BBASA0F60',\n  'juan.alvarez@xtract.app': 'U094FGA9VEF',\n  'juan alvarez': 'U094FGA9VEF',\n  'ian.brandan@xtract.app': 'U09FZ5MLF0E',\n  'ian brandan': 'U09FZ5MLF0E'\n};\n\nfunction resolverSlackId(email, nombre) {\n  const e = (email || '').toString().toLowerCase().trim();\n  const n = (nombre || '').toString().toLowerCase().trim();\n  return SLACK_MEMBERS[e] || SLACK_MEMBERS[n] || null;\n}\n\nfunction determinarTier(minutos) {\n  for (let i = ESCALONES.length - 1; i >= 0; i--) {\n    if (minutos >= ESCALONES[i]) return ESCALONES[i];\n  }\n  return null;\n}\n\nconst alertas = [];\n\nfor (const conv of lista) {\n  const labels = Array.isArray(conv.labels) ? conv.labels : [];\n  const assignee = conv.meta?.assignee;\n  \n  // Condición: SOLO conversaciones derivadas a humano\n  const esDerivado = labels.includes('necesita-humano') || !!assignee;\n  if (!esDerivado) continue;\n\n  const lastMsg = conv.last_non_activity_message;\n  if (!lastMsg || lastMsg.private) continue;\n\n  // Si el último mensaje es saliente (message_type === 1 o sender.type === 'user'),\n  // significa que el comercial YA contestó -> no alertar.\n  if (lastMsg.message_type === 1 || lastMsg.sender?.type === 'user') continue;\n\n  // Mensaje entrante del cliente\n  const msgTs = typeof lastMsg.created_at === 'number' ? lastMsg.created_at * 1000 : new Date(lastMsg.created_at).getTime();\n  if (isNaN(msgTs)) continue;\n\n  const diffMin = Math.floor((ahoraMs - msgTs) / 60000);\n  const tierMin = determinarTier(diffMin);\n  if (!tierMin) continue; // Menos de 10 min\n\n  const tierTag = 'sla-aviso-' + tierMin + 'm';\n\n  // Verificar si ya emitimos aviso para este escalón en esta conversación\n  if (labels.includes(tierTag)) continue;\n\n  const senderObj = conv.meta?.sender || lastMsg.sender || {};\n  const clienteNombre = senderObj.name || 'Cliente';\n  const clienteTel = senderObj.phone_number || '';\n  const ownerNombre = assignee?.name || (conv.custom_attributes?.owner) || 'Comercial asignado';\n  const ownerEmail = assignee?.email || '';\n\n  const slackId = resolverSlackId(ownerEmail, ownerNombre);\n  const ownerMencion = slackId ? '<@' + slackId + '>' : ownerNombre;\n\n  let textoMsg = (lastMsg.content || '').toString().trim();\n  if (textoMsg.length > 200) textoMsg = textoMsg.slice(0, 200) + '…';\n\n  const linkCw = 'https://chatwoot.xtract.app/app/accounts/1/conversations/' + conv.id;\n  const threadTs = conv.custom_attributes?.slack_thread_ts || null;\n\n  const esCriticoHora = tierMin >= 60;\n  let textoSlack = '';\n\n  if (esCriticoHora) {\n    textoSlack = [\n      '🚨 <!here> *[SLA CRÍTICO: 1 hora sin respuesta]*',\n      '👤 *Cliente:* ' + clienteNombre + (clienteTel ? ' (' + clienteTel + ')' : ''),\n      '💼 *Asignado a:* ' + ownerMencion,\n      '💬 _\"' + (textoMsg || '(Adjunto/audio)') + '\"_',\n      '',\n      '⚠️ *Por favor que cualquiera del equipo ingrese a responder:* <' + linkCw + '|Abrir en Chatwoot>'\n    ].join('\\n');\n  } else {\n    textoSlack = [\n      '⏱️ *[SLA: ' + tierMin + ' min sin responder]* ' + ownerMencion + ', el cliente sigue esperando respuesta en Chatwoot.',\n      '💬 _\"' + (textoMsg || '(Adjunto/audio)') + '\"_',\n      '🔗 <' + linkCw + '|Responder ahora>'\n    ].join('\\n');\n  }\n\n  // Merge de etiquetas preservando todas las anteriores\n  const nuevasLabels = [...new Set([...labels, tierTag])];\n\n  alertas.push({\n    json: {\n      conversation_id: conv.id,\n      tier_min: tierMin,\n      tier_tag: tierTag,\n      minutos_transcurridos: diffMin,\n      cliente_nombre: clienteNombre,\n      cliente_tel: clienteTel,\n      owner_nombre: ownerNombre,\n      owner_slack_id: slackId,\n      owner_mencion: ownerMencion,\n      thread_ts: threadTs,\n      is_broadcast: esCriticoHora,\n      texto_slack: textoSlack,\n      all_labels: nuevasLabels,\n      link_chatwoot: linkCw\n    }\n  });\n}\n\nreturn alertas;"
+        },
+        "id": "node-auditar-sla",
+        "name": "Auditar Demoras de SLA",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          880,
+          0
+        ]
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "loose",
+              "version": 2
+            },
+            "conditions": [
+              {
+                "id": "c1",
+                "leftValue": "={{ $json.conversation_id }}",
+                "rightValue": "",
+                "operator": {
+                  "type": "number",
+                  "operation": "exists",
+                  "singleValue": true
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "id": "node-hay-alertas",
+        "name": "¿Hay alertas de SLA?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.2,
+        "position": [
+          1100,
+          0
+        ]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "=https://slack.com/api/chat.postMessage",
+          "authentication": "predefinedCredentialType",
+          "nodeCredentialType": "slackApi",
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={\n  \"channel\": \"C0BKE2PE7B3\",\n  \"text\": {{ JSON.stringify($json.texto_slack) }},\n  \"thread_ts\": {{ $json.thread_ts ? JSON.stringify($json.thread_ts) : undefined }},\n  \"reply_broadcast\": {{ $json.is_broadcast ? true : undefined }},\n  \"mrkdwn\": true\n}",
+          "options": {
+            "response": {
+              "response": {
+                "neverError": true
+              }
+            },
+            "timeout": 30000
+          }
+        },
+        "id": "node-slack-alert",
+        "name": "Slack - Avisar en Hilo o Canal",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          1320,
+          -100
+        ],
+        "credentials": {
+          "slackApi": {
+            "id": "y1DaRieOF29GQnxm",
+            "name": "Xtract notifications"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "={{ $('Config').first().json.CHATWOOT_URL }}/api/v1/accounts/{{ $('Config').first().json.CHATWOOT_ACCOUNT_ID }}/conversations/{{ $json.conversation_id }}/labels",
+          "authentication": "genericCredentialType",
+          "genericAuthType": "httpHeaderAuth",
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ JSON.stringify({ labels: $json.all_labels }) }}",
+          "options": {
+            "response": {
+              "response": {
+                "neverError": true
+              }
+            },
+            "timeout": 30000
+          }
+        },
+        "id": "node-chatwoot-tag-sla",
+        "name": "Chatwoot - Marcar Escalón Notificado",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          1320,
+          100
+        ],
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "BjYt68eHeT61ihqb",
+            "name": "Chatwoot API"
+          }
+        }
+      }
+    ],
+    "connections": {
+      "Cron SLA (cada 5 min)": {
+        "main": [
+          [
+            {
+              "node": "Config",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Config": {
+        "main": [
+          [
+            {
+              "node": "Validar Horario Laboral",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Validar Horario Laboral": {
+        "main": [
+          [
+            {
+              "node": "Chatwoot - Obtener Conversaciones Abiertas",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Chatwoot - Obtener Conversaciones Abiertas": {
+        "main": [
+          [
+            {
+              "node": "Auditar Demoras de SLA",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Auditar Demoras de SLA": {
+        "main": [
+          [
+            {
+              "node": "¿Hay alertas de SLA?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "¿Hay alertas de SLA?": {
+        "main": [
+          [
+            {
+              "node": "Slack - Avisar en Hilo o Canal",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Chatwoot - Marcar Escalón Notificado",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "nodeGroups": [],
+    "authors": "Santiago Wuerich",
+    "name": null,
+    "description": null,
+    "autosaved": false,
+    "createdAt": "2026-09-09T19:14:48.452Z",
+    "updatedAt": "2026-09-09T19:14:48.452Z",
+    "workflowPublishHistory": [
+      {
+        "id": 2475,
+        "workflowId": "ybeC2iK5ANw6bXVD",
+        "versionId": "7c286fe1-faf9-42b6-a374-39ecdd2a6743",
+        "event": "activated",
+        "userId": "aa64b914-db8b-4587-b15e-b195296be28f",
+        "createdAt": "2026-09-09T19:14:48.771Z"
+      }
+    ]
+  }
+}

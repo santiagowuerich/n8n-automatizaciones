@@ -49,6 +49,46 @@ Workflow independiente diseñado para procesar llamadas de Discovery desde Googl
                   [Slack - Enviar borrador al Comercial] (DM oficial)
 ```
 
+> Nota: `JWT` → `HTTP - Generar Access Token` → `Drive - export texto` → `Merge` es la ruta
+> vieja (export directo del Doc de Drive). Quedó sin conexiones en el workflow real: la
+> transcripción llega hoy directo en el body del webhook (`raw.transcription`), ver
+> `Code - Extraer Datos`. No se borraron los nodos por si hace falta volver al flujo viejo.
+
+---
+
+## 2.1 Resolución de ERP (2026-09-10)
+
+Antes de generar el borrador, dos nodos Notion nuevos se disparan en paralelo desde
+`Code - Extraer Datos`:
+
+- **`Notion - Traer lista ERP`** (`database.get` sobre `Sales - XT`,
+  `09549c92-28ea-4e15-9350-055b079ce9ac`): trae en vivo las opciones configuradas de la
+  propiedad select `Que sistema usan?(*)`. Vivo y no hardcodeado a propósito — si en Notion se
+  agrega un ERP nuevo a la lista, el workflow lo ve en la próxima corrida sin tocar código.
+- **`Notion - Traer card completa`** (`databasePage.get` por `pageId`): trae el valor que un
+  humano ya haya cargado a mano en esa propiedad para la card de este Discovery.
+
+Después de la IA (que ahora también extrae `erp_llamada`, lo que el cliente dijo en la
+llamada, tal cual sin corregir), el nodo **`Resolver ERP`** decide el ERP final:
+
+1. Si la card de Notion ya tiene el campo cargado a mano → se usa ese valor tal cual (ya salió
+   de la lista real, no necesita matching).
+2. Si no, se toma `erp_llamada` y se lo compara (normalizado + distancia de edición chica)
+   contra el listado vivo de Notion — mismo problema que ya se documentó en el proyecto 05:
+   Fathom transcribe mal los nombres de ERP ("Finnegans" salió como Finance/Finex/Fan/Finegan/Fin
+   en una sola llamada).
+3. Si no matchea ninguna opción real, **no se inventa nada**: el ERP queda vacío/genérico en el
+   correo y se agrega una línea de alerta en el mensaje de Slack para que el comercial complete
+   el campo a mano. Decisión explícita del usuario (2026-09-10): mejor pedir revisión humana que
+   arriesgar un nombre de ERP incorrecto en un email a un cliente.
+
+Cobertura de tests: `tests/contract.test.js` sandboxea `Resolver ERP` con 5 casos (prioridad
+Notion, typo chico que matchea, match exacto, sin match real, sin dato en ningún lado).
+
+**Pendiente antes de pasar a PROD:** esto se armó y testeó en sandbox local (sin n8n corriendo
+de por medio) — falta validar en DEV con datos reales de la card de Notion y mostrar el diff
+para el gate de aprobación antes de tocar `xP2LYks5hHkcmgN5`.
+
 ---
 
 ## 3. Estructura del Borrador Generado y Soporte Multilingüe (ES / PT)

@@ -34,6 +34,8 @@ Todo nuevo diseño de workflow debe ser evaluado contra este checklist antes de 
 - [ ] ¿Las variables de plantillas externas (Meta / WhatsApp) tienen fallbacks por defecto para evitar errores 400 por campos vacíos?
 - [ ] ¿Se aplican las reglas de puntuación y estilo del canal (ej. WhatsApp solo signos de cierre `?`, `!`)?
 - [ ] ¿El workflow escribe en registros reales (Notion, Sheets, Chatwoot) durante una prueba? Si sí, ¿usa fila/conversación de staging?
+- [ ] **(2026-09-10)** ¿El nodo de resolución de destinatario es fail-safe por diseño? Si la bandera de modo prueba falta, viene vacía o con un valor inesperado, ¿el default es el modo seguro (redirige a Santiago, no toca datos reales) — o hace falta que todo esté bien seteado para no filtrar a un destinatario real? Ver [Patrón 11](catalogo-patrones.md#11-patrón-entorno-de-prueba-embebido-con-redirect-seguro-2026-09-10).
+- [ ] **(2026-09-10)** ¿El modo prueba cubre **todos** los efectos externos del workflow, o solo el envío de mensajes? Una escritura en Sheets/Notion/Calendly sigue pegando en datos reales del cliente aunque el mensaje se haya redirigido a Santiago.
 
 ---
 

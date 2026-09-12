@@ -128,3 +128,40 @@ Este documento define los patrones estándar de topología y flujo de datos que 
   - El nombre y la descripción de la herramienta son parte del prompt: nombres verbales y explícitos.
   - Las herramientas de solo lectura van primero en el diseño; las de escritura se agregan cuando el agente ya demuestra criterio.
 * **En producción:** `04 · WF2` (herramientas de Calendly + base de conocimiento).
+
+---
+
+## 11. Patrón: Entorno de Prueba Embebido con Redirect Seguro (2026-09-10)
+* **Cuándo usarlo:** Proyectos **nuevos de Xtract** que dependan de credenciales exclusivas de
+  cliente (Notion, Chatwoot, Calendly, Slack Xtract) — servicios que **no existen** en la
+  instancia Santiago (`n8n.santiagowuerich.info`), lo que vuelve inútil el split DEV/PROD por
+  instancia para esos casos. Ver [`sistemas.md §4`](sistemas.md#4-protocolo-de-transición-dev-a-prod)
+  para cuándo preferir este patrón sobre el modelo de instancia separada.
+* **Topología:**
+  ```text
+  Workflow PROD (n8n.xtract.app)      — real, se toca muy de vez en cuando, gate humano de siempre.
+  Workflow DEV-en-Xtract (misma instancia) — mismos nodos, mismas credenciales reales (sin remapeo).
+    Entrada ➔ Lógica de negocio ➔ Resolver Destinatario (fail-safe) ➔ Envío / Escritura
+                                          │
+                                          ├─ MODO_PRUEBA=false + destinatarios explícitos ➔ envío real
+                                          └─ default (bandera ausente, vacía o mal seteada) ➔ SIEMPRE a Santiago
+  ```
+* **Ventaja:** Resuelve la falta de paridad de credenciales de raíz — el DEV corre en la misma
+  instancia que PROD, con las credenciales reales, sin remapeo. El pase a PROD deja de requerir
+  el protocolo de sanitización de IDs (`credenciales.md §3`); solo hace falta quitar el redirect
+  y activar el workflow gemelo.
+* **Cuidado — el diseño es fail-safe, no fail-open:**
+  - El nodo `Resolver Destinatario` es central: si falta la bandera de modo prueba, si viene vacía
+    o con un valor inesperado, el **default siempre es el modo seguro** (redirige a Santiago, no
+    manda a nadie más). Nunca al revés.
+  - El modo prueba tiene que cubrir **todo efecto externo**, no solo mensajería. Si el workflow
+    también escribe en Sheets/Notion/Calendly, esas escrituras siguen pegando en datos reales del
+    cliente aunque el mensaje se redirija — necesitan su propio modo prueba (fila/tag de staging,
+    ver [patrón 4](#4-patrón-deduplicación-e-idempotencia) y [patrón 5](#5-patrón-ledger-externo-como-estado-del-proceso)).
+  - Este patrón nace de dos incidentes reales por el error inverso (fail-open): un `FORZAR_DESTINATARIO`
+    vacío que mandó un borrador a un DM real (06, 2026-08-28) y tres workflows `TEMP` que quedaron
+    9 días activos en `n8n.xtract.app` filtrando PII sin autenticación (2026-09-10, ver
+    [`lecciones.md`](lecciones.md)). Ver también los dos ítems nuevos de
+    [`criterios-critica.md §4`](criterios-critica.md).
+* **En producción:** ninguno todavía — patrón recién definido el 2026-09-10 para proyectos Xtract
+  nuevos. El primero que lo use debe dejar acá la referencia.

@@ -1,0 +1,377 @@
+{
+  "id": "Xoq5S04QXlr2JKx2",
+  "name": "TEMP - Read All Tabs Cleanly",
+  "description": null,
+  "active": true,
+  "activeVersionId": "758ed8ef-a79f-46c7-a541-7841857ee349",
+  "createdAt": "2026-08-28T13:35:11.005Z",
+  "updatedAt": "2026-08-28T13:35:11.005Z",
+  "isArchived": false,
+  "versionId": "758ed8ef-a79f-46c7-a541-7841857ee349",
+  "versionCounter": 1,
+  "sourceWorkflowId": null,
+  "triggerCount": 1,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "temp-read-all-sheets",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "webhook",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "temp-read-all-sheets"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "mode": "url",
+          "value": "https://docs.google.com/spreadsheets/d/1w6wVAuYmHjI8Fk4b3S1VLxAcgSSQkUjHOTrE1enmaP8/edit"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Leads Piloto"
+        },
+        "options": {}
+      },
+      "id": "read-piloto",
+      "name": "Read Leads Piloto",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        200,
+        -100
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "sgEH8OTRXcjJiTTc",
+          "name": "SheetCuentaSantiago"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "mode": "url",
+          "value": "https://docs.google.com/spreadsheets/d/1w6wVAuYmHjI8Fk4b3S1VLxAcgSSQkUjHOTrE1enmaP8/edit"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Enviados WA"
+        },
+        "options": {}
+      },
+      "id": "read-enviados",
+      "name": "Read Enviados WA",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        200,
+        100
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "sgEH8OTRXcjJiTTc",
+          "name": "SheetCuentaSantiago"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "mode": "url",
+          "value": "https://docs.google.com/spreadsheets/d/1w6wVAuYmHjI8Fk4b3S1VLxAcgSSQkUjHOTrE1enmaP8/edit"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Interacciones"
+        },
+        "options": {}
+      },
+      "id": "read-interacciones",
+      "name": "Read Interacciones",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        200,
+        300
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "sgEH8OTRXcjJiTTc",
+          "name": "SheetCuentaSantiago"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst piloto = $('Read Leads Piloto').all().map(i => i.json);\nconst enviados = $('Read Enviados WA').all().map(i => i.json);\nconst interacciones = $('Read Interacciones').all().map(i => i.json);\n\nreturn [{ json: {\n  piloto: piloto,\n  enviados: enviados,\n  interacciones_count: interacciones.length\n} }];"
+      },
+      "id": "combine",
+      "name": "Combine",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        500,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Read Leads Piloto",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Read Enviados WA",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Read Interacciones",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Leads Piloto": {
+      "main": [
+        [
+          {
+            "node": "Combine",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "nodeGroups": [],
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "pinData": null,
+  "meta": null,
+  "tags": [],
+  "shared": [
+    {
+      "role": "workflow:owner",
+      "workflowId": "Xoq5S04QXlr2JKx2",
+      "projectId": "GcZu9tSo2Hvl3tu1",
+      "project": {
+        "id": "GcZu9tSo2Hvl3tu1",
+        "name": "Santiago Wuerich <santiagow142001@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "customTelemetryTags": [],
+        "creatorId": "aa64b914-db8b-4587-b15e-b195296be28f",
+        "createdAt": "2026-07-30T14:04:56.362Z",
+        "updatedAt": "2026-08-04T21:24:46.921Z"
+      },
+      "createdAt": "2026-08-28T13:35:11.005Z",
+      "updatedAt": "2026-08-28T13:35:11.005Z"
+    }
+  ],
+  "activeVersion": {
+    "versionId": "758ed8ef-a79f-46c7-a541-7841857ee349",
+    "workflowId": "Xoq5S04QXlr2JKx2",
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "temp-read-all-sheets",
+          "responseMode": "lastNode",
+          "options": {}
+        },
+        "id": "webhook",
+        "name": "Webhook",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2,
+        "position": [
+          0,
+          0
+        ],
+        "webhookId": "temp-read-all-sheets"
+      },
+      {
+        "parameters": {
+          "documentId": {
+            "__rl": true,
+            "mode": "url",
+            "value": "https://docs.google.com/spreadsheets/d/1w6wVAuYmHjI8Fk4b3S1VLxAcgSSQkUjHOTrE1enmaP8/edit"
+          },
+          "sheetName": {
+            "__rl": true,
+            "mode": "name",
+            "value": "Leads Piloto"
+          },
+          "options": {}
+        },
+        "id": "read-piloto",
+        "name": "Read Leads Piloto",
+        "type": "n8n-nodes-base.googleSheets",
+        "typeVersion": 4.5,
+        "position": [
+          200,
+          -100
+        ],
+        "credentials": {
+          "googleSheetsOAuth2Api": {
+            "id": "sgEH8OTRXcjJiTTc",
+            "name": "SheetCuentaSantiago"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "documentId": {
+            "__rl": true,
+            "mode": "url",
+            "value": "https://docs.google.com/spreadsheets/d/1w6wVAuYmHjI8Fk4b3S1VLxAcgSSQkUjHOTrE1enmaP8/edit"
+          },
+          "sheetName": {
+            "__rl": true,
+            "mode": "name",
+            "value": "Enviados WA"
+          },
+          "options": {}
+        },
+        "id": "read-enviados",
+        "name": "Read Enviados WA",
+        "type": "n8n-nodes-base.googleSheets",
+        "typeVersion": 4.5,
+        "position": [
+          200,
+          100
+        ],
+        "credentials": {
+          "googleSheetsOAuth2Api": {
+            "id": "sgEH8OTRXcjJiTTc",
+            "name": "SheetCuentaSantiago"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "documentId": {
+            "__rl": true,
+            "mode": "url",
+            "value": "https://docs.google.com/spreadsheets/d/1w6wVAuYmHjI8Fk4b3S1VLxAcgSSQkUjHOTrE1enmaP8/edit"
+          },
+          "sheetName": {
+            "__rl": true,
+            "mode": "name",
+            "value": "Interacciones"
+          },
+          "options": {}
+        },
+        "id": "read-interacciones",
+        "name": "Read Interacciones",
+        "type": "n8n-nodes-base.googleSheets",
+        "typeVersion": 4.5,
+        "position": [
+          200,
+          300
+        ],
+        "credentials": {
+          "googleSheetsOAuth2Api": {
+            "id": "sgEH8OTRXcjJiTTc",
+            "name": "SheetCuentaSantiago"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "\nconst piloto = $('Read Leads Piloto').all().map(i => i.json);\nconst enviados = $('Read Enviados WA').all().map(i => i.json);\nconst interacciones = $('Read Interacciones').all().map(i => i.json);\n\nreturn [{ json: {\n  piloto: piloto,\n  enviados: enviados,\n  interacciones_count: interacciones.length\n} }];"
+        },
+        "id": "combine",
+        "name": "Combine",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          500,
+          0
+        ]
+      }
+    ],
+    "connections": {
+      "Webhook": {
+        "main": [
+          [
+            {
+              "node": "Read Leads Piloto",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Read Enviados WA",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Read Interacciones",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Read Leads Piloto": {
+        "main": [
+          [
+            {
+              "node": "Combine",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "nodeGroups": [],
+    "authors": "Santiago Wuerich",
+    "name": null,
+    "description": null,
+    "autosaved": false,
+    "createdAt": "2026-08-28T13:35:11.005Z",
+    "updatedAt": "2026-08-28T13:35:11.005Z",
+    "workflowPublishHistory": [
+      {
+        "id": 2017,
+        "workflowId": "Xoq5S04QXlr2JKx2",
+        "versionId": "758ed8ef-a79f-46c7-a541-7841857ee349",
+        "event": "activated",
+        "userId": "aa64b914-db8b-4587-b15e-b195296be28f",
+        "createdAt": "2026-08-28T13:35:12.017Z"
+      }
+    ]
+  }
+}

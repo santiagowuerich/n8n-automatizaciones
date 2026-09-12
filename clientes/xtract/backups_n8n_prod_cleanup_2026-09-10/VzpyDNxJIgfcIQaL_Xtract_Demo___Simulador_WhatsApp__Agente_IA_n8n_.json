@@ -1,0 +1,49 @@
+{
+  "id": "VzpyDNxJIgfcIQaL",
+  "name": "Xtract Demo — Simulador WhatsApp (Agente IA n8n)",
+  "description": null,
+  "active": false,
+  "activeVersionId": null,
+  "createdAt": "2026-08-05T16:32:37.089Z",
+  "updatedAt": "2026-08-28T01:16:30.027Z",
+  "isArchived": true,
+  "versionId": "ffb66de2-563d-4136-8488-c95651ac4c47",
+  "versionCounter": 2,
+  "sourceWorkflowId": null,
+  "triggerCount": 0,
+  "nodes": [],
+  "connections": {},
+  "nodeGroups": [],
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": [],
+  "shared": [
+    {
+      "role": "workflow:owner",
+      "workflowId": "VzpyDNxJIgfcIQaL",
+      "projectId": "GcZu9tSo2Hvl3tu1",
+      "project": {
+        "id": "GcZu9tSo2Hvl3tu1",
+        "name": "Santiago Wuerich <santiagow142001@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "customTelemetryTags": [],
+        "creatorId": "aa64b914-db8b-4587-b15e-b195296be28f",
+        "createdAt": "2026-07-30T14:04:56.362Z",
+        "updatedAt": "2026-08-04T21:24:46.921Z"
+      },
+      "createdAt": "2026-08-05T16:32:37.089Z",
+      "updatedAt": "2026-08-05T16:32:37.089Z"
+    }
+  ],
+  "activeVersion": null
+}

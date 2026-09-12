@@ -1,95 +1,92 @@
-# Base de conocimiento — Xtract
+# Xtract.app — Base de Conocimiento y Documento de Referencia (RAG)
 
-Fuente de verdad de **qué es y qué hace Xtract**, para todo workflow que le pase
-contexto a un LLM (agente de minutas, reactivación de Closed Lost, etc.).
-
-Si acá dice algo, la IA lo da por sabido y **no lo pregunta**.
-
-> Origen: `04-reactivacion-closed-lost/base-conocimiento-xtract.txt` (extraído del
-> PDF). Este archivo es la versión limpia y editable. **Al editarlo hay que
-> replicar el cambio en la constante `BASE_CONOCIMIENTO` del nodo
-> `Armar prompt de la minuta`** del workflow de minutas.
+Fuente de verdad oficial de **qué es y qué hace Xtract**, para todo workflow y agente que le pase contexto a un LLM (agente de WhatsApp Chatwoot, generación de minutas, reactivación, etc.).
 
 ---
 
-## Qué es
+## 1. Resumen Ejecutivo y Perfil de la Empresa
 
-Plataforma SaaS 100% en la nube, con IA, para automatizar el procesamiento de
-**facturas de compra**, flujos de aprobación y gestión de gastos corporativos.
-Sitio: https://xtract.app/
+Xtract es una plataforma SaaS 100% en la nube impulsada por Inteligencia Artificial especializada en la automatización del procesamiento de facturas de compra, flujos de aprobación y gestión de gastos corporativos.
 
-Elimina el tipeo manual de facturas, reduce errores de digitación, evita pagos
-duplicados y acelera la contabilización en el ERP **sin modificar el sistema
-contable existente**.
+- **Nombre de la Empresa / Producto:** Xtract (sitio web: [https://xtract.app/](https://xtract.app/))
+- **Propósito Principal:** Eliminar la carga operativa del tipeo manual de facturas, reducir errores de digitación, evitar pagos duplicados y agilizar los tiempos de contabilización en el ERP sin necesidad de modificar el sistema contable existente.
+- **Público Objetivo / Buyer Persona:** Directores Financieros (CFO), Gerentes Administrativos y Financieros, Equipos de Cuentas por Pagar (AP) / Tesorería, Contadores y Departamentos de Sistemas/IT.
 
-**Buyer persona:** CFO, gerentes administrativos y financieros, equipos de Cuentas
-por Pagar / Tesorería, contadores, Sistemas/IT.
+| Métrica Clave | Beneficio del Producto |
+| :--- | :--- |
+| **Reducción de Costos** | Hasta un 40% en costos administrativos. |
+| **Ahorro de Tiempo** | Hasta 110 horas mensuales por empresa. |
+| **Velocidad de IA** | Procesamiento de hasta 100 facturas por segundo. |
+| **Tiempo de Implementación** | Alrededor de 20 días hábiles (estándar). |
 
-| Métrica | Valor |
-|---|---|
-| Reducción de costos administrativos | hasta 40% |
-| Ahorro de tiempo | hasta 110 horas mensuales por empresa |
-| Velocidad de la IA | hasta 100 facturas por segundo |
-| Tiempo de implementación | 5 días hábiles (estándar) |
+---
 
-## Módulos
+## 2. Módulos y Productos Principales
 
-**Contabilización automática de facturas**
-- Ingesta por redirección de correo desde casillas de proveedores (Gmail u Outlook).
-  Se configura en menos de 10 minutos.
-- Lectura con IA de facturas de compra en **PDF**, sin importar diseño, país,
-  moneda ni idioma.
-- Extrae: emisor/receptor, número de factura, fechas, importes, impuestos, ítems
-  de detalle, órdenes de compra, cuentas contables, centros de costo y dimensiones.
-- Repositorio digital ilimitado en la nube, con búsqueda por número, fecha,
-  proveedor, estado de aprobación, centro de costo o importe.
-- Exportación en archivos planos (CSV, TXT, XLS) o integración directa por API REST.
+### 2.1. Contabilización Automática de Facturas (Automatic Posting of Invoices)
+- **Recepción e Ingesta:** Captura automática de comprobantes mediante la redirección de correos electrónicos desde casillas de proveedores (Gmail o Outlook). Configuración en menos de 10 minutos.
+- **Lectura Inteligente con IA:** Extrae automáticamente todos los datos clave de facturas de compra en formato **PDF**, independientemente del diseño, país de origen, moneda o idioma.
+- **Datos extraídos:** Datos del emisor/receptor, número de factura, fechas, importes, impuestos, ítems/líneas de detalle, órdenes de compra, cuentas contables y asignación de centros de costo o dimensiones.
+- **Repositorio Digital Ilimitado:** Almacenamiento centralizado en la nube con búsquedas avanzadas por número, fecha, proveedor, estado de aprobación, centro de costo o importe.
+- **Exportación y Registro:** Generación de archivos planos adaptados (CSV, TXT, XLS) para carga masiva o integración directa por API REST con el ERP.
 
-**Flujo de aprobación de facturas**
-- 100% digital, acceso web de escritorio y móvil.
-- Ruteo automático a los responsables de autorizar, según reglas predefinidas.
-- Recordatorios y alertas automáticas.
-- Trazabilidad completa: estados (pendiente / aprobado / rechazado) y motivos.
+### 2.2. Flujo de Aprobación de Facturas (Invoice Approval Workflow)
+- **Proceso 100% Digital y Papel Cero:** Acceso web (escritorio y móvil) para la revisión y autorización de facturas.
+- **Asignación Automática:** Ruteo inteligente de comprobantes a las personas responsables de autorizar según reglas predefinidas.
+- **Recordatorios Automáticos:** Notificaciones y alertas para evitar cuellos de botella y reducir el intercambio constante de emails.
+- **Trazabilidad y Auditoría:** Registro completo de estados (pendiente, aprobado, rechazado) y motivos de aprobación/rechazo en tiempo real.
 
-**Gestión de gastos**
-- App iOS y Android. Los colaboradores rinden gastos sacando foto del comprobante.
-- Reportes automáticos por usuario, categoría y estado.
-- Contabiliza reembolsos y gastos directamente contra el ERP.
+### 2.3. Aplicación de Gestión de Gastos (Expense Management App)
+- **Plataforma Móvil:** Aplicación disponible para dispositivos iOS y Android.
+- **Digitalización de Rendiciones:** Los colaboradores presentan sus gastos de viaje o representación tomando fotos de los comprobantes, eliminando el papel.
+- **Reportes de Gastos:** Generación automática de informes por usuario, categoría y estado sin tipeo manual.
+- **Integración Contable:** Conexión directa con el ERP para contabilizar reembolsos y gastos corporativos.
 
-## Integraciones
+---
 
-- **ERPs:** conexión nativa con SAP, Microsoft Dynamics 365, Oracle, NetSuite, y
-  con cualquier ERP local o desarrollo a medida.
-- **API REST:** APIs públicas con SDKs oficiales (Ruby, NodeJS, Java, etc.).
-  Sincronización bidireccional en tiempo real.
-- **Archivos planos:** CSV, TXT o XLS adaptados a la estructura exacta de
-  importación del ERP del cliente.
-- **BI:** integración con Power BI y Tableau.
-- **Estudios contables:** funcionalidad multicuenta, con división de cuentas e
-  interfaz centralizada para gestionar varios clientes.
+## 3. Integraciones Técnicas y Arquitectura
 
-## Preguntas frecuentes
+- **Sistemas ERP Compatibles:** Conexión nativa y fluida con sistemas líderes del mercado como **SAP, Microsoft Dynamics 365, Oracle, NetSuite**, así como con cualquier ERP local o desarrollo a medida.
+- **Métodos de Integración:**
+  - **API REST:** APIs públicas y robustas con SDKs oficiales disponibles en múltiples lenguajes de programación (Ruby, NodeJS, Java, etc.). Permite sincronización bidireccional en tiempo real.
+  - **Archivos Planos (Flat Files):** Exportación personalizada en formatos CSV, TXT o XLS adaptados a la estructura exacta de importación del ERP del cliente.
+- **Business Intelligence (BI):** Integración directa con herramientas de visualización de datos como **Power BI** y **Tableau** para la creación de tableros de control de gastos en tiempo real.
+- **Solución para Estudios Contables:** Funcionalidad multicuenta que permite a firmas contables gestionar la contabilidad de múltiples clientes con división de cuentas e interfaces centralizadas.
+
+---
+
+## 4. Preguntas Frecuentes para Asistencia por Bot (Base RAG)
 
 | Pregunta | Respuesta |
-|---|---|
-| ¿Requiere instalar algo local? | No. 100% nube (SaaS), 24/7 desde navegador y app móvil. |
-| ¿Qué facturas lee? | Facturas en PDF, sin importar diseño, idioma, moneda ni país. |
-| ¿Cuánto tarda la implementación? | ~5 días hábiles por archivos planos o API. |
-| ¿Cómo llegan las facturas? | Con una regla de redirección desde la casilla de compras hacia la casilla asignada en Xtract. |
-| ¿Se pueden asignar centros de costo antes del registro? | Sí, y también cuentas contables y órdenes de compra, durante lectura y aprobación. |
+| :--- | :--- |
+| **¿Xtract requiere instalar algún programa local?** | No, Xtract es una plataforma 100% basada en la nube (SaaS), disponible 24/7 a través de cualquier navegador web y app móvil. |
+| **¿Qué tipo de facturas puede leer Xtract?** | Xtract lee automáticamente facturas en formato PDF, sin importar el diseño, el idioma, la moneda o el país de origen del comprobante. |
+| **¿Cuánto tiempo toma la implementación?** | La implementación estándar mediante archivos planos o API puede completarse en aproximadamente 20 días hábiles. |
+| **¿Cómo llegan las facturas a la plataforma?** | Llegan automáticamente al configurar una regla de redirección desde la casilla de correo receptora de compras hacia la casilla asignada en Xtract (menos de 10 minutos). |
+| **¿Puedo asignar Centros de Costo antes del registro?** | Sí, permite automatizar la asignación de centros de costo, cuentas contables y órdenes de compra durante la etapa de aprobación y lectura. |
+| **¿Hay que cambiar de sistema contable?** | No, Xtract trabaja e integra sobre el ERP que la empresa ya utiliza sin reemplazarlo. |
 
-## Contacto
+---
 
-- Soporte: lunes a viernes, 08:00 a 20:00 — support@xtract.app
-- Consultas comerciales: xtract@xtract.app
+## 5. Contacto y Soporte Técnico
 
-## Lo que NO está definido
+- **Atención de Soporte:** Lunes a Viernes de 08:00 a 20:00 hs.
+- **Email de Soporte Técnico:** support@xtract.app
+- **Email de Consultas Generales y Ventas:** xtract@xtract.app
+- **Sitio Web:** [https://xtract.app/](https://xtract.app/)
 
-Esto es tan importante como lo anterior: son los temas donde la IA **no debe
-afirmar nada** y tiene que derivar al equipo comercial.
+---
 
-- **Precios.** No hay tarifas públicas. La cotización es a medida.
-- **Formatos que no sean PDF.** La ingesta directa de imágenes (JPG/PNG) o XML no
-  está confirmada en la documentación pública.
-- **Límites de API y almacenamiento.** No hay rate limits ni cuotas publicadas,
-  aunque el repositorio se anuncia como ilimitado.
+## 6. Fuentes e Incertidumbres (Límites de la IA / Lo que NO se debe afirmar)
+
+### Fuentes Consultadas
+- **Sitio oficial:** [Xtract.app](https://xtract.app/)
+- **Documentación e Integraciones:** [Xtract Integrations](https://xtract.app/integration)
+- **Centro de Ayuda y Soporte:** [Xtract Help & Support](https://xtract.app/help/)
+- **Flujo de Aprobación:** [Xtract Approval Workflow](https://xtract.app/approval/)
+
+### Incertidumbres y Límites Mandatorios para la IA
+- **Estructura de Precios Exacta:** El sitio web no publica valores fijos de planes o tarifas públicas por volumen de facturas; la cotización se realiza a medida a través del equipo comercial (**Siempre DERIVAR a un humano**).
+- **Soporte de Formatos No PDF:** La documentación enfatiza comprobantes en formato PDF; la capacidad de ingesta directa de imágenes (JPG/PNG) o XML directos no se especifica explícitamente en el portal público (**No afirmarlo**).
+- **Límites de Almacenamiento/API:** No se detallan límites de cuotas de consumo o rate limits en los endpoints públicos de la API, a pesar de indicarse un repositorio digital ilimitado.
+- **Conexión Nativa vs Integración:** Conexión nativa confirmada solo para SAP, Dynamics 365, Oracle y NetSuite. Para el resto de los ERPs, se integra por API REST o archivos planos.

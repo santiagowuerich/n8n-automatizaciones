@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vanware • Cold Outreach Email Canvas</title>
+  
+  <!-- Tailwind CSS & Google Fonts -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,600&family=Playfair+Display:ital,wght@0,600;1,400;1,600&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            serif: ['"Playfair Display"', 'Georgia', 'serif'],
+          },
+          colors: {
+            brand: {
+              wine: '#781219',
+              darkwine: '#4A080C',
+              sand: '#EAE6DE',
+              lightcard: '#F6F3EE',
+              accent: '#FF4D5A'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Efecto acanalado arquitectónico idéntico a la imagen */
+    .hero-fluted-wall {
+      background: 
+        radial-gradient(ellipse at 88% 50%, rgba(243, 213, 192, 0.22) 0%, rgba(120, 18, 25, 0) 55%),
+        repeating-linear-gradient(
+          90deg,
+          rgba(255, 255, 255, 0.05) 0px,
+          rgba(255, 255, 255, 0.05) 1.5px,
+          transparent 1.5px,
+          transparent 15px,
+          rgba(0, 0, 0, 0.35) 15px,
+          rgba(0, 0, 0, 0.35) 18px
+        ),
+        linear-gradient(155deg, #87151D 0%, #680E14 45%, #3B0609 100%);
+    }
+
+    /* Patrón sutil para la mesa de trabajo */
+    .canvas-grid {
+      background-color: #0F1216;
+      background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+
+    /* Scrollbars elegantes */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.1);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.35);
+    }
+  </style>
+</head>
+
+<body class="bg-[#0b0e13] text-gray-200 min-h-screen flex flex-col font-sans selection:bg-rose-500 selection:text-white">
+
+  <!-- Barra superior de control -->
+  <header class="h-16 border-b border-gray-800 bg-[#12161E]/90 backdrop-blur px-6 flex items-center justify-between shrink-0 z-30">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-red-600 to-rose-400 flex items-center justify-center font-black text-white text-base shadow-lg shadow-rose-900/30">
+        V
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="font-bold text-white tracking-tight">Vanware</span>
+          <span class="text-[10px] font-semibold tracking-wider uppercase px-2 py-0.5 rounded-full bg-rose-950/80 text-rose-300 border border-rose-800/40">Email Studio</span>
+        </div>
+        <p class="text-xs text-gray-400">Plantilla Cold Outreach • vanware.com.ar</p>
+      </div>
+    </div>
+
+    <!-- Controles de Vista y Acciones -->
+    <div class="flex items-center gap-3">
+      <!-- Selector de Dispositivo -->
+      <div class="bg-gray-900 border border-gray-800 rounded-lg p-1 flex items-center gap-1 text-xs">
+        <button id="btnViewDesktop" onclick="setDeviceView('desktop')" class="px-3 py-1.5 rounded-md font-medium transition bg-gray-800 text-white shadow-sm flex items-center gap-1.5">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+          Escritorio
+        </button>
+        <button id="btnViewMobile" onclick="setDeviceView('mobile')" class="px-3 py-1.5 rounded-md font-medium transition text-gray-400 hover:text-gray-200 flex items-center gap-1.5">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+          Móvil
+        </button>
+      </div>
+
+      <!-- Botón Copiar HTML para Envío Masivo -->
+      <button onclick="copyRawHtml()" class="bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold px-4 py-2 rounded-lg transition flex items-center gap-2 shadow-lg shadow-rose-600/20 active:scale-95">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+        <span>Copiar HTML para Enviar</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Área de trabajo (Split: Sidebar variables + Canvas) -->
+  <div class="flex-1 flex overflow-hidden">
+    
+    <!-- Sidebar de Variables Dinámicas -->
+    <aside class="w-96 bg-[#131720] border-r border-gray-800 flex flex-col shrink-0">
+      <div class="p-4 border-b border-gray-800">
+        <h2 class="text-xs font-bold uppercase tracking-wider text-gray-400 flex items-center gap-2">
+          <svg class="w-4 h-4 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+          Variables de Contacto en Frío
+        </h2>
+        <p class="text-xs text-gray-500 mt-1">Modificá los campos en vivo para previsualizar tu campaña.</p>
+      </div>
+
+      <div class="flex-1 overflow-y-auto p-4 space-y-4 text-xs">
+        
+        <div>
+          <label class="block font-medium text-gray-300 mb-1">Nombre destinatario <code>{{NOMBRE}}</code></label>
+          <input id="inNombre" type="text" value="Daniel" oninput="updateLiveEmail()" class="w-full bg-gray-900/90 border border-gray-700 rounded-lg px-3 py-2 text-white focus:border-rose-500 focus:outline-none transition">
+        </div>
+
+        <div>
+          <label class="block font-medium text-gray-300 mb-1">Producto o Solución <code>{{PRODUCTO}}</code></label>
+          <input id="inProducto" type="text" value="nuestro Sistema de Gestión Operativa" oninput="updateLiveEmail()" class="w-full bg-gray-900/90 border border-gray-700 rounded-lg px-3 py-2 text-white focus:border-rose-500 focus:outline-none transition">
+        </div>
+
+        <div class="pt-2 border-t border-gray-800">
+          <label class="block font-semibold text-rose-400 mb-2">3 Beneficios Clave (Bullets 🟢)</label>
+          
+          <div class="space-y-2">
+            <div>
+              <span class="text-[11px] text-gray-400">Beneficio 1</span>
+              <input id="inBen1" type="text" value="Automatizar la facturación y el seguimiento de pedidos sin reingresos manuales" oninput="updateLiveEmail()" class="w-full bg-gray-900/90 border border-gray-700 rounded-lg px-3 py-2 text-white focus:border-rose-500 focus:outline-none transition mt-0.5">
+            </div>
+
+            <div>
+              <span class="text-[11px] text-gray-400">Beneficio 2</span>
+              <input id="inBen2" type="text" value="Controlar stock y despachos en tiempo real desde una sola pantalla" oninput="updateLiveEmail()" class="w-full bg-gray-900/90 border border-gray-700 rounded-lg px-3 py-2 text-white focus:border-rose-500 focus:outline-none transition mt-0.5">
+            </div>
+
+            <div>
+              <span class="text-[11px] text-gray-400">Beneficio 3</span>
+              <input id="inBen3" type="text" value="Reducir un 40% las horas dedicadas a tareas administrativas repetitivas" oninput="updateLiveEmail()" class="w-full bg-gray-900/90 border border-gray-700 rounded-lg px-3 py-2 text-white focus:border-rose-500 focus:outline-none transition mt-0.5">
+            </div>
+          </div>
+        </div>
+
+        <div class="pt-2 border-t border-gray-800">
+          <label class="block font-medium text-gray-300 mb-1">Caso de éxito / Métrica <code>{{RESULTADO}}</code></label>
+          <textarea id="inResultado" rows="2" oninput="updateLiveEmail()" class="w-full bg-gray-900/90 border border-gray-700 rounded-lg px-3 py-2 text-white focus:border-rose-500 focus:outline-none transition resize-none">ordenar sus procesos de punta a punta y ganar 12 horas operativas por semana</textarea>
+        </div>
+
+        <div class="pt-2 border-t border-gray-800">
+          <label class="block font-medium text-gray-300 mb-1">Enlace del botón (Calendly / WhatsApp / Web)</label>
+          <input id="inEnlace" type="text" value="https://calendly.com" oninput="updateLiveEmail()" class="w-full bg-gray-900/90 border border-gray-700 rounded-lg px-3 py-2 text-white focus:border-rose-500 focus:outline-none transition">
+        </div>
+
+        <div class="pt-2 border-t border-gray-800">
+          <label class="block font-medium text-gray-300 mb-1">Foto del emisor (Headshot Santiago)</label>
+          <select id="selAvatar" onchange="changeAvatarPreset(this.value)" class="w-full bg-gray-900/90 border border-gray-700 rounded-lg px-3 py-2 text-white focus:border-rose-500 focus:outline-none transition mb-2">
+            <option value="preset1">Foto Santiago (Estilo referencia con lentes y cuello alto)</option>
+            <option value="preset2">Foto Santiago alternativa (Perfil corporativo formal)</option>
+            <option value="custom">URL personalizada...</option>
+          </select>
+          <input id="inFotoCustom" type="text" placeholder="https://tu-servidor.com/santiago.png" oninput="updateLiveEmail()" class="hidden w-full bg-gray-900/90 border border-gray-700 rounded-lg px-3 py-2 text-white focus:border-rose-500 focus:outline-none transition">
+        </div>
+
+      </div>
+
+      <div class="p-3 bg-gray-950/60 border-t border-gray-800 text-[11px] text-gray-500 flex items-center justify-between">
+        <span>Vanware Marketing Suite</span>
+        <button onclick="resetDefaults()" class="text-rose-400 hover:underline">Restaurar campos</button>
+      </div>
+    </aside>
+
+    <!-- Canvas Central con el Correo Electrónico -->
+    <main class="flex-1 canvas-grid overflow-y-auto p-6 md:p-10 flex flex-col items-center justify-start">
+      
+      <!-- Contenedor con ancho dinámico para emular Desktop vs Mobile -->
+      <div id="emailViewport" class="w-full max-w-[540px] transition-all duration-300 ease-out">
+        
+        <!-- Tarjeta Maestra del Email (Color Arena/Oatmeal de fondo idéntico al diseño) -->
+        <div class="bg-[#ECE7DF] rounded-[32px] p-3 md:p-3.5 shadow-2xl border border-stone-300/40 overflow-hidden text-neutral-800">
+          
+          <!-- SECCIÓN HERO: Tarjeta superior de color Borgoña / Rojo con panel acanalado -->
+          <div class="hero-fluted-wall rounded-[24px] pt-5 px-6 pb-0 text-center relative overflow-hidden border border-rose-950 shadow-inner">
+            
+            <!-- Barra superior dentro del Hero (Logo Vanware + Enlaces de navegación tipo revista) -->
+            <div class="flex items-center justify-between text-xs pb-4">
+              <!-- Logo Vanware con el iconito del interruptor circular idéntico -->
+              <div class="flex items-center gap-2">
+                <div class="w-5 h-5 rounded-full border-2 border-rose-200/90 flex items-center justify-center">
+                  <div class="w-1.5 h-1.5 bg-white rounded-full"></div>
+                </div>
+                <span class="font-extrabold text-white text-base tracking-tight">Vanware</span>
+              </div>
+
+              <!-- Enlaces minimalistas de cabecera -->
+              <div class="flex items-center gap-3.5 text-[11px] font-medium text-rose-200/90">
+                <a href="https://vanware.com.ar" class="hover:text-white transition">Sistemas</a>
+                <a href="https://vanware.com.ar" class="hover:text-white transition">Impacto</a>
+                <a href="https://vanware.com.ar" class="hover:text-white transition">Contacto</a>
+              </div>
+            </div>
+
+            <!-- Título Principal del Hero con tipografía Serif en cursiva -->
+            <div class="pt-3 pb-2 max-w-sm mx-auto">
+              <h1 class="text-white text-2xl md:text-[28px] font-bold tracking-tight leading-tight">
+                Notamos algo<br>
+                <span class="font-serif italic font-normal text-rose-100 text-[27px] md:text-[31px]">que vale la pena compartir</span>
+              </h1>
+              <p class="text-rose-200/90 text-[12px] md:text-[13px] leading-relaxed mt-2.5 font-normal px-2">
+                Encontramos tu empresa analizando operaciones del sector y creemos que podemos simplificar tu día a día.
+              </p>
+            </div>
+
+            <!-- Foto de Santiago perfectamente integrada y recortada en la base -->
+            <div class="mt-3 flex justify-center -mb-1 relative z-10">
+              <img id="viewAvatarImg" 
+                   src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=480&q=80" 
+                   alt="Santiago de Vanware" 
+                   class="w-48 h-56 md:w-52 md:h-60 object-cover object-top rounded-t-[100px] shadow-lg drop-shadow-[0_15px_25px_rgba(0,0,0,0.4)]">
+            </div>
+
+          </div>
+
+          <!-- CUERPO PRINCIPAL DEL CORREO -->
+          <div class="pt-7 px-4 md:px-7 pb-4 text-center">
+            <h2 class="text-neutral-900 font-bold text-base md:text-lg mb-2">
+              Hola <span id="viewNombre">Daniel</span>,
+            </h2>
+            <p class="text-neutral-700 text-[13px] md:text-[13.5px] leading-relaxed max-w-md mx-auto">
+              Mi nombre es Santiago, de <strong>Vanware</strong>. Nos dedicamos a la venta e implementación de sistemas integrales para empresas, y te contacto directamente porque creo que <strong id="viewProducto" class="text-neutral-900 underline decoration-rose-400 decoration-1 underline-offset-2">nuestro Sistema de Gestión Operativa</strong> puede ser de gran utilidad para tu operación diaria.
+            </p>
+          </div>
+
+          <!-- SUB-TARJETA BLANCA FLOTANTE (Idéntica al módulo 'Two tweaks. Big difference.') -->
+          <div class="px-2 md:px-5 py-2">
+            <div class="bg-white rounded-[24px] p-6 shadow-sm border border-stone-200/70 text-center">
+              
+              <!-- Pill badge rosado/rojo suave -->
+              <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-50 border border-rose-100 text-rose-800 text-[11px] font-semibold tracking-wide uppercase mb-3">
+                <span class="w-1.5 h-1.5 rounded-full bg-rose-600"></span>
+                <span>Propuesta a medida</span>
+              </div>
+
+              <!-- Título de impacto estilo editorial -->
+              <h3 class="text-neutral-900 font-bold text-xl md:text-[22px] leading-snug">
+                Tres mejoras clave.<br>
+                <span class="font-serif italic text-rose-700 font-medium text-[21px] md:text-[23px]">Gran impacto operativo.</span>
+              </h3>
+              
+              <p class="text-stone-500 text-xs mt-1.5 mb-5 max-w-xs mx-auto">
+                En concreto, el sistema permite potenciar estos 3 aspectos en tu negocio:
+              </p>
+
+              <!-- Lista de 3 Beneficios con iconos verdes 🟢 -->
+              <div class="space-y-3 text-left max-w-md mx-auto text-xs md:text-[13px] text-neutral-800">
+                
+                <div class="flex items-start gap-3 bg-stone-50/90 p-2.5 rounded-xl border border-stone-100">
+                  <span class="text-base leading-none shrink-0 mt-0.5">🟢</span>
+                  <span id="viewBen1" class="leading-snug font-medium text-stone-800">
+                    Automatizar la facturación y el seguimiento de pedidos sin reingresos manuales
+                  </span>
+                </div>
+
+                <div class="flex items-start gap-3 bg-stone-50/90 p-2.5 rounded-xl border border-stone-100">
+                  <span class="text-base leading-none shrink-0 mt-0.5">🟢</span>
+                  <span id="viewBen2" class="leading-snug font-medium text-stone-800">
+                    Controlar stock y despachos en tiempo real desde una sola pantalla
+                  </span>
+                </div>
+
+                <div class="flex items-start gap-3 bg-stone-50/90 p-2.5 rounded-xl border border-stone-100">
+                  <span class="text-base leading-none shrink-0 mt-0.5">🟢</span>
+                  <span id="viewBen3" class="leading-snug font-medium text-stone-800">
+                    Reducir un 40% las horas dedicadas a tareas administrativas repetitivas
+                  </span>
+                </div>
+
+              </div>
+
+              <!-- Prueba social / Resultado destacado -->
+              <div class="mt-5 pt-4 border-t border-dashed border-stone-200">
+                <p class="text-xs text-stone-600 leading-relaxed">
+                  🚀 Ya ayudamos a empresas a <strong id="viewResultado" class="text-neutral-900 font-bold">ordenar sus procesos de punta a punta y ganar 12 horas operativas por semana</strong>.
+                </p>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- LLAMADO A LA ACCIÓN (CTA) -->
+          <div class="pt-4 px-6 pb-6 text-center">
+            <p class="text-xs md:text-[13px] text-stone-600 leading-relaxed max-w-sm mx-auto mb-4">
+              Si te interesa, puedo coordinar una <strong>llamada breve de 15 minutos</strong> para mostrarte cómo funciona en vivo y cotizarlo según tu necesidad puntual.
+            </p>
+
+            <a id="viewBotonCta" href="https://calendly.com" target="_blank" class="inline-flex items-center justify-center gap-2 bg-[#781219] hover:bg-[#600D13] text-white font-bold text-xs md:text-sm px-7 py-3.5 rounded-full shadow-lg shadow-rose-950/20 transition transform active:scale-95">
+              <span>Coordinar una llamada</span>
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+            </a>
+          </div>
+
+          <!-- FOOTER MINIMALISTA CON BRANDING VANWARE -->
+          <div class="border-t border-stone-300/70 pt-4 pb-2 text-center text-[11px] text-stone-500">
+            <p class="font-semibold text-stone-700">Santiago • Especialista en Soluciones TI</p>
+            <p class="mt-0.5">Vanware — Implementación de Sistemas para Empresas • <a href="https://vanware.com.ar" class="text-rose-900 underline font-medium">vanware.com.ar</a></p>
+          </div>
+
+        </div>
+
+      </div>
+
+    </main>
+
+  </div>
+
+  <!-- TOAST NOTIFICATION MODAL -->
+  <div id="toastNotification" class="fixed bottom-6 right-6 bg-stone-900 text-white border border-stone-700 px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 transform translate-y-24 opacity-0 transition-all duration-300 z-50">
+    <div class="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-bold">✓</div>
+    <div>
+      <h4 id="toastTitle" class="text-xs font-bold">¡Copiado con éxito!</h4>
+      <p id="toastMessage" class="text-[11px] text-stone-400">El código HTML compatible para clientes de correo fue copiado.</p>
+    </div>
+  </div>
+
+  <!-- LOGICA JS -->
+  <script>
+    const avatarPresets = {
+      preset1: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=480&q=80',
+      preset2: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=480&q=80'
+    };
+
+    let currentAvatarUrl = avatarPresets.preset1;
+
+    // Actualiza los elementos del canvas en tiempo real
+    function updateLiveEmail() {
+      const nombre = document.getElementById('inNombre').value.trim() || 'Daniel';
+      const producto = document.getElementById('inProducto').value.trim() || 'nuestro Sistema de Gestión Operativa';
+      const ben1 = document.getElementById('inBen1').value.trim() || 'Beneficio 1';
+      const ben2 = document.getElementById('inBen2').value.trim() || 'Beneficio 2';
+      const ben3 = document.getElementById('inBen3').value.trim() || 'Beneficio 3';
+      const resultado = document.getElementById('inResultado').value.trim() || 'optimizar sus procesos';
+      const enlace = document.getElementById('inEnlace').value.trim() || 'https://vanware.com.ar';
+
+      document.getElementById('viewNombre').innerText = nombre;
+      document.getElementById('viewProducto').innerText = producto;
+      document.getElementById('viewBen1').innerText = ben1;
+      document.getElementById('viewBen2').innerText = ben2;
+      document.getElementById('viewBen3').innerText = ben3;
+      document.getElementById('viewResultado').innerText = resultado;
+      document.getElementById('viewBotonCta').setAttribute('href', enlace);
+
+      // Avatar
+      const sel = document.getElementById('selAvatar').value;
+      if (sel === 'custom') {
+        const customUrl = document.getElementById('inFotoCustom').value.trim();
+        if (customUrl) currentAvatarUrl = customUrl;
+      } else {
+        currentAvatarUrl = avatarPresets[sel];
+      }
+      document.getElementById('viewAvatarImg').setAttribute('src', currentAvatarUrl);
+    }
+
+    function changeAvatarPreset(value) {
+      const customInput = document.getElementById('inFotoCustom');
+      if (value === 'custom') {
+        customInput.classList.remove('hidden');
+      } else {
+        customInput.classList.add('hidden');
+        currentAvatarUrl = avatarPresets[value];
+      }
+      updateLiveEmail();
+    }
+
+    // Generador del código HTML 100% compatible con tablas en línea para clientes de correo (Gmail, Outlook, Brevo, Instantly, etc.)
+    function generateCleanEmailCode() {
+      const nombre = document.getElementById('inNombre').value.trim() || '{{NOMBRE}}';
+      const producto = document.getElementById('inProducto').value.trim() || '{{PRODUCTO}}';
+      const ben1 = document.getElementById('inBen1').value.trim() || '{{BENEFICIO_1}}';
+      const ben2 = document.getElementById('inBen2').value.trim() || '{{BENEFICIO_2}}';
+      const ben3 = document.getElementById('inBen3').value.trim() || '{{BENEFICIO_3}}';
+      const resultado = document.getElementById('inResultado').value.trim() || '{{RESULTADO}}';
+      const enlace = document.getElementById('inEnlace').value.trim() || 'https://vanware.com.ar';
+      const avatar = currentAvatarUrl;
+
+      return `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vanware</title>
+</head>
+<body style="margin:0; padding:0; background-color:#EBE7DF; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing:antialiased; color:#222222;">
+
+  <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color:#EBE7DF; padding:30px 10px;">
+    <tr>
+      <td align="center">
+        
+        <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width:520px; background-color:#F4F0EA; border-radius:28px; overflow:hidden; box-shadow:0 12px 35px rgba(0,0,0,0.07);">
+          
+          <!-- HERO ACANALADO ROJO/BORGOÑA -->
+          <tr>
+            <td style="padding:12px 12px 0 12px;">
+              <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background: linear-gradient(155deg, #87151D 0%, #680E14 45%, #3B0609 100%); border-radius:20px; text-align:center; overflow:hidden;">
+                
+                <!-- Barra superior -->
+                <tr>
+                  <td style="padding:18px 20px 10px 20px;">
+                    <table width="100%" border="0" cellspacing="0" cellpadding="0">
+                      <tr>
+                        <td align="left">
+                          <span style="font-size:16px; font-weight:800; color:#FFFFFF; letter-spacing:-0.3px;">
+                            &#9673; Vanware
+                          </span>
+                        </td>
+                        <td align="right">
+                          <a href="https://vanware.com.ar" style="font-size:11px; color:#F0C4C8; text-decoration:none; margin-left:12px;">Sistemas</a>
+                          <a href="https://vanware.com.ar" style="font-size:11px; color:#F0C4C8; text-decoration:none; margin-left:12px;">Soluciones</a>
+                          <a href="https://vanware.com.ar" style="font-size:11px; color:#F0C4C8; text-decoration:none; margin-left:12px;">Contacto</a>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+
+                <!-- Título Hero -->
+                <tr>
+                  <td style="padding:14px 20px 6px 20px;">
+                    <h1 style="margin:0; font-size:26px; line-height:1.2; font-weight:700; color:#FFFFFF;">
+                      Notamos algo<br>
+                      <span style="font-family:'Georgia', serif; font-style:italic; font-weight:normal; color:#FAD5D8;">que vale la pena compartir</span>
+                    </h1>
+                    <p style="margin:10px auto 0 auto; font-size:13px; line-height:1.45; color:#E8B4B8; max-width:360px;">
+                      Encontramos tu empresa analizando operaciones del sector y creemos que podemos optimizar tu operación.
+                    </p>
+                  </td>
+                </tr>
+
+                <!-- Foto de Santiago Recortada -->
+                <tr>
+                  <td align="center" style="padding-top:10px; line-height:0;">
+                    <img src="${avatar}" alt="Santiago de Vanware" width="220" style="display:block; max-width:220px; width:100%; height:auto; border:0; vertical-align:bottom; border-radius:100px 100px 0 0;">
+                  </td>
+                </tr>
+
+              </table>
+            </td>
+          </tr>
+
+          <!-- MENSAJE PERSONALIZADO -->
+          <tr>
+            <td style="padding:26px 26px 14px 26px; text-align:center;">
+              <p style="margin:0 0 12px 0; font-size:17px; font-weight:700; color:#1C1A19;">
+                Hola ${nombre},
+              </p>
+              <p style="margin:0; font-size:14px; line-height:1.6; color:#383533;">
+                Mi nombre es Santiago, de <strong>Vanware</strong>. Nos dedicamos a la venta e implementación de sistemas para empresas, y te contacto porque creo que <strong>${producto}</strong> puede ser de gran utilidad para tu operación.
+              </p>
+            </td>
+          </tr>
+
+          <!-- TARJETA INTERIOR BLANCA: BENEFICIOS -->
+          <tr>
+            <td style="padding:4px 20px 18px 20px;">
+              <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color:#FFFFFF; border-radius:20px; padding:22px 20px; border:1px solid #E5E0D8;">
+                
+                <tr>
+                  <td align="center" style="padding-bottom:12px;">
+                    <span style="display:inline-block; background-color:#FDEEEE; color:#8F1820; font-size:11px; font-weight:700; letter-spacing:0.4px; text-transform:uppercase; padding:4px 12px; border-radius:20px;">
+                      &bull; Propuesta a medida
+                    </span>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td align="center" style="padding-bottom:18px;">
+                    <h2 style="margin:0; font-size:21px; line-height:1.25; color:#1A1817; font-weight:700;">
+                      Tres mejoras clave.<br>
+                      <span style="font-family:'Georgia', serif; font-style:italic; color:#8F1820; font-weight:normal;">Gran impacto operativo.</span>
+                    </h2>
+                    <p style="margin:6px 0 0 0; font-size:12px; color:#78726A;">
+                      En concreto, ${producto} permite:
+                    </p>
+                  </td>
+                </tr>
+
+                <!-- Bullets -->
+                <tr>
+                  <td>
+                    <table width="100%" border="0" cellspacing="0" cellpadding="0">
+                      <tr>
+                        <td width="24" valign="top" style="padding:6px 0; font-size:14px;">&#x1F7E2;</td>
+                        <td valign="top" style="padding:6px 0 6px 8px; font-size:13px; line-height:1.45; color:#2E2C2A;">
+                          ${ben1}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td width="24" valign="top" style="padding:6px 0; font-size:14px;">&#x1F7E2;</td>
+                        <td valign="top" style="padding:6px 0 6px 8px; font-size:13px; line-height:1.45; color:#2E2C2A;">
+                          ${ben2}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td width="24" valign="top" style="padding:6px 0; font-size:14px;">&#x1F7E2;</td>
+                        <td valign="top" style="padding:6px 0 6px 8px; font-size:13px; line-height:1.45; color:#2E2C2A;">
+                          ${ben3}
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+
+                <!-- Resultado -->
+                <tr>
+                  <td style="padding-top:14px; border-top:1px dashed #E2DDD5;">
+                    <p style="margin:0; font-size:12px; line-height:1.5; color:#5E5851; text-align:center;">
+                      &#x1F680; Ya ayudamos a empresas a <strong>${resultado}</strong>.
+                    </p>
+                  </td>
+                </tr>
+
+              </table>
+            </td>
+          </tr>
+
+          <!-- LLAMADO A LA ACCION (BOTON) -->
+          <tr>
+            <td style="padding:8px 24px 26px 24px; text-align:center;">
+              <p style="margin:0 0 16px 0; font-size:13px; line-height:1.5; color:#47433F;">
+                Si te interesa, puedo coordinar una <strong>llamada breve de 15 minutos</strong> para mostrarte cómo funciona y cotizarlo según tu necesidad puntual:
+              </p>
+              
+              <table border="0" cellspacing="0" cellpadding="0" align="center">
+                <tr>
+                  <td align="center" style="border-radius:50px; background-color:#781219;">
+                    <a href="${enlace}" target="_blank" style="display:inline-block; padding:13px 30px; font-size:13px; font-weight:700; color:#FFFFFF; text-decoration:none; border-radius:50px;">
+                      Coordinar una llamada &rarr;
+                    </a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- PIE DE PAGINA -->
+          <tr>
+            <td style="background-color:#EBE5DC; padding:16px 20px; text-align:center; border-top:1px solid #DFDAD0;">
+              <p style="margin:0 0 3px 0; font-size:12px; font-weight:600; color:#2E2B29;">
+                Santiago &bull; Vanware
+              </p>
+              <p style="margin:0; font-size:11px; color:#78726A;">
+                Venta e implementación de software empresarial &bull; <a href="https://vanware.com.ar" style="color:#78726A; text-decoration:underline;">vanware.com.ar</a>
+              </p>
+            </td>
+          </tr>
+
+        </table>
+
+      </td>
+    </tr>
+  </table>
+
+</body>
+</html>`;
+    }
+
+    function setDeviceView(mode) {
+      const container = document.getElementById('emailViewport');
+      const btnDesktop = document.getElementById('btnViewDesktop');
+      const btnMobile = document.getElementById('btnViewMobile');
+
+      if (mode === 'mobile') {
+        container.style.maxWidth = '390px';
+        btnMobile.className = 'px-3 py-1.5 rounded-md font-medium transition bg-gray-800 text-white shadow-sm flex items-center gap-1.5';
+        btnDesktop.className = 'px-3 py-1.5 rounded-md font-medium transition text-gray-400 hover:text-gray-200 flex items-center gap-1.5';
+      } else {
+        container.style.maxWidth = '540px';
+        btnDesktop.className = 'px-3 py-1.5 rounded-md font-medium transition bg-gray-800 text-white shadow-sm flex items-center gap-1.5';
+        btnMobile.className = 'px-3 py-1.5 rounded-md font-medium transition text-gray-400 hover:text-gray-200 flex items-center gap-1.5';
+      }
+    }
+
+    function showToast(title, message) {
+      const toast = document.getElementById('toastNotification');
+      document.getElementById('toastTitle').innerText = title;
+      document.getElementById('toastMessage').innerText = message;
+
+      toast.classList.remove('translate-y-24', 'opacity-0');
+      toast.classList.add('translate-y-0', 'opacity-100');
+
+      setTimeout(() => {
+        toast.classList.remove('translate-y-0', 'opacity-100');
+        toast.classList.add('translate-y-24', 'opacity-0');
+      }, 3200);
+    }
+
+    function copyRawHtml() {
+      const code = generateCleanEmailCode();
+      navigator.clipboard.writeText(code).then(() => {
+        showToast('¡HTML Copiado!', 'Pegalo directamente en tu herramienta de email o campaña en frío.');
+      }).catch(() => {
+        showToast('Error', 'No se pudo copiar automáticamente.');
+      });
+    }
+
+    function resetDefaults() {
+      document.getElementById('inNombre').value = 'Daniel';
+      document.getElementById('inProducto').value = 'nuestro Sistema de Gestión Operativa';
+      document.getElementById('inBen1').value = 'Automatizar la facturación y el seguimiento de pedidos sin reingresos manuales';
+      document.getElementById('inBen2').value = 'Controlar stock y despachos en tiempo real desde una sola pantalla';
+      document.getElementById('inBen3').value = 'Reducir un 40% las horas dedicadas a tareas administrativas repetitivas';
+      document.getElementById('inResultado').value = 'ordenar sus procesos de punta a punta y ganar 12 horas operativas por semana';
+      document.getElementById('inEnlace').value = 'https://calendly.com';
+      document.getElementById('selAvatar').value = 'preset1';
+      document.getElementById('inFotoCustom').classList.add('hidden');
+      updateLiveEmail();
+      showToast('Restaurado', 'Los valores predeterminados fueron restablecidos.');
+    }
+
+    // Inicialización
+    window.addEventListener('DOMContentLoaded', () => {
+      updateLiveEmail();
+    });
+  </script>
+
+</body>
+</html>

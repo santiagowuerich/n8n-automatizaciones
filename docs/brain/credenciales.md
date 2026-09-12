@@ -88,7 +88,14 @@ no de DEV.
 
 **Regla:** al llevar un workflow del repo a DEV, remapear los IDs de la tabla §2 a los de §1
 antes de importar. En sentido inverso (DEV → PROD), aplicar el remapeo opuesto según el
-[protocolo de transición](sistemas.md#4-protocolo-de-transición-dev-a-prod).
+[protocolo de transición — ruta legacy](sistemas.md#42-ruta-legacy-instancia-separada-santiago-dev--xtract-prod).
+
+**Excepción — proyectos con DEV embebido en Xtract (2026-09-10):** los proyectos nuevos que
+usan el [Patrón 11](catalogo-patrones.md#11-patrón-entorno-de-prueba-embebido-con-redirect-seguro-2026-09-10)
+construyen DEV y PROD como dos workflows dentro de **la misma instancia** (`n8n.xtract.app`).
+Ahí no hay remapeo: ambos workflows usan los mismos IDs de la tabla §2. El "despliegue" es quitar
+el redirect fail-safe y activar el gemelo, no cambiar credenciales. Este remapeo sigue aplicando
+solo a los proyectos que usan el modelo de instancia separada (§4.2 del protocolo de transición).
 
 ---
 

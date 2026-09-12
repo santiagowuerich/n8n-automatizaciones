@@ -58,6 +58,18 @@ Este protocolo define el ciclo de verificación autónoma que ejecuta el Second 
 5. **Criterio de Auto-corrección:**
    - Errores de sintaxis en nodos `Code` (JavaScript), mapeo de expresiones JSON (`{{ $json.field }}`) o tipos de datos deben corregirse automáticamente hasta lograr una ejecución limpia (máximo 3 reintentos).
    - Errores de credenciales, conectividad o permisos se escalan inmediatamente al usuario.
+6. **Proyectos con DEV embebido en Xtract (2026-09-10):** para proyectos que usan el
+   [Patrón 11 — Entorno de Prueba Embebido con Redirect Seguro](catalogo-patrones.md#11-patrón-entorno-de-prueba-embebido-con-redirect-seguro-2026-09-10),
+   las pruebas corren **siempre** contra el workflow DEV-en-Xtract, con el redirect fail-safe
+   activo. Nunca se prueba contra el workflow PROD real, y nunca se desactiva la bandera de modo
+   prueba (`MODO_PRUEBA`) sin un pedido explícito del usuario para esa corrida puntual.
+   - **Principio fail-safe, no fail-open (regla general, reusable también en `personal/`):**
+     cualquier bandera de modo prueba tiene que tener un default seguro. Si la bandera falta,
+     viene vacía o con un valor inesperado, el workflow debe comportarse como si el modo prueba
+     estuviera activo (redirigir a Santiago, no tocar datos reales) — nunca al revés. Nace de dos
+     incidentes reales por el error inverso: `FORZAR_DESTINATARIO` vacío mandando un borrador a
+     un DM real (06, 2026-08-28) y tres `TEMP` activos 9 días filtrando PII sin auth (2026-09-10,
+     ver [`lecciones.md`](lecciones.md)).
 
 ---
 

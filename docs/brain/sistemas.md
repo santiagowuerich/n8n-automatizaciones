@@ -157,6 +157,38 @@ degrada a manual**:
 > Aplica **solo a proyectos de Xtract**. Los proyectos propios no migran de instancia: se
 > construyen y viven en `n8n.santiagowuerich.info`.
 
+Desde 2026-09-10 hay **dos rutas** para llegar a PROD en Xtract, según dónde vive el DEV del
+proyecto. No son intercambiables a mitad de camino — se elige una al diseñar el proyecto.
+
+### 4.1 Ruta recomendada para proyectos nuevos: DEV embebido en `n8n.xtract.app`
+
+Motivo: `n8n.santiagowuerich.info` no tiene (ni va a tener siempre) las credenciales exclusivas
+de cliente — Notion Xtract, Chatwoot, Calendly, Slack Xtract (ver tabla §2 de
+[`credenciales.md`](credenciales.md)). Para cualquier proyecto que dependa de esos servicios,
+DEV en la instancia Santiago está incompleto por diseño. La solución: construir DEV y PROD como
+**dos workflows en la misma instancia** (`n8n.xtract.app`), usando el
+[Patrón 11 — Entorno de Prueba Embebido con Redirect Seguro](catalogo-patrones.md#11-patrón-entorno-de-prueba-embebido-con-redirect-seguro-2026-09-10).
+
+1. **Desarrollo en DEV-en-Xtract:** el workflow se construye y prueba en su variante DEV, en la
+   misma instancia, con las credenciales reales y el nodo `Resolver Destinatario` fail-safe
+   activo (redirige a Santiago por defecto — ver testing-protocol.md §1).
+2. **Crítica adversarial:** checklist de [`criterios-critica.md`](criterios-critica.md), incluidos
+   los ítems del redirect fail-safe (§4).
+3. **Sin remapeo de credenciales:** misma instancia, mismos IDs — se salta el paso de
+   sanitización de IDs del protocolo legacy (§4.2).
+4. **Diff & Reporte:** igual que la ruta legacy.
+5. **Gate de Aprobación:** el usuario aprueba explícitamente el pase.
+6. **"Despliegue":** quitar el redirect fail-safe del workflow DEV-en-Xtract y activar el
+   workflow PROD gemelo (o promoverlo, según cómo se haya construido el par). Ver
+   [`n8n-deploy-prod`](../../.agents/skills/n8n-deploy-prod/SKILL.md).
+7. **Verificación post-deploy:** igual que la ruta legacy — estado `active`, credenciales
+   enlazadas, webhook respondiendo.
+
+### 4.2 Ruta legacy: instancia separada (Santiago DEV → Xtract PROD)
+
+Sigue aplicando a los proyectos que ya usan este modelo (04, 05, 06) y a cualquier feature nueva
+que no dependa de ningún servicio exclusivo de cliente.
+
 1. **Desarrollo en DEV:** El workflow se crea o modifica y se somete al [Protocolo de Testing](testing-protocol.md).
 2. **Crítica adversarial:** Se aplica el checklist de [`criterios-critica.md`](criterios-critica.md).
 3. **Sanitización:** Se limpian credenciales duras y se remapean los IDs de DEV a PROD.
@@ -164,3 +196,22 @@ degrada a manual**:
 5. **Gate de Aprobación:** El usuario aprueba explícitamente el despliegue.
 6. **Importación a PROD:** Vía `n8n_prod` si el host lo tiene; si no, por la ruta manual de §3.
 7. **Verificación post-deploy:** Estado `active`, credenciales enlazadas y webhook respondiendo.
+
+---
+
+## 5. Manejo de respuestas grandes de MCP (2026-09-10)
+
+Un `get_workflow` (`n8n_prod` o `n8n-mcp`) sobre un workflow con muchos nodos puede devolver un
+JSON de cientos de miles de caracteres. Verificado en vivo el 2026-09-10: pedir `bAh0FYSFTM0UeXSc`
+(proyecto 05) devolvió 233.023 caracteres y superó el límite de tokens de una sola respuesta —
+la tool lo guardó en un archivo aparte y hubo que grepearlo. `04-WF2` (45 nodos) o cualquier
+workflow de tamaño similar va a pegar el mismo problema.
+
+**Regla:** antes de pedir el JSON completo de un workflow con muchos nodos (aprox. 15+, o
+cualquiera ya conocido como grande — 04-WF2, 05, 06), delegar esa lectura a un subagente en vez
+de traerla a la conversación principal. Si solo hace falta un dato puntual (un nodo, una
+credencial, un parámetro), grepear el archivo resultante en vez de leerlo completo — no cargar
+un dump gigante en contexto para responder una pregunta chica.
+
+Esto aplica a cualquier agente que trabaje sobre este repo (Claude Code, Antigravity u otro), no
+es una limitación exclusiva de una herramienta puntual.

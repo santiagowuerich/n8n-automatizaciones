@@ -1,0 +1,187 @@
+{
+  "id": "egC6T1U4V4YHA8tf",
+  "name": "TEMP - cancelar reunion Gaston (borrar)",
+  "description": null,
+  "active": true,
+  "activeVersionId": "2ac9d146-e88f-4d5f-b0b1-c97648cf43eb",
+  "createdAt": "2026-09-01T13:35:30.742Z",
+  "updatedAt": "2026-09-02T14:59:12.881Z",
+  "isArchived": false,
+  "versionId": "2ac9d146-e88f-4d5f-b0b1-c97648cf43eb",
+  "versionCounter": 5,
+  "sourceWorkflowId": null,
+  "triggerCount": 1,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "temp-cancelar-gaston",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "id": "8631ceaa-acdb-4084-9503-71646a8f201d",
+      "name": "disparo",
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "d7fb6baa-1724-40a4-9ddd-997cbd62297a"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.calendly.com/scheduled_events/151662d7-9a13-44e8-83a6-f54b83e3231a/invitees",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "calendlyOAuth2Api",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "id": "26606ad3-3786-40c8-932b-bd1149e66a14",
+      "name": "cancelar",
+      "position": [
+        220,
+        0
+      ],
+      "credentials": {
+        "calendlyOAuth2Api": {
+          "id": "VJnAlINTOaMmBHc6",
+          "name": "Calendly micaela.marcos"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "disparo": {
+      "main": [
+        [
+          {
+            "node": "cancelar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "nodeGroups": [],
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "pinData": null,
+  "meta": null,
+  "tags": [],
+  "shared": [
+    {
+      "role": "workflow:owner",
+      "workflowId": "egC6T1U4V4YHA8tf",
+      "projectId": "GcZu9tSo2Hvl3tu1",
+      "project": {
+        "id": "GcZu9tSo2Hvl3tu1",
+        "name": "Santiago Wuerich <santiagow142001@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "customTelemetryTags": [],
+        "creatorId": "aa64b914-db8b-4587-b15e-b195296be28f",
+        "createdAt": "2026-07-30T14:04:56.362Z",
+        "updatedAt": "2026-08-04T21:24:46.921Z"
+      },
+      "createdAt": "2026-09-01T13:35:30.742Z",
+      "updatedAt": "2026-09-01T13:35:30.742Z"
+    }
+  ],
+  "activeVersion": {
+    "versionId": "2ac9d146-e88f-4d5f-b0b1-c97648cf43eb",
+    "workflowId": "egC6T1U4V4YHA8tf",
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "temp-cancelar-gaston",
+          "responseMode": "onReceived",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2,
+        "id": "8631ceaa-acdb-4084-9503-71646a8f201d",
+        "name": "disparo",
+        "position": [
+          0,
+          0
+        ],
+        "webhookId": "d7fb6baa-1724-40a4-9ddd-997cbd62297a"
+      },
+      {
+        "parameters": {
+          "method": "GET",
+          "url": "https://api.calendly.com/scheduled_events/151662d7-9a13-44e8-83a6-f54b83e3231a/invitees",
+          "authentication": "predefinedCredentialType",
+          "nodeCredentialType": "calendlyOAuth2Api",
+          "options": {
+            "response": {
+              "response": {
+                "neverError": true
+              }
+            },
+            "timeout": 30000
+          }
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "id": "26606ad3-3786-40c8-932b-bd1149e66a14",
+        "name": "cancelar",
+        "position": [
+          220,
+          0
+        ],
+        "credentials": {
+          "calendlyOAuth2Api": {
+            "id": "VJnAlINTOaMmBHc6",
+            "name": "Calendly micaela.marcos"
+          }
+        }
+      }
+    ],
+    "connections": {
+      "disparo": {
+        "main": [
+          [
+            {
+              "node": "cancelar",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "nodeGroups": [],
+    "authors": "Santiago Wuerich",
+    "name": null,
+    "description": null,
+    "autosaved": false,
+    "createdAt": "2026-09-02T14:59:12.884Z",
+    "updatedAt": "2026-09-02T14:59:12.884Z",
+    "workflowPublishHistory": [
+      {
+        "id": 2223,
+        "workflowId": "egC6T1U4V4YHA8tf",
+        "versionId": "2ac9d146-e88f-4d5f-b0b1-c97648cf43eb",
+        "event": "activated",
+        "userId": "aa64b914-db8b-4587-b15e-b195296be28f",
+        "createdAt": "2026-09-02T14:59:13.239Z"
+      }
+    ]
+  }
+}

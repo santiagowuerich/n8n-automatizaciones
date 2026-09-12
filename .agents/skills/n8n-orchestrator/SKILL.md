@@ -14,8 +14,8 @@ No activar para tareas que sean puramente de documentación estática o consulta
 
 ## Hard Rules
 
-- **DEV First:** Todo diseño, modificación y prueba se realiza ÚNICAMENTE en la instancia DEV (`n8n.santiagowuerich.info`).
-- **PROD Protegido:** NUNCA modificar ni publicar directamente en PROD (`n8n.xtract.app`) sin pasar por validación y gate de aprobación humana.
+- **DEV First:** Todo diseño, modificación y prueba se realiza primero en un entorno de DEV — la instancia Santiago (`n8n.santiagowuerich.info`, ruta legacy) o, para proyectos Xtract nuevos que dependan de credenciales exclusivas de cliente (Notion, Chatwoot, Calendly, Slack Xtract), el workflow DEV-en-Xtract del [Patrón 11](../../../docs/brain/catalogo-patrones.md#11-patrón-entorno-de-prueba-embebido-con-redirect-seguro-2026-09-10) dentro de `n8n.xtract.app` mismo, con el redirect fail-safe activo. Cuál ruta usar se define al diseñar el proyecto (ver `docs/brain/sistemas.md §4`), no a mitad de camino. Nunca se prueba directo contra el workflow PROD real.
+- **PROD Protegido:** NUNCA modificar, activar ni publicar directamente el workflow PROD (`n8n.xtract.app`) sin pasar por validación y gate de aprobación humana — aplica igual en las dos rutas.
 - **Sin Secretos:** Usar siempre los identificadores de credenciales de `docs/brain/credenciales.md`. Nunca hardcodear tokens.
 - **Auto-verificación:** No entregar un workflow sin haber ejecutado al menos una prueba con datos mock y verificado el schema de salida.
 

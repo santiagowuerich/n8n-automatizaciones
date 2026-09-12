@@ -1,0 +1,47 @@
+{
+  "id": "5TVUxlguQ5ptQx6g",
+  "name": "My workflow 8",
+  "description": null,
+  "active": false,
+  "activeVersionId": null,
+  "createdAt": "2026-08-05T20:53:39.496Z",
+  "updatedAt": "2026-08-05T20:55:15.888Z",
+  "isArchived": true,
+  "versionId": "9b501c6b-3950-47e3-a747-6c191fb6a549",
+  "versionCounter": 2,
+  "sourceWorkflowId": null,
+  "triggerCount": 0,
+  "nodes": [],
+  "connections": {},
+  "nodeGroups": [],
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "pinData": {},
+  "meta": null,
+  "tags": [],
+  "shared": [
+    {
+      "role": "workflow:owner",
+      "workflowId": "5TVUxlguQ5ptQx6g",
+      "projectId": "GcZu9tSo2Hvl3tu1",
+      "project": {
+        "id": "GcZu9tSo2Hvl3tu1",
+        "name": "Santiago Wuerich <santiagow142001@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "customTelemetryTags": [],
+        "creatorId": "aa64b914-db8b-4587-b15e-b195296be28f",
+        "createdAt": "2026-07-30T14:04:56.362Z",
+        "updatedAt": "2026-08-04T21:24:46.921Z"
+      },
+      "createdAt": "2026-08-05T20:53:39.496Z",
+      "updatedAt": "2026-08-05T20:53:39.496Z"
+    }
+  ],
+  "activeVersion": null
+}

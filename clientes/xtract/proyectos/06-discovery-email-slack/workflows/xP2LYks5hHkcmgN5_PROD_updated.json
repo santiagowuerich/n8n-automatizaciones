@@ -1,0 +1,1181 @@
+{
+  "id": "xP2LYks5hHkcmgN5",
+  "name": "Xtract - 06 Resumen Discovery Call a Slack (Borrador de Email)",
+  "description": null,
+  "active": true,
+  "activeVersionId": "0626ab75-090b-4637-b50c-6a0b0d08babb",
+  "createdAt": "2026-08-26T18:30:04.869Z",
+  "updatedAt": "2026-09-10T21:00:09.611Z",
+  "isArchived": false,
+  "versionId": "c94a8ee2-2aad-42d7-a92e-bc57f2d0372c",
+  "versionCounter": 96,
+  "sourceWorkflowId": null,
+  "triggerCount": 1,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "discovery-email-slack",
+        "options": {}
+      },
+      "id": "node-webhook-trigger",
+      "name": "Link a discovery cargado",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -608,
+        208
+      ],
+      "webhookId": "discovery-email-slack"
+    },
+    {
+      "parameters": {
+        "jsCode": "let raw = $input.first().json;\nwhile (raw.body && typeof raw.body === \"object\") { raw = raw.body; }\n\n// ── Helpers ──────────────────────────────────────────────────────────────────\nconst getPropValue = (p) => {\n  if (!p) return \"\";\n  if (typeof p === \"string\") return p;\n  if (p.url) return p.url;\n  if (p.email) return p.email;\n  if (p.rich_text && p.rich_text[0]) return p.rich_text[0].plain_text || p.rich_text[0].text?.content || \"\";\n  if (p.title && p.title[0]) return p.title[0].plain_text || p.title[0].text?.content || \"\";\n  return \"\";\n};\n\nconst props = raw.properties || {};\n\n// ── Transcripción ─────────────────────────────────────────────────────────────\n// Nuevo formato: campo \"transcription\" (inglés) llega directo en el body\n// Formato viejo Notion: raw.transcripcion o raw.body.transcripcion\nconst transcripcion = raw.transcription || raw.transcripcion || \"\";\n\n// ── Link al Doc / fileId ──────────────────────────────────────────────────────\n// Nuevo formato: \"docUrl\"\n// Formato viejo Notion: \"Link a discovery\" en properties\nlet linkDiscovery = raw.docUrl || \"\";\n\nif (!linkDiscovery) {\n  for (const [k, v] of Object.entries(props)) {\n    if (!v) continue;\n    const kNorm = k.toLowerCase();\n    if (kNorm.includes(\"discovery\") || kNorm.includes(\"transcri\") || kNorm.includes(\"drive\") || kNorm.includes(\"doc\") || kNorm.includes(\"link\")) {\n      const val = getPropValue(v);\n      if (val && (val.includes(\"drive.google.com\") || val.includes(\"docs.google.com\"))) {\n        linkDiscovery = val;\n        break;\n      }\n    }\n  }\n}\nif (!linkDiscovery) {\n  for (const [k, v] of Object.entries(raw)) {\n    if (typeof v === \"string\" && (v.includes(\"drive.google.com\") || v.includes(\"docs.google.com\"))) {\n      linkDiscovery = v;\n      break;\n    }\n  }\n}\n\nlet fileId = \"\";\nconst match = (linkDiscovery || \"\").match(/\\/(?:d|document\\/d)\\/([a-zA-Z0-9_-]+)/) || (linkDiscovery || \"\").match(/id=([a-zA-Z0-9_-]+)/);\nif (match) fileId = match[1];\n\n// ── Empresa ───────────────────────────────────────────────────────────────────\nlet empresa = \"\";\nfor (const [k, v] of Object.entries(props)) {\n  if (!v) continue;\n  const kNorm = k.toLowerCase();\n  if (kNorm.includes(\"empresa\") || kNorm.includes(\"name\") || kNorm.includes(\"title\") || kNorm.includes(\"cliente\") || kNorm.includes(\"oportun\")) {\n    empresa = getPropValue(v);\n    if (empresa) break;\n  }\n}\nif (!empresa) empresa = raw.property_nombre_oportunidad || raw.empresa || raw.name || raw.company || \"Cliente\";\n\n// ── Owner / Comercial ─────────────────────────────────────────────────────────\n// Nuevo formato: \"ownerEmail\" llega directo\nlet ownerEmail = raw.ownerEmail || raw.owner_email || \"\";\n\nif (!ownerEmail) {\n  let rawOwnerFromProp = Array.isArray(raw.property_owner) ? raw.property_owner[0] : (raw.property_owner || \"\");\n  ownerEmail = raw.owner || rawOwnerFromProp || \"\";\n}\nif (!ownerEmail) {\n  for (const [k, v] of Object.entries(props)) {\n    if (!v) continue;\n    const kNorm = k.toLowerCase();\n    if (kNorm.includes(\"owner\") || kNorm.includes(\"responsable\") || kNorm.includes(\"comercial\")) {\n      if (v.people && v.people[0] && v.people[0].person && v.people[0].person.email) {\n        ownerEmail = v.people[0].person.email;\n        break;\n      }\n    }\n  }\n}\nif (!ownerEmail) ownerEmail = \"nicolas.gonzalez@xtract.app\";\n\n// ── Emails de interlocutores / clientes ───────────────────────────────────────\nconst notionEmails = [];\nfor (const [k, v] of Object.entries(props)) {\n  if (!v) continue;\n  if (v.email) notionEmails.push(v.email);\n  if (v.people && Array.isArray(v.people)) {\n    v.people.forEach(p => {\n      if (p && p.person && p.person.email && !p.person.email.includes(\"@xtract.app\")) {\n        notionEmails.push(p.person.email);\n      }\n    });\n  }\n  if (k.toLowerCase().includes(\"mail\") || k.toLowerCase().includes(\"correo\") || k.toLowerCase().includes(\"email\")) {\n    const val = getPropValue(v);\n    if (val && val.includes(\"@\") && !val.includes(\"@xtract.app\")) notionEmails.push(val);\n  }\n}\n\n// ── URL de Notion ─────────────────────────────────────────────────────────────\nconst rawId = (raw.id || raw.page_id || \"\").replace(/-/g, \"\");\nconst notionUrl = raw.url || (rawId ? (\"https://www.notion.so/\" + rawId) : \"\");\n\nreturn [{ json: {\n  transcripcion,\n  fileId,\n  linkDiscovery,\n  empresa,\n  ownerEmail,\n  notionUrl,\n  notionEmails,\n  raw\n} }];"
+      },
+      "id": "node-extraer-datos",
+      "name": "Code - Extraer Datos",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -384,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "useJson": true,
+        "claimsJson": "={\n  \"iss\": \"transcript-docs-reader@transcripts-reader.iam.gserviceaccount.com\",\n  \"sub\": \"{{ $json.ownerEmail }}\",\n  \"scope\": \"https://www.googleapis.com/auth/drive.readonly\",\n  \"aud\": \"https://oauth2.googleapis.com/token\",\n  \"exp\": {{ Math.floor(Date.now() / 1000) + 3600 }},\n  \"iat\": {{ Math.floor(Date.now() / 1000) }}\n}",
+        "options": {}
+      },
+      "id": "node-jwt",
+      "name": "JWT",
+      "type": "n8n-nodes-base.jwt",
+      "typeVersion": 1,
+      "position": [
+        -160,
+        208
+      ],
+      "credentials": {
+        "jwtAuth": {
+          "id": "B3KwxGmlrCCTgAHk",
+          "name": "Service Account Xtract transcripts-reader"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://oauth2.googleapis.com/token",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "grant_type",
+              "value": "urn:ietf:params:oauth:grant-type:jwt-bearer"
+            },
+            {
+              "name": "assertion",
+              "value": "={{ $json.token }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-access-token",
+      "name": "HTTP - Generar Access Token",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        64,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://www.googleapis.com/drive/v3/files/{{ $('Code - Extraer Datos').first().json.fileId }}/export",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "mimeType",
+              "value": "text/plain"
+            },
+            {
+              "name": "supportsAllDrives",
+              "value": "true"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.access_token }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "id": "node-drive-export",
+      "name": "Drive - export texto",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        288,
+        208
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// La transcripción ya viene extraída por \"Code - Extraer Datos\"\n// (ya sea del campo \"transcription\" del nuevo payload o de la card de Notion)\nconst extraidos = $('Code - Extraer Datos').first().json;\nlet txt = String(extraidos.transcripcion || '').trim();\nif (txt.length > 22000) {\n  txt = txt.slice(0, 22000) + '\\n...[transcripción resumida]';\n}\nreturn [{ json: { transcripcion: txt } }];"
+      },
+      "id": "node-preparar-transcripcion",
+      "name": "Preparar transcripcion",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        512,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "model": "deepseek/deepseek-chat",
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "id": "node-deepseek-model",
+      "name": "OpenRouter Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        720,
+        384
+      ],
+      "credentials": {
+        "openRouterApi": {
+          "id": "LW8I48MvSQglFqrJ",
+          "name": "OpenRouter Xtract"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "text": "={{ $json.transcripcion }}",
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"idioma\": {\n      \"type\": \"string\",\n      \"enum\": [\n        \"es\",\n        \"pt\"\n      ],\n      \"description\": \"Idioma del cliente y de la conversación: 'pt' si el cliente es de Brasil o habló en portugués; 'es' si habló en español.\"\n    },\n    \"interlocutores\": {\n      \"type\": \"string\",\n      \"description\": \"Nombres de las personas del cliente (ej: Francisco, Yasmín y Máximo)\"\n    },\n    \"emails_destinatarios\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\"\n      },\n      \"description\": \"Emails de los interlocutores del cliente mencionados en la llamada. Si no se mencionaron explícitamente, devolver array vacío [].\"\n    },\n    \"saludo_intro\": {\n      \"type\": \"string\",\n      \"description\": \"Frase de saludo inicial y agradecimiento por la reunión en el idioma detectado (es o pt).\"\n    },\n    \"desafios_puntos\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\"\n      },\n      \"description\": \"Viñetas de 1 línea cada una. OBLIGATORIO: resaltar con negrita (*texto*) las métricas (*500–600 facturas mensuales*), canales (*correo, WhatsApp, formato físico y diferentes portales de proveedores*), circuitos (*facturas con Orden de Compra y compras directas*) y momentos de cierre (*picos de trabajo durante el cierre y comienzo de cada mes*).\"\n    },\n    \"solucion_encaje\": {\n      \"type\": \"string\",\n      \"description\": \"Párrafo breve de 2 o 3 oraciones. OBLIGATORIO: resaltar con negrita (*texto*) los conceptos clave (ej: *lectura, imputación y registración*, *API*, etc.).\"\n    },\n    \"proximos_pasos\": {\n      \"type\": \"string\",\n      \"description\": \"Párrafo de próximos pasos. OBLIGATORIO: resaltar con negrita (*texto*) el día/hora (*el jueves a la misma hora*), la *demostración de Xtract* y la *propuesta comercial, alcance y tiempos estimados de implementación*.\"\n    },\n    \"cierre_despedida\": {\n      \"type\": \"string\",\n      \"description\": \"Frase corta de cierre (ej: Quedo atento.).\"\n    },\n    \"reunion_ya_agendada\": {\n      \"type\": \"boolean\",\n      \"description\": \"true si en la llamada acordaron o confirmaron un día/momento para el próximo encuentro. De lo contrario false.\"\n    },\n    \"detalle_reunion_agendada\": {\n      \"type\": \"string\",\n      \"description\": \"Día y hora acordados (ej: *jueves a la misma hora*, *mañana a las 15:00 hs*).\"\n    },\n    \"asunto_email\": {\n      \"type\": \"string\",\n      \"description\": \"Asunto del correo en el idioma detectado.\"\n    },\n    \"erp_llamada\": {\n      \"type\": \"string\",\n      \"description\": \"Nombre del sistema/ERP que el cliente dijo que usa actualmente, TAL COMO lo pronuncio/transcribio (sin corregir la ortografia ni normalizarlo vos). Si no se menciono ningun sistema en la llamada, devolver cadena vacia \\\"\\\".\"\n    },\n    \"solicito_documentacion_api\": {\n      \"type\": \"boolean\",\n      \"description\": \"true si solicitaron o acordaron enviar la documentación de la API.\"\n    },\n    \"empresa\": {\n      \"type\": \"string\",\n      \"description\": \"Nombre de la empresa del cliente mencionada en la llamada o en el título del documento (ej: EPA, La Cascada, etc.)\"\n    }\n  },\n  \"required\": [\n    \"idioma\",\n    \"interlocutores\",\n    \"saludo_intro\",\n    \"desafios_puntos\",\n    \"solucion_encaje\",\n    \"proximos_pasos\",\n    \"reunion_ya_agendada\",\n    \"detalle_reunion_agendada\",\n    \"asunto_email\",\n    \"solicito_documentacion_api\"\n  ]\n}",
+        "options": {
+          "systemPromptTemplate": "Sos Nicolás González, Account Executive senior de Xtract (plataforma B2B SaaS de automatización de Cuentas a Pagar y procesamiento inteligente de facturas para medianas y grandes empresas).\n\nTu tarea es analizar la transcripción de la Discovery Call y redactar el borrador del correo ejecutivo de seguimiento que le enviarás al cliente, usando TU estilo real de redacción.\n\n=== REGLA DE NEGRITAS OBLIGATORIAS (ESTILO EXACTO DE NICOLÁS) ===\nNicolás utiliza negritas (*texto*) en datos y conceptos clave para que el correo sea súper claro y escaneable:\n1. En desafios_puntos:\n   - Resaltar SIEMPRE en negrita el volumen (*500–600 facturas mensuales*, *2.000 facturas mensuales*).\n   - Resaltar SIEMPRE en negrita los canales de recepción (*correo, WhatsApp, formato físico y diferentes portales de proveedores*).\n   - Resaltar SIEMPRE en negrita los circuitos (*facturas con Orden de Compra y compras directas*).\n   - Resaltar SIEMPRE en negrita los hitos de tiempo (*picos de trabajo durante el cierre y comienzo de cada mes*).\n2. En solucion_encaje:\n   - Resaltar SIEMPRE en negrita las acciones de valor (*lectura, imputación y registración*, *contabilización automática*).\n3. En proximos_pasos:\n   - Resaltar SIEMPRE en negrita el día y hora (*el jueves a la misma hora*), la *demostración de Xtract* y la *propuesta comercial, alcance y tiempos estimados de implementación*.\n\n=== REGLA DE IDIOMA MANDATORIA ===\n1. Si la conversación o el interlocutor principal hablaron en PORTUGUÉS (Brasil):\n   - Asigná \"idioma\": \"pt\".\n   - Todo el contenido del correo se redacta en PORTUGUÉS (PT-BR) con terminología B2B adecuada y negritas (*...*).\n2. Si la conversación fue en ESPAÑOL:\n   - Asigná \"idioma\": \"es\".\n   - Todo el contenido del correo se redacta en ESPAÑOL con negritas (*...*).\n\n=== CASO DE REFERENCIA EXACTO ===\n\n[CASO CLIENTE TUTTO PORKYS - REUNIÓN YA AGENDADA]\nHola Francisco, Yasmín y Máximo, buenas tardes.\nMuchas gracias por el tiempo en la reunión de hoy.\nLes comparto un breve resumen de lo conversado y los próximos pasos:\n\nSituación actual\n• Gestionan aproximadamente *500–600 facturas mensuales*, cuya registración se realiza actualmente de forma manual.\n• Las facturas se reciben por *correo, WhatsApp, formato físico y diferentes portales de proveedores*.\n• Trabajan con dos circuitos principales: *facturas con Orden de Compra y compras directas*, utilizando dimensiones para su imputación contable.\n• Actualmente se generan *picos de trabajo durante el cierre y comienzo de cada mes*, debiendo completar el cierre antes del día 10.\n\nObjetivo\nCentralizar la recepción de las facturas y automatizar su *lectura, imputación y registración*, contemplando los diferentes circuitos y disponibilizando la información mediante API para su integración con el sistema de gestión.\n\nPróximo paso\nComo coordinamos, nos reunimos nuevamente el *jueves a la misma hora* para realizar la *demostración de Xtract* y presentarles la *propuesta comercial, alcance y tiempos estimados de implementación*.\nLes envío la invitación para dejarlo agendado.\n\nQuedo atento.\nSaludos y gracias,\nNicolás\n\n=== ERP MENCIONADO EN LA LLAMADA ===\nSi en algún momento de la conversación el cliente nombra el sistema/ERP que usa (SAP, NetSuite, Tango, Xubio, Finnegans, Bejerman, Excel, etc.), captalo en \"erp_llamada\" EXACTAMENTE como se transcribió, sin corregirlo ni adivinar la grafía correcta (la transcripción automática suele deformar estos nombres — eso se resuelve después, en el workflow, contra el listado real de Notion). Si no lo mencionaron, dejalo en \"\".\n\n=== REGLA DE CONCISIÓN Y LONGITUD ===\n1. SÍNTESIS EJECUTIVA: Máximo 3 o 4 viñetas en desafios_puntos con negritas.\n2. OBJETIVO: Un solo párrafo conciso (2 o 3 oraciones).\n3. PRÓXIMO PASO: Directo y con negritas."
+        }
+      },
+      "id": "node-ia-extractor",
+      "name": "IA - Redactar borrador de correo",
+      "type": "@n8n/n8n-nodes-langchain.informationExtractor",
+      "typeVersion": 1.2,
+      "position": [
+        720,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Entradas y Datos Base\nlet iaRaw = {};\ntry {\n  iaRaw = $(\"IA - Redactar borrador de correo\").first().json || {};\n} catch(e) {\n  iaRaw = $input.first().json || {};\n}\nconst ia = iaRaw.output || iaRaw;\n\nlet extraidos = {};\ntry {\n  extraidos = $(\"Code - Extraer Datos\").first().json || {};\n} catch(e) {}\n\nlet notion = {};\ntry {\n  notion = $(\"Notion - Traer card completa\").first().json || {};\n} catch(e) {}\n\n// Destinatario Forzado (\"U0BJLTDCAMR\" para pruebas)\nconst FORZAR_DESTINATARIO = \"\";\n\nconst idioma = (ia.idioma === \"pt\") ? \"pt\" : \"es\";\nconst esPt = idioma === \"pt\";\n\n// Normalizar asteriscos a simples de Slack (*texto*)\nconst toSlackBold = str => String(str || \"\")\n  .replace(/\\*{2,}([^*]+)\\*{2,}/g, \"*$1*\")\n  .replace(/\\*{2,}/g, \"*\");\n\n// Extraer empresa limpiamente priorizando lo normalizado\nconst empresa = ((extraidos.empresa && extraidos.empresa !== \"Cliente\") ? extraidos.empresa : (ia.empresa || notion.empresa || notion.Empresa || notion.name || notion.title || notion.Name || extraidos.empresa || (esPt ? \"sua empresa\" : \"su empresa\"))).trim();\n\nconst emails = (extraidos.notionEmails && extraidos.notionEmails.length) \n  ? extraidos.notionEmails \n  : (Array.isArray(ia.emails_destinatarios) ? ia.emails_destinatarios.filter(Boolean) : []);\nconst paraTexto = emails.length ? emails.join(\", \") : \"*(Completar emails de los interlocutores)*\";\n\nlet defaultSubject = esPt ? \"Acompanhamento - Automatização de Contas a Pagar\" : \"Resumen de la reunión y próximos pasos\";\nconst subjectPersonalizado = ia.asunto_email || defaultSubject;\n\n// 2. Nombre del Comercial (SOLO PRIMER NOMBRE, sin apellido)\nconst interlocutores = (ia.interlocutores || extraidos.interlocutor || extraidos.nombreKdm || notion.persona || (esPt ? \"equipe\" : \"equipo\")).trim();\nconst rawOwner = extraidos.ownerEmail || (Array.isArray(notion.owner) ? notion.owner[0] : notion.owner) || notion.ownerEmail || \"nicolas.gonzalez@xtract.app\";\n\nconst OWNER_NOMBRES = {\n  \"nicolas.gonzalez@xtract.app\": \"Nicolás\",\n  \"wenceslao.hoepner@xtract.app\": \"Wenceslao\",\n  \"damian.deggeller@xtract.app\": \"Damián\",\n  \"greta.bruno@xtract.app\": \"Greta\",\n  \"ian.brandan@xtract.app\": \"Ian\",\n  \"tomas.marconi@xtract.app\": \"Tomás\",\n  \"juan.alvarez@xtract.app\": \"Juan\",\n  \"matias.febre@xtract.app\": \"Matías\",\n  \"jesus.degruttola@xtract.app\": \"Jesús\"\n};\nconst ownerKey = String(rawOwner || \"\").toLowerCase().trim();\nconst ownerLocal = rawOwner.split(\"@\")[0].replace(/[._-]+/g, \" \");\nconst primerNombreComercial = OWNER_NOMBRES[ownerKey] || (ownerLocal ? (ownerLocal.split(\" \")[0].charAt(0).toUpperCase() + ownerLocal.split(\" \")[0].slice(1).toLowerCase()) : \"Nicolás\");\n\n// 3. Construir Bloques del Correo con el estilo exacto de Nicolás (con subtítulos en negrita)\n\n// Saludo y agradecimiento\nlet saludo = \"\";\nif (ia.saludo_intro) {\n  saludo = ia.saludo_intro\n    .replace(/(?:less+)?compartos+uns+breves+resumen[^.\\n]*[:.\\n]?/gi, \"\")\n    .replace(/compartilhos+ums+breves+resumo[^.\\n]*[:.\\n]?/gi, \"\")\n    .replace(/\\b(?:les|comparto|compartilho)\\s*$/gi, \"\")\n    .trim();\n} else {\n  if (esPt) {\n    saludo = \"Olá \" + interlocutores + \", boa tarde.\\n\\nMuito obrigado pelo tempo na nossa conversa de hoje.\";\n  } else {\n    saludo = \"Hola \" + interlocutores + \", buenas tardes.\\n\\nMuchas gracias por el tiempo en la reunión de hoy.\";\n  }\n}\n\nconst fraseIntro = esPt \n  ? \"Compartilho um breve resumo do que conversamos e os próximos passos:\"\n  : \"Les comparto un breve resumen de lo conversado y los próximos pasos:\";\n\n// Resumen de puntos principales (Situación actual)\nlet listaPuntos = [];\nif (Array.isArray(ia.desafios_puntos)) {\n  for (const item of ia.desafios_puntos) {\n    const s = String(item || \"\").trim();\n    if (s.includes(\"•\") || (s.includes(\"-\") && s.length > 50)) {\n      const splitItems = s.split(/[•\\n]+/).map(x => x.trim()).filter(x => x.length > 5);\n      listaPuntos.push(...splitItems);\n    } else if (s) {\n      listaPuntos.push(s);\n    }\n  }\n} else if (typeof ia.desafios_puntos === \"string\" && ia.desafios_puntos.trim()) {\n  listaPuntos = ia.desafios_puntos.split(/[•\\n]+/).map(x => x.trim()).filter(x => x.length > 5);\n} else if (ia.desafio) {\n  listaPuntos = String(ia.desafio).split(/[•\\n]+/).map(x => x.trim()).filter(x => x.length > 5);\n}\n\n// Asegurar negritas en puntos clave si la IA no las puso\nconst autoBoldPunto = str => {\n  let res = String(str || \"\").trim();\n  if (!res.includes('*')) {\n    res = res.replace(/(\\b\\d{2,4}(?:[–\\-]\\d{2,4})?\\s+(?:facturas|documentos|comprobantes)\\s+(?:mensuales|por\\s+mes)?)/gi, '*$1*');\n    res = res.replace(/(correo,?\\s*WhatsApp,?\\s*formato físico[^.,]*portales de proveedores)/gi, '*$1*');\n    res = res.replace(/(facturas con Orden de Compra y compras directas)/gi, '*$1*');\n    res = res.replace(/(picos de trabajo durante el cierre y comienzo de cada mes)/gi, '*$1*');\n  }\n  return toSlackBold(res);\n};\n\nconst puntosFinales = listaPuntos.slice(0, 4);\nconst bloquePuntos = puntosFinales.length \n  ? puntosFinales.map(p => \"\\t•  \" + autoBoldPunto(String(p).replace(/^[•\\-\\*]\\s*/, \"\").trim())).join(\"\\n\") \n  : (esPt ? \"\\t•  Automatização do fluxo de entrada de *notas fiscais*.\" : \"\\t•  Automatización del flujo de *facturas*.\");\n\nconst tituloSituacion = esPt ? \"*Situação atual*\" : \"*Situación actual*\";\nconst seccionSituacion = tituloSituacion + \"\\n\" + bloquePuntos;\n\n// Propuesta de solución (Objetivo)\nlet rawSolucion = ia.solucion_encaje || ia.solucion || \"\";\nrawSolucion = rawSolucion.replace(/\\n{3,}/g, \"\\n\\n\").trim();\nif (!rawSolucion.includes('*')) {\n  rawSolucion = rawSolucion\n    .replace(/(lectura, imputación y registración)/gi, '*$1*')\n    .replace(/(contabilização automática)/gi, '*$1*')\n    .replace(/(integração via API)/gi, '*$1*');\n}\nrawSolucion = toSlackBold(rawSolucion);\nconst tituloObjetivo = esPt ? \"*Objetivo*\" : \"*Objetivo*\";\nconst seccionObjetivo = rawSolucion ? (tituloObjetivo + \"\\n\" + rawSolucion) : \"\";\n\n// Documentación de API (si aplica)\nconst solicitoApi = ia.solicito_documentacion_api === true || ia.solicito_documentacion_api === \"true\";\nlet bloqueApi = \"\";\nif (solicitoApi) {\n  if (esPt) {\n    bloqueApi = \"Conforme combinamos, compartilho a <https://xtractapi.docs.apiary.io/#reference|documentação da nossa API REST> para validação com o suporte do ERP.\";\n  } else {\n    bloqueApi = \"Tal como acordamos, les comparto la <https://xtractapi.docs.apiary.io/#reference|documentación de la API Rest> para que el equipo técnico valide los endpoints.\";\n  }\n}\n\n// Próximos pasos\nconst reunionAgendada = ia.reunion_ya_agendada === true || ia.reunion_ya_agendada === \"true\" || (ia.detalle_reunion_agendada && !ia.detalle_reunion_agendada.toLowerCase().includes(\"pendiente\"));\nlet defaultProximos = \"\";\nif (reunionAgendada) {\n  const det = ia.detalle_reunion_agendada || (esPt ? \"na data combinada\" : \"el jueves a la misma hora\");\n  defaultProximos = esPt \n    ? \"Como combinamos, nos reunimos novamente *\" + det.replace(/\\*/g, \"\") + \"* para realizar a *demonstração da Xtract* e apresentar a *proposta comercial, escopo e prazos de implementação*.\\nEnvio o convite para deixar agendado.\"\n    : \"Como coordinamos, nos reunimos nuevamente *\" + det.replace(/^el\\s+/i, \"el \").replace(/\\*/g, \"\") + \"* para realizar la *demostración de Xtract* y presentarles la *propuesta comercial, alcance y tiempos estimados de implementación*.\\nLes envío la invitación para dejarlo agendado.\";\n} else {\n  defaultProximos = esPt \n    ? \"Como próximo passo, coordenamos uma reunião de 30 minutos na próxima semana para realizar a *demonstração da ferramenta de ponta a ponta* e apresentar a *proposta comercial* adaptada à sua operação.\"\n    : \"Como próximo paso, coordinemos una videollamada de 30 minutos la próxima semana para realizar la *demostración de la herramienta de punta a punta* y presentarles la *propuesta comercial* adaptada a su operación.\";\n}\n\nlet rawProximos = ia.proximos_pasos || defaultProximos;\nrawProximos = rawProximos\n  .replace(/te env[íi]o por whatsapp[^.\\n]*[.\\n]?/gi, \"\")\n  .replace(/le enviar[ée] por correo la documentaci[oó]n[^.\\n]*[.\\n]?/gi, \"\")\n  .replace(/le env[íi]o por email la documentaci[oó]n[^.\\n]*[.\\n]?/gi, \"\")\n  .replace(/enviaremos la documentaci[oó]n[^.\\n]*[.\\n]?/gi, \"\")\n  .replace(/envio por e-?mail a documenta[çc][aã]o[^.\\n]*[.\\n]?/gi, \"\")\n  .replace(/whatsapp/gi, \"correo\")\n  .trim();\n\nif (!rawProximos.includes('*')) {\n  rawProximos = rawProximos\n    .replace(/(demostración de Xtract|demonstração da Xtract)/gi, '*$1*')\n    .replace(/(propuesta comercial, alcance y tiempos estimados de implementación|proposta comercial, escopo e prazos de implementação)/gi, '*$1*');\n}\nrawProximos = toSlackBold(rawProximos);\n\nconst tituloProximos = esPt ? \"*Próximo passo*\" : \"*Próximo paso*\";\nconst seccionProximos = tituloProximos + \"\\n\" + (rawProximos || defaultProximos);\n\n// Casos de Éxito oficiales (con sangría tabulada y enlaces formateados)\nconst normText = s => String(s || \"\").normalize(\"NFD\").replace(/[\\u0300-\\u036f]/g, \"\").toLowerCase().trim();\nlet erpResuelto = {};\ntry { erpResuelto = $(\"Resolver ERP\").first().json || {}; } catch(e) {}\nconst erpNorm = normText(erpResuelto.erp || \"\");\nconst empresaNorm = normText(empresa);\n\nlet videosRelevantes = [];\nif (esPt) {\n  if (erpNorm.includes(\"sap\")) {\n    videosRelevantes.push(\"\\t•  <https://www.youtube.com/watch?v=yJtHFuTnwSA|Caso de sucesso Pomelo (SAP)>\");\n  }\n} else {\n  if (erpNorm.includes(\"netsuite\")) {\n    videosRelevantes.push(\"\\t•  <https://www.youtube.com/watch?v=4xFCkoxat1o|Caso InvGate (NetSuite)>\");\n  } else if (erpNorm.includes(\"sap\")) {\n    videosRelevantes.push(\"\\t•  <https://www.youtube.com/watch?v=ikDLA5HjQbs|Caso Pomelo (SAP)>\");\n  } else if (empresaNorm.includes(\"salud\") || empresaNorm.includes(\"sanatorio\") || empresaNorm.includes(\"clinica\") || empresaNorm.includes(\"hospital\")) {\n    videosRelevantes.push(\"\\t•  <https://www.youtube.com/watch?v=I8J-vd5U5ck|Caso SanCor Salud>\");\n  }\n}\nconst bloqueCasosExito = videosRelevantes.join(\"\\n\");\n\n// Cierre y firma prolija (sin duplicar nombres)\nlet bloqueCierre = \"\";\nif (esPt) {\n  let despedidaPt = (ia.cierre_despedida || \"Fico à disposição.\")\n    .replace(/muito obrigado[^.\\n]*/gi, \"\")\n    .replace(/abra[çc]os[^.\\n]*/gi, \"\")\n    .replace(new RegExp(primerNombreComercial, \"gi\"), \"\")\n    .trim();\n  if (!despedidaPt) despedidaPt = \"Fico à disposição.\";\n  bloqueCierre = despedidaPt + \"\\n\\nMuito obrigado e abraços,\\n\" + primerNombreComercial;\n} else {\n  let despedidaEs = (ia.cierre_despedida || \"Quedo atento.\")\n    .replace(/saludos[^.\\n]*/gi, \"\")\n    .replace(/muchas gracias[^.\\n]*/gi, \"\")\n    .replace(/gracias[^.\\n]*/gi, \"\")\n    .replace(new RegExp(primerNombreComercial, \"gi\"), \"\")\n    .replace(/\\s*[.,;]+\\s*$/g, \"\")\n    .trim();\n  if (!despedidaEs) despedidaEs = \"Quedo atento.\";\n  bloqueCierre = despedidaEs + \".\\n\\nSaludos y gracias,\\n\" + primerNombreComercial;\n}\n\n// 4. Ensamble del Borrador Completo\nconst trimNewlines = str => String(str || \"\").replace(/^\\n+|\\n+$/g, \"\");\n\nconst cuerpoEmail = [\n  saludo,\n  fraseIntro,\n  seccionSituacion,\n  seccionObjetivo,\n  bloqueApi,\n  seccionProximos,\n  bloqueCasosExito,\n  bloqueCierre\n].map(trimNewlines).filter(Boolean).join(\"\\n\\n\");\n\n// 5. Matching en Cascada para encontrar el ID de Slack del Comercial\nconst norm = s => String(s == null ? \"\" : s).normalize(\"NFD\").replace(/[̀-ͯ]/g, \"\").toLowerCase().trim();\nconst emailNorm = norm(rawOwner);\nconst local = norm(rawOwner.split(\"@\")[0]);\nconst comoNombre = local.replace(/[._-]+/g, \" \");\n\nconst KNOWN_OWNERS = {\n  // Principales Ejecutivos\n  'nicolas.gonzalez@xtract.app': 'U02MCAHHM1T',\n  'nicolas@xtract.app': 'U02MCAHHM1T',\n  'nicolas gonzalez': 'U02MCAHHM1T',\n  'nicolás gonzalez': 'U02MCAHHM1T',\n  'tomas@xtract.app': 'U01AC8ARHG8',\n  'tomas.marconi@xtract.app': 'U01AC8ARHG8',\n  'tomas marconi': 'U01AC8ARHG8',\n  'wenceslao.hoepner@xtract.app': 'U0BBASA0F60',\n  'wenceslao@xtract.app': 'U0BBASA0F60',\n  'wenceslao hoepner': 'U0BBASA0F60',\n  'juan.alvarez@xtract.app': 'U094FGA9VEF',\n  'juan@xtract.app': 'U094FGA9VEF',\n  'juan alvarez': 'U094FGA9VEF',\n  'damian.deggeller@xtract.app': 'U09PYEWUHGF',\n  'damian@xtract.app': 'U09PYEWUHGF',\n  'damian deggeller': 'U09PYEWUHGF',\n  'damián deggeller': 'U09PYEWUHGF',\n  'greta.bruno@xtract.app': 'U096BLX5864',\n  'greta@xtract.app': 'U096BLX5864',\n  'greta bruno': 'U096BLX5864',\n  'ian.brandan@xtract.app': 'U09FZ5MLF0E',\n  'ian@xtract.app': 'U09FZ5MLF0E',\n  'ian brandan': 'U09FZ5MLF0E',\n  \n  // Equipo Comercial Ampliado & SDRs\n  'jesus@xtract.app': 'U01A12169ND',\n  'jesus.degruttola@xtract.app': 'U01A12169ND',\n  'jesús de gruttola': 'U01A12169ND',\n  'jesus.soria@xtract.app': 'U0AM7HGHQTB',\n  'jesús soria': 'U0AM7HGHQTB',\n  'matias.febre@xtract.app': 'U07JW0A2AL9',\n  'matias@xtract.app': 'U07JW0A2AL9',\n  'matías febré': 'U07JW0A2AL9',\n  'neiber@xtract.app': 'U06R7TRQKV1',\n  'neiber monti': 'U06R7TRQKV1',\n  'gaston.moriconi@xtract.app': 'U093XP1LAUC',\n  'gastón moriconi': 'U093XP1LAUC',\n  'bruno.corrao@xtract.app': 'U064UNXJZ7F',\n  'franco.argibel@xtract.app': 'U08BMGJDT7F',\n  'santiago.paredes@xtract.app': 'U0AQMAM2ZB9',\n  'alejandro@xtract.app': 'U01A11YN7SM',\n  'alejandro.bezdjian@xtract.app': 'U01A11YN7SM',\n  'ezequiel.nievas@xtract.app': 'U09CY8PBPSN',\n  'sofia.ferro@xtract.app': 'U0BE9AQHFPV'\n};\n\nlet usuarios = [];\ntry {\n  const raw = $(\"Slack - Traer usuarios\").first().json;\n  usuarios = (raw.members || raw.users || []).filter(u => u && u.id && !u.deleted && !u.is_bot);\n} catch(e) {}\n\nconst perfil = u => u.profile || {};\nlet owner = usuarios.find(u => norm(perfil(u).email) === emailNorm) || null;\nif (!owner) owner = usuarios.find(u => norm(u.name) === local) || null;\nif (!owner) owner = usuarios.find(u => norm(perfil(u).display_name) === local) || null;\nif (!owner) owner = usuarios.find(u => norm(u.real_name) === comoNombre) || null;\nif (!owner) owner = usuarios.find(u => norm(perfil(u).real_name) === comoNombre) || null;\n\nconst SLACK_FALLBACK_DM = \"U0BJLTDCAMR\";\nconst ownerSlackIdReal = owner ? owner.id : (KNOWN_OWNERS[emailNorm] || SLACK_FALLBACK_DM);\nconst ownerSlackId = FORZAR_DESTINATARIO || ownerSlackIdReal;\nconst enModoPrueba = !!FORZAR_DESTINATARIO;\nconst esFallback = !owner && !KNOWN_OWNERS[emailNorm];\n\n// Link a Notion y Link a Discovery\nconst rawId = (extraidos.notionUrl ? \"\" : (notion.id || notion.page_id || \"\").replace(/-/g, \"\"));\nconst notionUrl = extraidos.notionUrl || notion.url || (rawId ? (\"https://www.notion.so/\" + rawId) : \"\");\nconst linkDoc = extraidos.linkDiscovery || \"\";\n\n// 6. Mensaje Formateado para Slack\nconst tagIdioma = esPt ? \" 🇧🇷 *(Português)*\" : \" 🌎 *(Español)*\";\nconst footerCopia = esPt ? \"_Pronto para copiar e enviar no Gmail / Outlook._\" : \"_Listo para copiar y enviar en Gmail / Outlook._\";\n\nconst linksEncabezado = linkDoc ? (\"• <\" + linkDoc + \"|Abrir Transcripción en Google Docs>\") : \"\";\n\nconst textoSlack = [\n  (enModoPrueba ? (\":test_tube: *MODO PRUEBA* — en producción esto le hubiera llegado a `\" + ownerSlackIdReal + \"`\") : \"\"),\n  \":incoming_envelope: *Borrador de Email Post-Discovery*\" + tagIdioma + \" — \" + empresa,\n  (ia.reunion_ya_agendada ? \"📅 *Reunión pactada:* \" + (ia.detalle_reunion_agendada || \"Sí (en la llamada)\") : \"📅 *Reunión:* Pendiente de coordinar\"),\n  linksEncabezado,\n  (esFallback ? \"_Nota: Enviado a fallback de pruebas._\" : \"\"),\n  (erpResuelto.erp_sin_match ? \"⚠️ *ERP sin confirmar:* el cliente mencionó algo como \\\"\" + erpResuelto.erp_sin_match + \"\\\", pero no coincide con ninguna opción del listado de Notion — completar el campo 'Que sistema usan?' manualmente.\" : \"\"),\n  \"\",\n  \"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\",\n  \"*Para:* \" + paraTexto,\n  \"*Subject:* \" + subjectPersonalizado,\n  \"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\",\n  \"\",\n  cuerpoEmail,\n  \"\",\n  \"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\",\n  footerCopia\n].filter(Boolean).join(\"\\n\");\n\nreturn [{ json: {\n  texto_slack: textoSlack,\n  cuerpo_email: cuerpoEmail,\n  idioma: idioma,\n  para: paraTexto,\n  subject: subjectPersonalizado,\n  owner_slack_id: ownerSlackId,\n  comercial: primerNombreComercial,\n  empresa: empresa,\n  notion_url: notionUrl\n} }];\n"
+      },
+      "id": "node-armar-slack",
+      "name": "Armar mensaje de Slack",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1248,
+        272
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://slack.com/api/chat.postMessage",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "slackApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"channel\": \"{{ $json.owner_slack_id }}\",\n  \"text\": {{ JSON.stringify($json.texto_slack) }},\n  \"mrkdwn\": true,\n  \"unfurl_links\": false,\n  \"unfurl_media\": false\n}",
+        "options": {}
+      },
+      "id": "node-slack-post",
+      "name": "Slack - Enviar borrador a Santiago",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1472,
+        272
+      ],
+      "credentials": {
+        "slackApi": {
+          "id": "y1DaRieOF29GQnxm",
+          "name": "Xtract notifications"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://slack.com/api/users.list",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "slackApi",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "slack-traer-usuarios-wf06",
+      "name": "Slack - Traer usuarios",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        608,
+        -208
+      ],
+      "credentials": {
+        "slackApi": {
+          "id": "y1DaRieOF29GQnxm",
+          "name": "Xtract notifications"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "database",
+        "databaseId": {
+          "__rl": true,
+          "value": "09549c92-28ea-4e15-9350-055b079ce9ac",
+          "mode": "list",
+          "cachedResultName": "Sales - XT",
+          "cachedResultUrl": "https://app.notion.com/p/09549c9228ea4e159350055b079ce9ac"
+        }
+      },
+      "id": "node-notion-lista-erp",
+      "name": "Notion - Traer lista ERP",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [
+        -112,
+        544
+      ],
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "waitBetweenTries": 3000,
+      "credentials": {
+        "notionApi": {
+          "id": "hCkfHhloIjGdaqmd",
+          "name": "Xtract Notion"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "get",
+        "pageId": {
+          "__rl": true,
+          "mode": "url",
+          "value": "={{ $('Code - Extraer Datos').first().json.notionUrl }}"
+        },
+        "simple": false
+      },
+      "id": "node-notion-card-completa",
+      "name": "Notion - Traer card completa",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [
+        64,
+        448
+      ],
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "waitBetweenTries": 3000,
+      "credentials": {
+        "notionApi": {
+          "id": "hCkfHhloIjGdaqmd",
+          "name": "Xtract Notion"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// =====================================================================\n// RESOLVER ERP: prioridad campo manual de Notion > lo dicho en la llamada.\n// El campo manual de Notion (\"Que sistema usan?(*)\") ya sale de la lista\n// desplegable real -> si esta cargado, es la fuente de verdad y no necesita\n// matching. Si no esta cargado, se toma lo que la IA extrajo de la\n// transcripcion (erp_llamada) y se lo compara contra el listado REAL y VIVO\n// de opciones de Notion (Notion - Traer lista ERP), porque Fathom transcribe\n// pesimo los nombres de ERP (ver comentario del mismo problema en WF05:\n// \"Finnegans\" salio como Finance, Finex, Fan, Finegan y Fin en una sola\n// llamada). Si no matchea ninguna opcion real, NO se inventa nada: queda\n// generico y se avisa en el mensaje de Slack para que lo revise un humano.\n// =====================================================================\nconst PROP_ERP = \"Que sistema usan?(*)\";\n\nconst normERP = s => String(s || \"\")\n  .normalize(\"NFD\").replace(/[\\u0300-\\u036f]/g, \"\")\n  .toLowerCase()\n  .replace(/[^a-z0-9]+/g, \" \")\n  .trim();\n\nfunction levenshtein(a, b) {\n  const m = a.length, n = b.length;\n  if (!m) return n;\n  if (!n) return m;\n  const fila = Array(n + 1).fill(0).map((_, i) => i);\n  for (let i = 1; i <= m; i++) {\n    let prevDiag = fila[0];\n    fila[0] = i;\n    for (let j = 1; j <= n; j++) {\n      const tmp = fila[j];\n      fila[j] = a[i - 1] === b[j - 1] ? prevDiag : 1 + Math.min(prevDiag, fila[j], fila[j - 1]);\n      prevDiag = tmp;\n    }\n  }\n  return fila[n];\n}\n\nfunction matchearContraLista(valor, lista) {\n  const v = normERP(valor);\n  if (!v || !lista.length) return null;\n  let hit = lista.find(op => normERP(op) === v);\n  if (hit) return hit;\n  hit = lista.find(op => {\n    const o = normERP(op);\n    return o.length > 2 && (o.includes(v) || v.includes(o));\n  });\n  if (hit) return hit;\n  hit = lista.find(op => {\n    const o = normERP(op);\n    const dist = levenshtein(v, o);\n    return dist <= Math.max(1, Math.ceil(Math.min(v.length, o.length) * 0.3));\n  });\n  return hit || null;\n}\n\n// 1. Listado canonico vivo desde Notion\nlet listaCanonica = [];\ntry {\n  const db = $(\"Notion - Traer lista ERP\").first().json || {};\n  const prop = (db.properties || {})[PROP_ERP] || {};\n  const opciones = (prop.select && prop.select.options) || [];\n  listaCanonica = opciones.map(o => o.name).filter(Boolean);\n} catch (e) {}\n\n// 2. Valor manual ya cargado en la card de Notion (prioridad 1)\nlet erpNotionManual = \"\";\nlet pageId = \"\";\ntry {\n  const card = $(\"Notion - Traer card completa\").first().json || {};\n  pageId = card.id || \"\";\n  const prop = (card.properties || {})[PROP_ERP] || {};\n  erpNotionManual = (prop.select && prop.select.name) || \"\";\n} catch (e) {}\n\nif (!pageId) {\n  try {\n    const extraidos = $(\"Code - Extraer Datos\").first().json || {};\n    pageId = (extraidos.raw && extraidos.raw.id) || extraidos.pageId || (extraidos.notionUrl || \"\").split(\"/\").pop().replace(/-/g, \"\") || \"\";\n  } catch (e) {}\n}\n\n// 3. ERP mencionado en la llamada (IA), solo si Notion no lo tiene cargado\nlet erpLlamada = \"\";\ntry {\n  const iaRaw = $(\"IA - Redactar borrador de correo\").first().json || {};\n  const ia = iaRaw.output || iaRaw;\n  erpLlamada = (ia.erp_llamada || \"\").toString().trim();\n} catch (e) {}\n\nlet erp = \"\";\nlet erpConfirmado = false;\nlet erpSinMatch = \"\";\nlet debeActualizarNotion = false;\n\nif (erpNotionManual) {\n  erp = erpNotionManual;\n  erpConfirmado = true;\n  debeActualizarNotion = false; // Ya esta cargado en Notion, no pisar\n} else if (erpLlamada) {\n  const matched = matchearContraLista(erpLlamada, listaCanonica);\n  if (matched) {\n    erp = matched;\n    erpConfirmado = true;\n    debeActualizarNotion = true; // Solo actualiza si hizo match exacto con listaCanonica\n  } else {\n    erpSinMatch = erpLlamada;\n  }\n}\n\nreturn [{ json: {\n  erp,\n  erp_confirmado: erpConfirmado,\n  erp_sin_match: erpSinMatch,\n  erp_lista_canonica: listaCanonica,\n  debe_actualizar_notion: debeActualizarNotion,\n  page_id: pageId\n} }];\n"
+      },
+      "id": "node-resolver-erp",
+      "name": "Resolver ERP",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        976,
+        416
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cond-actualizar-erp",
+              "leftValue": "={{ $json.debe_actualizar_notion }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "cond-has-pageid",
+              "leftValue": "={{ $json.page_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "node-if-debe-actualizar-notion",
+      "name": "Debe actualizar Notion?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1248,
+        464
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://api.notion.com/v1/pages/{{ $json.page_id }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "2022-06-28"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  properties: {\n    \"Que sistema usan?(*)\": {\n      select: {\n        name: $json.erp\n      }\n    }\n  }\n}) }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1472,
+        448
+      ],
+      "id": "node-notion-actualizar-erp",
+      "name": "Notion - Actualizar ERP",
+      "credentials": {
+        "notionApi": {
+          "id": "hCkfHhloIjGdaqmd",
+          "name": "Xtract Notion"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Link a discovery cargado": {
+      "main": [
+        [
+          {
+            "node": "Code - Extraer Datos",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Slack - Traer usuarios",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Extraer Datos": {
+      "main": [
+        [
+          {
+            "node": "Preparar transcripcion",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Notion - Traer lista ERP",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Notion - Traer card completa",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JWT": {
+      "main": [
+        []
+      ]
+    },
+    "HTTP - Generar Access Token": {
+      "main": [
+        []
+      ]
+    },
+    "Drive - export texto": {
+      "main": [
+        []
+      ]
+    },
+    "Preparar transcripcion": {
+      "main": [
+        [
+          {
+            "node": "IA - Redactar borrador de correo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IA - Redactar borrador de correo": {
+      "main": [
+        [
+          {
+            "node": "Resolver ERP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Armar mensaje de Slack": {
+      "main": [
+        [
+          {
+            "node": "Slack - Enviar borrador a Santiago",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "IA - Redactar borrador de correo",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notion - Traer lista ERP": {
+      "main": [
+        []
+      ]
+    },
+    "Notion - Traer card completa": {
+      "main": [
+        []
+      ]
+    },
+    "Resolver ERP": {
+      "main": [
+        [
+          {
+            "node": "Armar mensaje de Slack",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Debe actualizar Notion?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Debe actualizar Notion?": {
+      "main": [
+        [
+          {
+            "node": "Notion - Actualizar ERP",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    }
+  },
+  "nodeGroups": [],
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "staticData": null,
+  "pinData": {
+    "Link a discovery cargado": [
+      {
+        "json": {
+          "headers": {
+            "host": "n8n.xtract.app",
+            "user-agent": "n8n",
+            "content-length": "18903",
+            "accept": "application/json,text/html,application/xhtml+xml,application/xml,text/*;q=0.9, image/*;q=0.8, */*;q=0.7",
+            "accept-encoding": "gzip, compress, deflate, br",
+            "content-type": "application/json",
+            "server": "Heroku",
+            "via": "1.1 heroku-router",
+            "x-forwarded-for": "98.92.71.95",
+            "x-forwarded-port": "443",
+            "x-forwarded-proto": "https",
+            "x-request-id": "078dcef6-4d57-3edd-3b19-972487170de5",
+            "x-request-start": "1789054204234"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "source_id": "3d6ed654-9b0a-814a-8e45-d11beda679d9",
+            "source_type": "transcript",
+            "tipo": "discovery",
+            "docUrl": "https://docs.google.com/document/d/1mBRiAWma83KiRN_jMX2clxSi3jYdv-PeBHJx0TWVjlE/edit?usp=drivesdk",
+            "transcription": "Merbin Rangel y Wenceslao Hoepner\r\nAsistentes\r\nMatías Febré, Matías's Fathom Notetaker, Merbin Rangel, Wenceslao Hoepner\r\nTranscripción\r\nWenceslao Hoepner: Mati,\r\nMatías Febré: ¿Cómo es?\r\nMatías Febré: Todo bien.\r\nWenceslao Hoepner: bien vos ahí está la\r\nMatías Febré: Todo bien.\r\nMatías Febré: Dame un segundo que que\r\nWenceslao Hoepner: persona.\r\nMatías Febré: meto el no\r\nWenceslao Hoepner: Ándale,\r\nMatías Febré: trigger\r\nWenceslao Hoepner: n más.\r\nWenceslao Hoepner: Saco el mío.\r\nMatías Febré: y ya se sumó.\r\nWenceslao Hoepner: No lo sumó.\r\nMatías Febré: Sí, sí.\r\nMatías Febré: Es\r\nMatías Febré: malvin.\r\nMerbin Rangel: Buen día.\r\nWenceslao Hoepner: Erwin, ¿cómo estás?\r\nMerbin Rangel: ¿Qué tal?\r\nMerbin Rangel: ¿Cómo están?\r\nMerbin Rangel: Todo bien, un gusto.\r\nWenceslao Hoepner: Un gusto conocerte.\r\nMerbin Rangel: Ya voy a poner la cámara.\r\nMerbin Rangel: Dame un segundo.\r\nMatías Febré: ¿Qué tal, Bervín?\r\nMatías Febré: ¿Cómo andás?\r\nMerbin Rangel: Todo muy bien.\r\nMerbin Rangel: Muy bien.\r\nMatías Febré: Bueno, me alegro.\r\nMerbin Rangel: Un gusto.\r\nMerbin Rangel: Un gusto.\r\nMerbin Rangel: Matíaslado.\r\nMerbin Rangel: ¿Cómo están ustedes?\r\nMatías Febré: Muy bien, muy bien.\r\nMatías Febré: Ahí antes que nada nos presentamos e tantoes como yo somos el equipo comercial, eh, específicamente yo, el equipo de alianzas.\r\nMatías Febré: Ahí estuvimos revisando los datos que que dejaste en la web y bueno, nos interesaba conversar un poco al respecto.\r\nMerbin Rangel: Perdón.\r\nMatías Febré: entiendo que están en Perú y estaban interesados en en incorporar la solución a sus desarrollos, por lo que he leído.\r\nMerbin Rangel: Y de hecho somos una casa de software.\r\nMerbin Rangel: Eh, fabricamos soluciones especializadas para para empresas de nicho.\r\nMerbin Rangel: No tenemos distinción en tipo de producto.\r\nMerbin Rangel: Es decir, podemos hemos hecho soluciones para el agro, por ejemplo, donde desarrollamos desde domótica, electrónica, sensores de temperatura, sensores de de humedad, sensores de de acidez de suelo,\r\nMerbin Rangel: hasta hemos hecho desarrollos para una empresa de de eh contabilidad, eh una una empresa de gestión contable y de\r\nMerbin Rangel: hecho por por ese ese caso de uso particularmente es donde estamos este vemos la oportunidad de trabajar con ustedes y me gustaría entender un poco cuál es su modelo de de de negocio y el modelo del servicio que ofrece,\r\nMerbin Rangel: porque según entiendo o o y corrígeme si no es así, el producto que ofreces es simplemente es es un OCR especializado en\r\nMerbin Rangel: reconocer facturas con una efectividad del 98% o 99, si no me equivoco.\r\nMatías Febré: Bien.\r\nMatías Febré: Eh, sí.\r\nMatías Febré: Bueno, ahí para digamos ir por partes y antes de comentarte sobre extractaría terminar de entender e ustedes digamos se encargan específicamente de hacer desarrollos a medida para el cliente,\r\nMatías Febré: ya sea de la industria del agro o cualquier industria en cualquier área.\r\nMerbin Rangel: Sí, en cualquier área.\r\nMerbin Rangel: De hecho, trabajamos con la banca, trabajamos con con medios de pago, banca, este, telecomunicaciones.\r\nMerbin Rangel: Hemos ahorita estamos haciendo un desarrollo para Claro, estamos haciendo para varios bancos acá en Perú.\r\nMerbin Rangel: Eh, tenemos estamos haciendo para una empresa de medios de pago, estamos haciendo la integración con una RP de de eh si no me equivoco es TAP el que tienen ellos actualmente conectado,\r\nMerbin Rangel: pero estamos haciendo la integración de eh pagos con QR con su sistema RP para las cajas que manejan, una empresa que maneja 800 puntos de venta a nivel nacional.\r\nMerbin Rangel: Ese tipo de de trabajos complejos que estamos desarrollando, por ejemplo, para una una universidad también la integración en tu desde un medio de pago especializado también para eh integrarlo con el ERP del de la de la universidad.\r\nMerbin Rangel: Entonces, generalmente tenemos proyectos complejos y difíciles de de de hacer.\r\nMatías Febré: Sí,\r\nMerbin Rangel: Los que nadie quiere hacer los hacemos\r\nMatías Febré: perfecto.\r\nMerbin Rangel: nosotros.\r\nMatías Febré: No se entiende.\r\n00:05:00\r\nMatías Febré: Perfecto.\r\nMatías Febré: Ahí te quería consultar.\r\nMatías Febré: ¿Sus clientes están únicamente en Perú o también en otros países?\r\nMerbin Rangel: Eh, la mayoría está en Perú, eh, aunque tenemos uno que otro en otros países donde donde o\r\nMatías Febré: Ok.\r\nMerbin Rangel: apoyamos o vamos como como backfice de quien tiene el contrato.\r\nMerbin Rangel: Suele suceder bastante de que no no nos contratan.\r\nMerbin Rangel: Nosotros realizamos el trabajo y y qui quien el cliente viene a ser\r\nMatías Febré: Y entiendo que industrias son variadas.\r\nMerbin Rangel: otro.\r\nMatías Febré: E sabes más o menos qué es RPS trabajan los clientes lo tienen\r\nMerbin Rangel: Sí. Eh,\r\nMatías Febré: mapeado.\r\nMerbin Rangel: la mayoría con los que hemos trabajado tienen tienen desarrollos propios.\r\nMerbin Rangel: Por lo menos acá en Perú es bastante común.\r\nMerbin Rangel: La mayoría de los de los clientes tienen sus desarrollos propios y salvo el caso de estos grandes que tienen la mayoría tienen SAP.\r\nMatías Febré: Perfecto.\r\nMatías Febré: Consulto esto porque eh ahora llegando a lo que es extract, básicamente extract SAS que lo que permite es automatizar el proceso completo de proveedores desde la recepción de la factura, la lectura y el procesamiento de toda la información que venga en el documento,\r\nMatías Febré: ya sean productos, orden de compra, impuestos, importes o cualquier información adicional que venga en la factura.\r\nMatías Febré: Y luego lo que es la parametrización de ese documento en el IRP que trabaja la empresa, sea SAP o sea un sistema propio.\r\nMerbin Rangel: Perfecto.\r\nMatías Febré: Te consultaba eso porque lo que hacemos es desarrollamos un conector entre extract y el IRP que utiliza la empresa para que la información viaje de forma automática.\r\nMatías Febré: O sea, básicamente el conector lo que va a hacer es replicar el trabajo de un auxiliar contable.\r\nMatías Febré: va a correr un proceso automático cada x tiempo,\r\nMerbin Rangel: Perfecto.\r\nMatías Febré: pueden ser 20 minutos, media hora, una hora, lo que desee el cliente, y va a buscar en extractas que están listas para ser registradas en el sistema de gestión y va a viajar la factura y se va a parametrizar en el\r\nMatías Febré: IRP.\r\nMatías Febré: Entonces, para poder nosotros conectarnos, lo que precisamos es que pueda vincularse a través de una API el sistema.\r\nMerbin Rangel: Okay, perfecto.\r\nMatías Febré: Si eso está okay, no hay ningún problema, podemos conectarnos tranquilamente.\r\nMerbin Rangel: Okay.\r\nMerbin Rangel: Y y claro, tú ofreces el el el panel de administración de de del ingreso de esas facturas al cliente.\r\nMerbin Rangel: Es decir, no existiría una posibilidad donde donde el trabajo porque porque hay muchos clientes que ya tienen sus procesos.\r\nMerbin Rangel: Entonces, eh entregarle un panel adicional o un proceso adicional para para para hacer algo, puede haber un poquito de fricción allí.\r\nMerbin Rangel: Existe existe alguna posibilidad donde nos podamos integrar a nivel de de de que de que lo hagas behind the scen?\r\nMerbin Rangel: O sea, que no\r\nMatías Febré: Entiendo.\r\nMatías Febré: Sí, entiendo ahí lo que lo que consultas.\r\nMatías Febré: Eh, lo que pasa es que la plataforma, digamos,\r\nMerbin Rangel: No.\r\nMatías Febré: eh le va a permitir varias funcionalidades.\r\nMatías Febré: Primero que va a servir como un repositorio digital histórico donde va a tener centralizado todas las facturas desde el día uno que comience a trabajar y también va a poder gestionar desde ahí los gastos de tipo viáticos, que entiendo que también les interesaba.\r\nMatías Febré: Eso, digamos, lo pueden cargar a través de una app móvil y lo pueden visualizar desde la plataforma.\r\nMerbin Rangel: Perfecto.\r\nMatías Febré: Además de esto, van a poder tener un digamos una sección donde van a poder generar reportes personalizados, van a tener un flujo de aprobación dentro de la plataforma que pueden\r\nMatías Febré: utilizar y también a su vez van a poder en el caso que deseen disponibilizar un portal para que sus propios proveedores puedan visualizar el estado de las facturas si están aprobadas,\r\nMerbin Rangel: Okay.\r\nMatías Febré: pagadas.\r\nMatías Febré: Va a servir como un paso previo al IRP.\r\nMatías Febré: Por lo general no suele ser fricción eh para el cliente, más bien le va a dar más información y le va a permitir eh tener una vista previa de el estado de las facturas y que puedan simplemente gestionar desde ahí\r\nMatías Febré: aprobación y control de las facturas.\r\n00:10:00\r\nMerbin Rangel: Interesante.\r\nMerbin Rangel: Yo te diría, eh, ¿y cuál es el modelo de negocio con tus partners?\r\nMerbin Rangel: Este, los clientes los atendrían ustedes, los atende, los atende uno a nivel de partner.\r\nMerbin Rangel: ¿Cuál es ese ese modelo que tienes actualmente?\r\nMerbin Rangel: Porque ojo, lo escucho, suena bien, pero eh eh al final del día el que tiene la razón es el cliente.\r\nMerbin Rangel: El cliente tal vez eh se lo muestra a a la persona adecuada dentro de la organización y la persona te va a decir, \"Maravilloso, me quitaste 20 problemas de encima. como estoy seguro que te lo deben haber dicho en la mayoría de tus reuniones.\r\nMatías Febré: Listo.\r\nMerbin Rangel: Eh, ¿qué qué cuál es cuál es la metodología que utilizan para poder llegar a ese punto?\r\nMerbin Rangel: Es decir, que yo pueda decirle a un cliente mío, \"Oye, está este sistema, eh, tal vez te interese, puedes este verificarlo, revisarlo, tratar de de de de ver si efectivamente este es\r\nMerbin Rangel: así.\r\nMatías Febré: Perfecto.\r\nMatías Febré: Ahí por lo general lo que hacemos, Mervin, es e coordinamos una reunión inicial con el cliente interesado y de tu lado haces la introducción con el cliente y ahí nosotros en esa reunión inicial que le llamamos Discovery,\r\nMatías Febré: lo que buscamos entender es cómo llevan el proceso hoy en día, cuántas personas hay en el equipo, dónde reciben las facturas, cuántas personas eh están dentro del proceso.\r\nMatías Febré: Eso tanto como aprobación como para registro como para el pago de la factura.\r\nMatías Febré: Después el volumen de facturas que procesan, qué sistema de gestión utilizan y buscamos identificar otros puntos de dolor que puedan haber dentro del proceso.\r\nMatías Febré: Una vez que tenemos toda esa información, si la empresa está interesada, coordinamos un segundo encuentro donde con toda la información que recabamos en la reunión inicial, realizamos una demo.\r\nMatías Febré: personalizada, resolvemos todas las dudas que surjan de la plataforma y luego de esa demo les presentamos la propuesta que vamos a armar para esa reunión.\r\nMatías Febré: Eh, obviamente entre nosotros podemos planificar la propuesta previo a esa segunda reunión para que tú me indiques eh estos valores son correctos, eh debemos subirlos, debemos bajarlos e y demás cuestiones y\r\nMatías Febré: luego ya a través de la presentación de la propuesta que el cliente pueda tomar una decisión.\r\nMerbin Rangel: Perfecto.\r\nMerbin Rangel: Y según según tu experiencia, la la oferta de valor está es que reduces eh el costo operacional de tener personas registrando facturas.\r\nMatías Febré: Sin dudas.\r\nMatías Febré: Sí, en realidad que sí.\r\nMatías Febré: Nosotros buscamos igual enfocarlo en que puedan esa misma persona puede realizar tareas que aporten valor al negocio, que no sean tareas de data entry, pero sin dudas que van a poder optimizar los costos.\r\nMerbin Rangel: Eso.\r\nMerbin Rangel: Ojo, estoy hablando contigo y estoy viviendo eh en mi mente a qué clientes podemos ofrecerlo y se me ocurren desde una plataforma de de factoring hasta clientes que tienen, sé que pueden tener ese dolor,\r\nMerbin Rangel: pero no me lo han comunicado porque no lo no tal vez ni siquiera lo saben que es un dolor.\r\nMatías Febré: Sí.\r\nWenceslao Hoepner: Sí, Mervin, ahí permitíme sumar, no solo es la hora hombre per sé por carga, eh, sino también la herramienta cuenta con controles duplicidades.\r\nWenceslao Hoepner: Tenemos cliente, yo estoy más de cara al cliente en este término, como Mati había comentado, y hay errores de duplicados, eh, que se suben facturas duplicadas, se terminan pagando eh prontos pagos omitidos.\r\nWenceslao Hoepner: Hay ciertos clientes los cuales trabajan con proveedores, los cuales por pronto pago tienen descuentos que a veces si quedan de registro manual se ralentiza, pierden ese tipo de descuentos.\r\nWenceslao Hoepner: E esto te lo indico, ya que nosotros estamos asociados con la consultora de LOID, no sé si la conocés, tenemos un análisis del Roy hecho con ellos y en base a este análisis del Roy, no solamente es la hora hombre per sé que se que que que requiere la carga de factura,\r\nWenceslao Hoepner: sino que hay todos estos detalles contemplados, los cuales son muy eh beneficiosos para para el cliente.\r\nMerbin Rangel: No, inclusive los errores de carga.\r\nWenceslao Hoepner: Errores de carga,\r\nMerbin Rangel: O sea,\r\nWenceslao Hoepner: sí.\r\nMerbin Rangel: hay hay hay un fin de de de puntos que intervienen que cuando automatizas ya te quitas de encima todos los\r\nWenceslao Hoepner: Totalmente.\r\nMatías Febré: Sí, sí, sin dudas.\r\nMerbin Rangel: problemas.\r\nMatías Febré: Y también la idea es que puedan eh hoy en día el auxiliar contable destinar su tiempo a una tarea más estratégica, por ejemplo,\r\n00:15:00\r\nMerbin Rangel: Gracias.\r\nMatías Febré: a crear reportes de valor para los proveedores y negociar, como decía y mejores números por pronto pago y bueno, tener la posibilidad de tomarse el crédito fiscal por ingresar las facturas en tiempo y forma,\r\nMatías Febré: tener la información ordenada para lo que es el cierre de ejercicio fiscal y mensual.\r\nMatías Febré: Entonces, la verdad que los beneficios son múltiples y por lo general los equipos eh las empresas lo ven en la primer reunión, ya identifican estos estos beneficios.\r\nMatías Febré: E ahí lo que te iba a indicar, Mervin, es sus clientes por lo general tienen muchos proveedores, manejan un volumen considerable.\r\nMatías Febré: ¿Tienes idea de eso?\r\nMerbin Rangel: Sí, tengo clientes desde bancos hasta, mira, por ejemplo, tengo uno de que hace factor\r\nMerbin Rangel: su su su la base de su producto son la factura y ya arrancamos con ese.\r\nMerbin Rangel: Tenemos también este supermercado, eh el nivel de factur de facturas que que manejan también es altísimo.\r\nMerbin Rangel: Eh hay hay hay hay hay oportunidades acá.\r\nMerbin Rangel: Acá creo que te hay oportunidades.\r\nMerbin Rangel: Yo diría, yo diría, vuelvo y te repito, hoy no es un dolor.\r\nMerbin Rangel: Hay que hay que hablando con la persona correcta podemos podemos decirle, \"Oye, si implementamos esto, resolvemos eh hacemos podemos podemos arreglar acá, arreglar acá y te optimizas esto, te ahorras esto,\r\nMatías Febré: Sí.\r\nMerbin Rangel: esa\r\nMatías Febré: Ahí lo que te iba a comentar, Mervin, es tal vez no saben, como indicabas previamente que eso da un dolor, pero cuando ven la posibilidad de automatizar un proceso muy manual, resulta una solución.\r\nMatías Febré: Entonces, muchas veces o tal vez ustedes eh no ha surgido el tema con el cliente, pero sea un dolor.\r\nMatías Febré: Eh, pero bueno, ahí eso no lo lo podemos ya indagar más adelante.\r\nMatías Febré: Si quieres, lo que te propongo, Mervin, es que hagamos una siguiente reunión en donde pueda mostrarle la plataforma para que veas el alcance que tiene y ahí va a ser más sencillo identificar un potencial cliente e que esté sufriendo el proceso manual.\r\nMatías Febré: Y ahí, bueno, podemos luego de esa realizar la demo, te puedo mostrar ahí cuál es el esquema de comisiones que trabajamos y poder comentarte e cómo trabajamos los acuerdos de alianzas para que luego podamos formalizar, ¿sí te\r\nMatías Febré: parece?\r\nMerbin Rangel: Sí, me parece, me parece bien.\r\nMerbin Rangel: Así, así lo veo, lo veo en en movimiento tener una una idea más mucho más clara como para poder ofrecerla.\r\nMerbin Rangel: nos ponemos de acuerdo y y encantado de de trabajar con ustedes.\r\nMerbin Rangel: Inclusive, insisto, creo que tiene muchos casos de uso más allá de de del control de de de facturación de las facturas para para ciertos tipos de clientes.\r\nMatías Febré: Perfecto.\r\nMatías Febré: ¿Te parece, Mervin, si agendamos para el jueves que viene en este mismo horario para hacer la demo?\r\nMerbin Rangel: Perfecto, perfecto.\r\nMatías Febré: Así ya te comparto la invitación y ahora igualmente te paso una minuta con con un brochure de la plataforma para que puedas eh revisar ahí el detalle de la tecnología que utilizamos en la lectura.\r\nMatías Febré: También hay una calculadora de retorno de inversión para que puedas ver en función del volumen que que tenga la empresa, cuál es el retorno de inversión que van a poder eh ver.\r\nMatías Febré: Y bueno, también te paso algunos casos de éxito para que conozcas la experiencia de desde el punto de vista del usuario y ya el jueves que viene hacemos la demo y bueno y luego analizamos los próximos pasos.\r\nMerbin Rangel: Perfecto.\r\nMerbin Rangel: Maravilloso.\r\nMerbin Rangel: Hagámoslo\r\nMatías Febré: Bueno,\r\nMerbin Rangel: así.\r\nMatías Febré: muchísimas gracias Mervin, por tu tiempo.\r\nMatías Febré: Ahí ya te paso la invitación y nos vemos el jueves próximo.\r\nMerbin Rangel: Gracias, Matías.\r\nMerbin Rangel: Gracias, bueno.\r\nWenceslao Hoepner: Gracias que buenas tardes.\r\nMatías Febré: Luego.\r\nMerbin Rangel: Hasta luego.\r\nWenceslao Hoepner: Co?\r\nMerbin Rangel: Que estén bien,\r\nMatías Febré: Ciao.\r\nMatías Febré: Ciao.\r\nMerbin Rangel: muchachos.\r\nLa reunión finalizó después de 00:20:03 👋\r\nEsta transcripción editable se generó automáticamente y puede contener errores. Los usuarios también pueden cambiar el texto después de que se cree."
+          },
+          "webhookUrl": "https://n8n.xtract.app/webhook/discovery-email-slack",
+          "executionMode": "production"
+        }
+      }
+    ]
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": [],
+  "shared": [
+    {
+      "role": "workflow:owner",
+      "workflowId": "xP2LYks5hHkcmgN5",
+      "projectId": "GcZu9tSo2Hvl3tu1",
+      "project": {
+        "id": "GcZu9tSo2Hvl3tu1",
+        "name": "Santiago Wuerich <santiagow142001@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "customTelemetryTags": [],
+        "creatorId": "aa64b914-db8b-4587-b15e-b195296be28f",
+        "createdAt": "2026-07-30T14:04:56.362Z",
+        "updatedAt": "2026-08-04T21:24:46.921Z"
+      },
+      "createdAt": "2026-08-26T18:30:04.869Z",
+      "updatedAt": "2026-08-26T18:30:04.869Z"
+    }
+  ],
+  "activeVersion": {
+    "versionId": "0626ab75-090b-4637-b50c-6a0b0d08babb",
+    "workflowId": "xP2LYks5hHkcmgN5",
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "discovery-email-slack",
+          "options": {}
+        },
+        "id": "node-webhook-trigger",
+        "name": "Link a discovery cargado",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2,
+        "position": [
+          -608,
+          208
+        ],
+        "webhookId": "discovery-email-slack"
+      },
+      {
+        "parameters": {
+          "jsCode": "let raw = $input.first().json;\nwhile (raw.body && typeof raw.body === \"object\") { raw = raw.body; }\n\n// ── Helpers ──────────────────────────────────────────────────────────────────\nconst getPropValue = (p) => {\n  if (!p) return \"\";\n  if (typeof p === \"string\") return p;\n  if (p.url) return p.url;\n  if (p.email) return p.email;\n  if (p.rich_text && p.rich_text[0]) return p.rich_text[0].plain_text || p.rich_text[0].text?.content || \"\";\n  if (p.title && p.title[0]) return p.title[0].plain_text || p.title[0].text?.content || \"\";\n  return \"\";\n};\n\nconst props = raw.properties || {};\n\n// ── Transcripción ─────────────────────────────────────────────────────────────\n// Nuevo formato: campo \"transcription\" (inglés) llega directo en el body\n// Formato viejo Notion: raw.transcripcion o raw.body.transcripcion\nconst transcripcion = raw.transcription || raw.transcripcion || \"\";\n\n// ── Link al Doc / fileId ──────────────────────────────────────────────────────\n// Nuevo formato: \"docUrl\"\n// Formato viejo Notion: \"Link a discovery\" en properties\nlet linkDiscovery = raw.docUrl || \"\";\n\nif (!linkDiscovery) {\n  for (const [k, v] of Object.entries(props)) {\n    if (!v) continue;\n    const kNorm = k.toLowerCase();\n    if (kNorm.includes(\"discovery\") || kNorm.includes(\"transcri\") || kNorm.includes(\"drive\") || kNorm.includes(\"doc\") || kNorm.includes(\"link\")) {\n      const val = getPropValue(v);\n      if (val && (val.includes(\"drive.google.com\") || val.includes(\"docs.google.com\"))) {\n        linkDiscovery = val;\n        break;\n      }\n    }\n  }\n}\nif (!linkDiscovery) {\n  for (const [k, v] of Object.entries(raw)) {\n    if (typeof v === \"string\" && (v.includes(\"drive.google.com\") || v.includes(\"docs.google.com\"))) {\n      linkDiscovery = v;\n      break;\n    }\n  }\n}\n\nlet fileId = \"\";\nconst match = (linkDiscovery || \"\").match(/\\/(?:d|document\\/d)\\/([a-zA-Z0-9_-]+)/) || (linkDiscovery || \"\").match(/id=([a-zA-Z0-9_-]+)/);\nif (match) fileId = match[1];\n\n// ── Empresa ───────────────────────────────────────────────────────────────────\nlet empresa = \"\";\nfor (const [k, v] of Object.entries(props)) {\n  if (!v) continue;\n  const kNorm = k.toLowerCase();\n  if (kNorm.includes(\"empresa\") || kNorm.includes(\"name\") || kNorm.includes(\"title\") || kNorm.includes(\"cliente\") || kNorm.includes(\"oportun\")) {\n    empresa = getPropValue(v);\n    if (empresa) break;\n  }\n}\nif (!empresa) empresa = raw.property_nombre_oportunidad || raw.empresa || raw.name || raw.company || \"Cliente\";\n\n// ── Owner / Comercial ─────────────────────────────────────────────────────────\n// Nuevo formato: \"ownerEmail\" llega directo\nlet ownerEmail = raw.ownerEmail || raw.owner_email || \"\";\n\nif (!ownerEmail) {\n  let rawOwnerFromProp = Array.isArray(raw.property_owner) ? raw.property_owner[0] : (raw.property_owner || \"\");\n  ownerEmail = raw.owner || rawOwnerFromProp || \"\";\n}\nif (!ownerEmail) {\n  for (const [k, v] of Object.entries(props)) {\n    if (!v) continue;\n    const kNorm = k.toLowerCase();\n    if (kNorm.includes(\"owner\") || kNorm.includes(\"responsable\") || kNorm.includes(\"comercial\")) {\n      if (v.people && v.people[0] && v.people[0].person && v.people[0].person.email) {\n        ownerEmail = v.people[0].person.email;\n        break;\n      }\n    }\n  }\n}\nif (!ownerEmail) ownerEmail = \"nicolas.gonzalez@xtract.app\";\n\n// ── Emails de interlocutores / clientes ───────────────────────────────────────\nconst notionEmails = [];\nfor (const [k, v] of Object.entries(props)) {\n  if (!v) continue;\n  if (v.email) notionEmails.push(v.email);\n  if (v.people && Array.isArray(v.people)) {\n    v.people.forEach(p => {\n      if (p && p.person && p.person.email && !p.person.email.includes(\"@xtract.app\")) {\n        notionEmails.push(p.person.email);\n      }\n    });\n  }\n  if (k.toLowerCase().includes(\"mail\") || k.toLowerCase().includes(\"correo\") || k.toLowerCase().includes(\"email\")) {\n    const val = getPropValue(v);\n    if (val && val.includes(\"@\") && !val.includes(\"@xtract.app\")) notionEmails.push(val);\n  }\n}\n\n// ── URL de Notion ─────────────────────────────────────────────────────────────\nconst rawId = (raw.id || raw.page_id || \"\").replace(/-/g, \"\");\nconst notionUrl = raw.url || (rawId ? (\"https://www.notion.so/\" + rawId) : \"\");\n\nreturn [{ json: {\n  transcripcion,\n  fileId,\n  linkDiscovery,\n  empresa,\n  ownerEmail,\n  notionUrl,\n  notionEmails,\n  raw\n} }];"
+        },
+        "id": "node-extraer-datos",
+        "name": "Code - Extraer Datos",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          -384,
+          208
+        ]
+      },
+      {
+        "parameters": {
+          "useJson": true,
+          "claimsJson": "={\n  \"iss\": \"transcript-docs-reader@transcripts-reader.iam.gserviceaccount.com\",\n  \"sub\": \"{{ $json.ownerEmail }}\",\n  \"scope\": \"https://www.googleapis.com/auth/drive.readonly\",\n  \"aud\": \"https://oauth2.googleapis.com/token\",\n  \"exp\": {{ Math.floor(Date.now() / 1000) + 3600 }},\n  \"iat\": {{ Math.floor(Date.now() / 1000) }}\n}",
+          "options": {}
+        },
+        "id": "node-jwt",
+        "name": "JWT",
+        "type": "n8n-nodes-base.jwt",
+        "typeVersion": 1,
+        "position": [
+          -160,
+          208
+        ],
+        "credentials": {
+          "jwtAuth": {
+            "id": "B3KwxGmlrCCTgAHk",
+            "name": "Service Account Xtract transcripts-reader"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://oauth2.googleapis.com/token",
+          "sendBody": true,
+          "contentType": "form-urlencoded",
+          "bodyParameters": {
+            "parameters": [
+              {
+                "name": "grant_type",
+                "value": "urn:ietf:params:oauth:grant-type:jwt-bearer"
+              },
+              {
+                "name": "assertion",
+                "value": "={{ $json.token }}"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "node-access-token",
+        "name": "HTTP - Generar Access Token",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          64,
+          208
+        ]
+      },
+      {
+        "parameters": {
+          "url": "=https://www.googleapis.com/drive/v3/files/{{ $('Code - Extraer Datos').first().json.fileId }}/export",
+          "sendQuery": true,
+          "queryParameters": {
+            "parameters": [
+              {
+                "name": "mimeType",
+                "value": "text/plain"
+              },
+              {
+                "name": "supportsAllDrives",
+                "value": "true"
+              }
+            ]
+          },
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "=Bearer {{ $json.access_token }}"
+              }
+            ]
+          },
+          "options": {
+            "response": {
+              "response": {
+                "responseFormat": "text"
+              }
+            }
+          }
+        },
+        "id": "node-drive-export",
+        "name": "Drive - export texto",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          288,
+          208
+        ],
+        "retryOnFail": true,
+        "maxTries": 3,
+        "waitBetweenTries": 2000,
+        "onError": "continueRegularOutput"
+      },
+      {
+        "parameters": {
+          "jsCode": "// La transcripción ya viene extraída por \"Code - Extraer Datos\"\n// (ya sea del campo \"transcription\" del nuevo payload o de la card de Notion)\nconst extraidos = $('Code - Extraer Datos').first().json;\nlet txt = String(extraidos.transcripcion || '').trim();\nif (txt.length > 22000) {\n  txt = txt.slice(0, 22000) + '\\n...[transcripción resumida]';\n}\nreturn [{ json: { transcripcion: txt } }];"
+        },
+        "id": "node-preparar-transcripcion",
+        "name": "Preparar transcripcion",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          512,
+          208
+        ]
+      },
+      {
+        "parameters": {
+          "model": "deepseek/deepseek-chat",
+          "options": {
+            "temperature": 0.2
+          }
+        },
+        "id": "node-deepseek-model",
+        "name": "OpenRouter Chat Model",
+        "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+        "typeVersion": 1,
+        "position": [
+          720,
+          384
+        ],
+        "credentials": {
+          "openRouterApi": {
+            "id": "LW8I48MvSQglFqrJ",
+            "name": "OpenRouter Xtract"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "text": "={{ $json.transcripcion }}",
+          "schemaType": "manual",
+          "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"idioma\": {\n      \"type\": \"string\",\n      \"enum\": [\n        \"es\",\n        \"pt\"\n      ],\n      \"description\": \"Idioma del cliente y de la conversación: 'pt' si el cliente es de Brasil o habló en portugués; 'es' si habló en español.\"\n    },\n    \"interlocutores\": {\n      \"type\": \"string\",\n      \"description\": \"Nombres de las personas del cliente (ej: Francisco, Yasmín y Máximo)\"\n    },\n    \"emails_destinatarios\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\"\n      },\n      \"description\": \"Emails de los interlocutores del cliente mencionados en la llamada. Si no se mencionaron explícitamente, devolver array vacío [].\"\n    },\n    \"saludo_intro\": {\n      \"type\": \"string\",\n      \"description\": \"Frase de saludo inicial y agradecimiento por la reunión en el idioma detectado (es o pt).\"\n    },\n    \"desafios_puntos\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\"\n      },\n      \"description\": \"Viñetas de 1 línea cada una. OBLIGATORIO: resaltar con negrita (*texto*) las métricas (*500–600 facturas mensuales*), canales (*correo, WhatsApp, formato físico y diferentes portales de proveedores*), circuitos (*facturas con Orden de Compra y compras directas*) y momentos de cierre (*picos de trabajo durante el cierre y comienzo de cada mes*).\"\n    },\n    \"solucion_encaje\": {\n      \"type\": \"string\",\n      \"description\": \"Párrafo breve de 2 o 3 oraciones. OBLIGATORIO: resaltar con negrita (*texto*) los conceptos clave (ej: *lectura, imputación y registración*, *API*, etc.).\"\n    },\n    \"proximos_pasos\": {\n      \"type\": \"string\",\n      \"description\": \"Párrafo de próximos pasos. OBLIGATORIO: resaltar con negrita (*texto*) el día/hora (*el jueves a la misma hora*), la *demostración de Xtract* y la *propuesta comercial, alcance y tiempos estimados de implementación*.\"\n    },\n    \"cierre_despedida\": {\n      \"type\": \"string\",\n      \"description\": \"Frase corta de cierre (ej: Quedo atento.).\"\n    },\n    \"reunion_ya_agendada\": {\n      \"type\": \"boolean\",\n      \"description\": \"true si en la llamada acordaron o confirmaron un día/momento para el próximo encuentro. De lo contrario false.\"\n    },\n    \"detalle_reunion_agendada\": {\n      \"type\": \"string\",\n      \"description\": \"Día y hora acordados (ej: *jueves a la misma hora*, *mañana a las 15:00 hs*).\"\n    },\n    \"asunto_email\": {\n      \"type\": \"string\",\n      \"description\": \"Asunto del correo en el idioma detectado.\"\n    },\n    \"erp_llamada\": {\n      \"type\": \"string\",\n      \"description\": \"Nombre del sistema/ERP que el cliente dijo que usa actualmente, TAL COMO lo pronuncio/transcribio (sin corregir la ortografia ni normalizarlo vos). Si no se menciono ningun sistema en la llamada, devolver cadena vacia \\\"\\\".\"\n    },\n    \"solicito_documentacion_api\": {\n      \"type\": \"boolean\",\n      \"description\": \"true si solicitaron o acordaron enviar la documentación de la API.\"\n    }\n  },\n  \"required\": [\n    \"idioma\",\n    \"interlocutores\",\n    \"saludo_intro\",\n    \"desafios_puntos\",\n    \"solucion_encaje\",\n    \"proximos_pasos\",\n    \"reunion_ya_agendada\",\n    \"detalle_reunion_agendada\",\n    \"asunto_email\",\n    \"solicito_documentacion_api\"\n  ]\n}",
+          "options": {
+            "systemPromptTemplate": "Sos Nicolás González, Account Executive senior de Xtract (plataforma B2B SaaS de automatización de Cuentas a Pagar y procesamiento inteligente de facturas para medianas y grandes empresas).\n\nTu tarea es analizar la transcripción de la Discovery Call y redactar el borrador del correo ejecutivo de seguimiento que le enviarás al cliente, usando TU estilo real de redacción.\n\n=== REGLA DE NEGRITAS OBLIGATORIAS (ESTILO EXACTO DE NICOLÁS) ===\nNicolás utiliza negritas (*texto*) en datos y conceptos clave para que el correo sea súper claro y escaneable:\n1. En desafios_puntos:\n   - Resaltar SIEMPRE en negrita el volumen (*500–600 facturas mensuales*, *2.000 facturas mensuales*).\n   - Resaltar SIEMPRE en negrita los canales de recepción (*correo, WhatsApp, formato físico y diferentes portales de proveedores*).\n   - Resaltar SIEMPRE en negrita los circuitos (*facturas con Orden de Compra y compras directas*).\n   - Resaltar SIEMPRE en negrita los hitos de tiempo (*picos de trabajo durante el cierre y comienzo de cada mes*).\n2. En solucion_encaje:\n   - Resaltar SIEMPRE en negrita las acciones de valor (*lectura, imputación y registración*, *contabilización automática*).\n3. En proximos_pasos:\n   - Resaltar SIEMPRE en negrita el día y hora (*el jueves a la misma hora*), la *demostración de Xtract* y la *propuesta comercial, alcance y tiempos estimados de implementación*.\n\n=== REGLA DE IDIOMA MANDATORIA ===\n1. Si la conversación o el interlocutor principal hablaron en PORTUGUÉS (Brasil):\n   - Asigná \"idioma\": \"pt\".\n   - Todo el contenido del correo se redacta en PORTUGUÉS (PT-BR) con terminología B2B adecuada y negritas (*...*).\n2. Si la conversación fue en ESPAÑOL:\n   - Asigná \"idioma\": \"es\".\n   - Todo el contenido del correo se redacta en ESPAÑOL con negritas (*...*).\n\n=== CASO DE REFERENCIA EXACTO ===\n\n[CASO CLIENTE TUTTO PORKYS - REUNIÓN YA AGENDADA]\nHola Francisco, Yasmín y Máximo, buenas tardes.\nMuchas gracias por el tiempo en la reunión de hoy.\nLes comparto un breve resumen de lo conversado y los próximos pasos:\n\nSituación actual\n• Gestionan aproximadamente *500–600 facturas mensuales*, cuya registración se realiza actualmente de forma manual.\n• Las facturas se reciben por *correo, WhatsApp, formato físico y diferentes portales de proveedores*.\n• Trabajan con dos circuitos principales: *facturas con Orden de Compra y compras directas*, utilizando dimensiones para su imputación contable.\n• Actualmente se generan *picos de trabajo durante el cierre y comienzo de cada mes*, debiendo completar el cierre antes del día 10.\n\nObjetivo\nCentralizar la recepción de las facturas y automatizar su *lectura, imputación y registración*, contemplando los diferentes circuitos y disponibilizando la información mediante API para su integración con el sistema de gestión.\n\nPróximo paso\nComo coordinamos, nos reunimos nuevamente el *jueves a la misma hora* para realizar la *demostración de Xtract* y presentarles la *propuesta comercial, alcance y tiempos estimados de implementación*.\nLes envío la invitación para dejarlo agendado.\n\nQuedo atento.\nSaludos y gracias,\nNicolás\n\n=== ERP MENCIONADO EN LA LLAMADA ===\nSi en algún momento de la conversación el cliente nombra el sistema/ERP que usa (SAP, NetSuite, Tango, Xubio, Finnegans, Bejerman, Excel, etc.), captalo en \"erp_llamada\" EXACTAMENTE como se transcribió, sin corregirlo ni adivinar la grafía correcta (la transcripción automática suele deformar estos nombres — eso se resuelve después, en el workflow, contra el listado real de Notion). Si no lo mencionaron, dejalo en \"\".\n\n=== REGLA DE CONCISIÓN Y LONGITUD ===\n1. SÍNTESIS EJECUTIVA: Máximo 3 o 4 viñetas en desafios_puntos con negritas.\n2. OBJETIVO: Un solo párrafo conciso (2 o 3 oraciones).\n3. PRÓXIMO PASO: Directo y con negritas."
+          }
+        },
+        "id": "node-ia-extractor",
+        "name": "IA - Redactar borrador de correo",
+        "type": "@n8n/n8n-nodes-langchain.informationExtractor",
+        "typeVersion": 1.2,
+        "position": [
+          720,
+          208
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "// 1. Entradas y Datos Base\nconst iaRaw = $input.first().json;\nconst ia = iaRaw.output || iaRaw;\n\nlet extraidos = {};\ntry {\n  extraidos = $(\"Code - Extraer Datos\").first().json || {};\n} catch(e) {}\n\nlet notion = {};\ntry {\n  notion = $(\"Notion - Traer card completa\").first().json || {};\n} catch(e) {}\n\n// Destinatario Forzado (\"U0BJLTDCAMR\" para pruebas)\nconst FORZAR_DESTINATARIO = \"\";\n\nconst idioma = (ia.idioma === \"pt\") ? \"pt\" : \"es\";\nconst esPt = idioma === \"pt\";\n\n// Normalizar asteriscos a simples de Slack (*texto*)\nconst toSlackBold = str => String(str || \"\")\n  .replace(/\\*{2,}([^*]+)\\*{2,}/g, \"*$1*\")\n  .replace(/\\*{2,}/g, \"*\");\n\n// Extraer empresa limpiamente priorizando lo normalizado\nconst empresa = (extraidos.empresa || notion.empresa || notion.Empresa || notion.name || notion.title || notion.Name || \"\").trim() || (esPt ? \"sua empresa\" : \"su empresa\");\n\nconst emails = (extraidos.notionEmails && extraidos.notionEmails.length) \n  ? extraidos.notionEmails \n  : (Array.isArray(ia.emails_destinatarios) ? ia.emails_destinatarios.filter(Boolean) : []);\nconst paraTexto = emails.length ? emails.join(\", \") : \"*(Completar emails de los interlocutores)*\";\n\nlet defaultSubject = esPt ? \"Acompanhamento - Automatização de Contas a Pagar\" : \"Resumen de la reunión y próximos pasos\";\nconst subjectPersonalizado = ia.asunto_email || defaultSubject;\n\n// 2. Nombre del Comercial (SOLO PRIMER NOMBRE, sin apellido)\nconst interlocutores = (ia.interlocutores || extraidos.interlocutor || extraidos.nombreKdm || notion.persona || (esPt ? \"equipe\" : \"equipo\")).trim();\nconst rawOwner = extraidos.ownerEmail || (Array.isArray(notion.owner) ? notion.owner[0] : notion.owner) || notion.ownerEmail || \"nicolas.gonzalez@xtract.app\";\n\nconst OWNER_NOMBRES = {\n  \"nicolas.gonzalez@xtract.app\": \"Nicolás\",\n  \"wenceslao.hoepner@xtract.app\": \"Wenceslao\",\n  \"damian.deggeller@xtract.app\": \"Damián\",\n  \"greta.bruno@xtract.app\": \"Greta\",\n  \"ian.brandan@xtract.app\": \"Ian\",\n  \"tomas.marconi@xtract.app\": \"Tomás\",\n  \"juan.alvarez@xtract.app\": \"Juan\",\n  \"matias.febre@xtract.app\": \"Matías\",\n  \"jesus.degruttola@xtract.app\": \"Jesús\"\n};\nconst ownerKey = String(rawOwner || \"\").toLowerCase().trim();\nconst ownerLocal = rawOwner.split(\"@\")[0].replace(/[._-]+/g, \" \");\nconst primerNombreComercial = OWNER_NOMBRES[ownerKey] || (ownerLocal ? (ownerLocal.split(\" \")[0].charAt(0).toUpperCase() + ownerLocal.split(\" \")[0].slice(1).toLowerCase()) : \"Nicolás\");\n\n// 3. Construir Bloques del Correo con el estilo exacto de Nicolás (con subtítulos en negrita)\n\n// Saludo y agradecimiento\nlet saludo = \"\";\nif (ia.saludo_intro) {\n  saludo = ia.saludo_intro\n    .replace(/(?:less+)?compartos+uns+breves+resumen[^.\\n]*[:.\\n]?/gi, \"\")\n    .replace(/compartilhos+ums+breves+resumo[^.\\n]*[:.\\n]?/gi, \"\")\n    .replace(/\\b(?:les|comparto|compartilho)\\s*$/gi, \"\")\n    .trim();\n} else {\n  if (esPt) {\n    saludo = \"Olá \" + interlocutores + \", boa tarde.\\n\\nMuito obrigado pelo tempo na nossa conversa de hoje.\";\n  } else {\n    saludo = \"Hola \" + interlocutores + \", buenas tardes.\\n\\nMuchas gracias por el tiempo en la reunión de hoy.\";\n  }\n}\n\nconst fraseIntro = esPt \n  ? \"Compartilho um breve resumo do que conversamos e os próximos passos:\"\n  : \"Les comparto un breve resumen de lo conversado y los próximos pasos:\";\n\n// Resumen de puntos principales (Situación actual)\nlet listaPuntos = [];\nif (Array.isArray(ia.desafios_puntos)) {\n  for (const item of ia.desafios_puntos) {\n    const s = String(item || \"\").trim();\n    if (s.includes(\"•\") || (s.includes(\"-\") && s.length > 50)) {\n      const splitItems = s.split(/[•\\n]+/).map(x => x.trim()).filter(x => x.length > 5);\n      listaPuntos.push(...splitItems);\n    } else if (s) {\n      listaPuntos.push(s);\n    }\n  }\n} else if (typeof ia.desafios_puntos === \"string\" && ia.desafios_puntos.trim()) {\n  listaPuntos = ia.desafios_puntos.split(/[•\\n]+/).map(x => x.trim()).filter(x => x.length > 5);\n} else if (ia.desafio) {\n  listaPuntos = String(ia.desafio).split(/[•\\n]+/).map(x => x.trim()).filter(x => x.length > 5);\n}\n\n// Asegurar negritas en puntos clave si la IA no las puso\nconst autoBoldPunto = str => {\n  let res = String(str || \"\").trim();\n  if (!res.includes('*')) {\n    res = res.replace(/(\\b\\d{2,4}(?:[–\\-]\\d{2,4})?\\s+(?:facturas|documentos|comprobantes)\\s+(?:mensuales|por\\s+mes)?)/gi, '*$1*');\n    res = res.replace(/(correo,?\\s*WhatsApp,?\\s*formato físico[^.,]*portales de proveedores)/gi, '*$1*');\n    res = res.replace(/(facturas con Orden de Compra y compras directas)/gi, '*$1*');\n    res = res.replace(/(picos de trabajo durante el cierre y comienzo de cada mes)/gi, '*$1*');\n  }\n  return toSlackBold(res);\n};\n\nconst puntosFinales = listaPuntos.slice(0, 4);\nconst bloquePuntos = puntosFinales.length \n  ? puntosFinales.map(p => \"\\t•  \" + autoBoldPunto(String(p).replace(/^[•\\-\\*]\\s*/, \"\").trim())).join(\"\\n\") \n  : (esPt ? \"\\t•  Automatização do fluxo de entrada de *notas fiscais*.\" : \"\\t•  Automatización del flujo de *facturas*.\");\n\nconst tituloSituacion = esPt ? \"*Situação atual*\" : \"*Situación actual*\";\nconst seccionSituacion = tituloSituacion + \"\\n\" + bloquePuntos;\n\n// Propuesta de solución (Objetivo)\nlet rawSolucion = ia.solucion_encaje || ia.solucion || \"\";\nrawSolucion = rawSolucion.replace(/\\n{3,}/g, \"\\n\\n\").trim();\nif (!rawSolucion.includes('*')) {\n  rawSolucion = rawSolucion\n    .replace(/(lectura, imputación y registración)/gi, '*$1*')\n    .replace(/(contabilização automática)/gi, '*$1*')\n    .replace(/(integração via API)/gi, '*$1*');\n}\nrawSolucion = toSlackBold(rawSolucion);\nconst tituloObjetivo = esPt ? \"*Objetivo*\" : \"*Objetivo*\";\nconst seccionObjetivo = rawSolucion ? (tituloObjetivo + \"\\n\" + rawSolucion) : \"\";\n\n// Documentación de API (si aplica)\nconst solicitoApi = ia.solicito_documentacion_api === true || ia.solicito_documentacion_api === \"true\";\nlet bloqueApi = \"\";\nif (solicitoApi) {\n  if (esPt) {\n    bloqueApi = \"Conforme combinamos, compartilho a <https://xtractapi.docs.apiary.io/#reference|documentação da nossa API REST> para validação com o suporte do ERP.\";\n  } else {\n    bloqueApi = \"Tal como acordamos, les comparto la <https://xtractapi.docs.apiary.io/#reference|documentación de la API Rest> para que el equipo técnico valide los endpoints.\";\n  }\n}\n\n// Próximos pasos\nconst reunionAgendada = ia.reunion_ya_agendada === true || ia.reunion_ya_agendada === \"true\" || (ia.detalle_reunion_agendada && !ia.detalle_reunion_agendada.toLowerCase().includes(\"pendiente\"));\nlet defaultProximos = \"\";\nif (reunionAgendada) {\n  const det = ia.detalle_reunion_agendada || (esPt ? \"na data combinada\" : \"el jueves a la misma hora\");\n  defaultProximos = esPt \n    ? \"Como combinamos, nos reunimos novamente *\" + det.replace(/\\*/g, \"\") + \"* para realizar a *demonstração da Xtract* e apresentar a *proposta comercial, escopo e prazos de implementação*.\\nEnvio o convite para deixar agendado.\"\n    : \"Como coordinamos, nos reunimos nuevamente *\" + det.replace(/^el\\s+/i, \"el \").replace(/\\*/g, \"\") + \"* para realizar la *demostración de Xtract* y presentarles la *propuesta comercial, alcance y tiempos estimados de implementación*.\\nLes envío la invitación para dejarlo agendado.\";\n} else {\n  defaultProximos = esPt \n    ? \"Como próximo passo, coordenamos uma reunião de 30 minutos na próxima semana para realizar a *demonstração da ferramenta de ponta a ponta* e apresentar a *proposta comercial* adaptada à sua operação.\"\n    : \"Como próximo paso, coordinemos una videollamada de 30 minutos la próxima semana para realizar la *demostración de la herramienta de punta a punta* y presentarles la *propuesta comercial* adaptada a su operación.\";\n}\n\nlet rawProximos = ia.proximos_pasos || defaultProximos;\nrawProximos = rawProximos\n  .replace(/te env[íi]o por whatsapp[^.\\n]*[.\\n]?/gi, \"\")\n  .replace(/le enviar[ée] por correo la documentaci[oó]n[^.\\n]*[.\\n]?/gi, \"\")\n  .replace(/le env[íi]o por email la documentaci[oó]n[^.\\n]*[.\\n]?/gi, \"\")\n  .replace(/enviaremos la documentaci[oó]n[^.\\n]*[.\\n]?/gi, \"\")\n  .replace(/envio por e-?mail a documenta[çc][aã]o[^.\\n]*[.\\n]?/gi, \"\")\n  .replace(/whatsapp/gi, \"correo\")\n  .trim();\n\nif (!rawProximos.includes('*')) {\n  rawProximos = rawProximos\n    .replace(/(demostración de Xtract|demonstração da Xtract)/gi, '*$1*')\n    .replace(/(propuesta comercial, alcance y tiempos estimados de implementación|proposta comercial, escopo e prazos de implementação)/gi, '*$1*');\n}\nrawProximos = toSlackBold(rawProximos);\n\nconst tituloProximos = esPt ? \"*Próximo passo*\" : \"*Próximo paso*\";\nconst seccionProximos = tituloProximos + \"\\n\" + (rawProximos || defaultProximos);\n\n// Casos de Éxito oficiales (con sangría tabulada y enlaces formateados)\nconst normText = s => String(s || \"\").normalize(\"NFD\").replace(/[\\u0300-\\u036f]/g, \"\").toLowerCase().trim();\nlet erpResuelto = {};\ntry { erpResuelto = $(\"Resolver ERP\").first().json || {}; } catch(e) {}\nconst erpNorm = normText(erpResuelto.erp || \"\");\nconst empresaNorm = normText(empresa);\n\nlet videosRelevantes = [];\nif (esPt) {\n  if (erpNorm.includes(\"sap\")) {\n    videosRelevantes.push(\"\\t•  <https://www.youtube.com/watch?v=yJtHFuTnwSA|Caso de sucesso Pomelo (SAP)>\");\n  } else {\n    videosRelevantes.push(\"\\t•  <https://www.youtube.com/watch?v=k2uYl5kSGBQ|Caso de sucesso MODO>\");\n  }\n} else {\n  if (erpNorm.includes(\"netsuite\")) {\n    videosRelevantes.push(\"\\t•  <https://www.youtube.com/watch?v=4xFCkoxat1o|Caso InvGate (NetSuite)>\");\n  } else if (erpNorm.includes(\"sap\")) {\n    videosRelevantes.push(\"\\t•  <https://www.youtube.com/watch?v=ikDLA5HjQbs|Caso Pomelo (SAP)>\");\n  } else if (empresaNorm.includes(\"salud\") || empresaNorm.includes(\"sanatorio\") || empresaNorm.includes(\"clinica\") || empresaNorm.includes(\"hospital\")) {\n    videosRelevantes.push(\"\\t•  <https://www.youtube.com/watch?v=I8J-vd5U5ck|Caso SanCor Salud>\");\n  } else {\n    videosRelevantes.push(\"\\t•  <https://www.youtube.com/watch?v=k2uYl5kSGBQ|Caso MODO>\");\n  }\n}\nconst bloqueCasosExito = videosRelevantes.join(\"\\n\");\n\n// Cierre y firma prolija (sin duplicar nombres)\nlet bloqueCierre = \"\";\nif (esPt) {\n  let despedidaPt = (ia.cierre_despedida || \"Fico à disposição.\")\n    .replace(/muito obrigado[^.\\n]*/gi, \"\")\n    .replace(/abra[çc]os[^.\\n]*/gi, \"\")\n    .replace(new RegExp(primerNombreComercial, \"gi\"), \"\")\n    .trim();\n  if (!despedidaPt) despedidaPt = \"Fico à disposição.\";\n  bloqueCierre = despedidaPt + \"\\n\\nMuito obrigado e abraços,\\n\" + primerNombreComercial;\n} else {\n  let despedidaEs = (ia.cierre_despedida || \"Quedo atento.\")\n    .replace(/saludos[^.\\n]*/gi, \"\")\n    .replace(/muchas gracias[^.\\n]*/gi, \"\")\n    .replace(/gracias[^.\\n]*/gi, \"\")\n    .replace(new RegExp(primerNombreComercial, \"gi\"), \"\")\n    .trim();\n  if (!despedidaEs) despedidaEs = \"Quedo atento.\";\n  bloqueCierre = despedidaEs + \"\\n\\nSaludos y gracias,\\n\" + primerNombreComercial;\n}\n\n// 4. Ensamble del Borrador Completo\nconst trimNewlines = str => String(str || \"\").replace(/^\\n+|\\n+$/g, \"\");\n\nconst cuerpoEmail = [\n  saludo,\n  fraseIntro,\n  seccionSituacion,\n  seccionObjetivo,\n  bloqueApi,\n  seccionProximos,\n  bloqueCasosExito,\n  bloqueCierre\n].map(trimNewlines).filter(Boolean).join(\"\\n\\n\");\n\n// 5. Matching en Cascada para encontrar el ID de Slack del Comercial\nconst norm = s => String(s == null ? \"\" : s).normalize(\"NFD\").replace(/[̀-ͯ]/g, \"\").toLowerCase().trim();\nconst emailNorm = norm(rawOwner);\nconst local = norm(rawOwner.split(\"@\")[0]);\nconst comoNombre = local.replace(/[._-]+/g, \" \");\n\nconst KNOWN_OWNERS = {\n  // Principales Ejecutivos\n  'nicolas.gonzalez@xtract.app': 'U02MCAHHM1T',\n  'nicolas@xtract.app': 'U02MCAHHM1T',\n  'nicolas gonzalez': 'U02MCAHHM1T',\n  'nicolás gonzalez': 'U02MCAHHM1T',\n  'tomas@xtract.app': 'U01AC8ARHG8',\n  'tomas.marconi@xtract.app': 'U01AC8ARHG8',\n  'tomas marconi': 'U01AC8ARHG8',\n  'wenceslao.hoepner@xtract.app': 'U0BBASA0F60',\n  'wenceslao@xtract.app': 'U0BBASA0F60',\n  'wenceslao hoepner': 'U0BBASA0F60',\n  'juan.alvarez@xtract.app': 'U094FGA9VEF',\n  'juan@xtract.app': 'U094FGA9VEF',\n  'juan alvarez': 'U094FGA9VEF',\n  'damian.deggeller@xtract.app': 'U09PYEWUHGF',\n  'damian@xtract.app': 'U09PYEWUHGF',\n  'damian deggeller': 'U09PYEWUHGF',\n  'damián deggeller': 'U09PYEWUHGF',\n  'greta.bruno@xtract.app': 'U096BLX5864',\n  'greta@xtract.app': 'U096BLX5864',\n  'greta bruno': 'U096BLX5864',\n  'ian.brandan@xtract.app': 'U09FZ5MLF0E',\n  'ian@xtract.app': 'U09FZ5MLF0E',\n  'ian brandan': 'U09FZ5MLF0E',\n  \n  // Equipo Comercial Ampliado & SDRs\n  'jesus@xtract.app': 'U01A12169ND',\n  'jesus.degruttola@xtract.app': 'U01A12169ND',\n  'jesús de gruttola': 'U01A12169ND',\n  'jesus.soria@xtract.app': 'U0AM7HGHQTB',\n  'jesús soria': 'U0AM7HGHQTB',\n  'matias.febre@xtract.app': 'U07JW0A2AL9',\n  'matias@xtract.app': 'U07JW0A2AL9',\n  'matías febré': 'U07JW0A2AL9',\n  'neiber@xtract.app': 'U06R7TRQKV1',\n  'neiber monti': 'U06R7TRQKV1',\n  'gaston.moriconi@xtract.app': 'U093XP1LAUC',\n  'gastón moriconi': 'U093XP1LAUC',\n  'bruno.corrao@xtract.app': 'U064UNXJZ7F',\n  'franco.argibel@xtract.app': 'U08BMGJDT7F',\n  'santiago.paredes@xtract.app': 'U0AQMAM2ZB9',\n  'alejandro@xtract.app': 'U01A11YN7SM',\n  'alejandro.bezdjian@xtract.app': 'U01A11YN7SM',\n  'ezequiel.nievas@xtract.app': 'U09CY8PBPSN',\n  'sofia.ferro@xtract.app': 'U0BE9AQHFPV'\n};\n\nlet usuarios = [];\ntry {\n  const raw = $(\"Slack - Traer usuarios\").first().json;\n  usuarios = (raw.members || raw.users || []).filter(u => u && u.id && !u.deleted && !u.is_bot);\n} catch(e) {}\n\nconst perfil = u => u.profile || {};\nlet owner = usuarios.find(u => norm(perfil(u).email) === emailNorm) || null;\nif (!owner) owner = usuarios.find(u => norm(u.name) === local) || null;\nif (!owner) owner = usuarios.find(u => norm(perfil(u).display_name) === local) || null;\nif (!owner) owner = usuarios.find(u => norm(u.real_name) === comoNombre) || null;\nif (!owner) owner = usuarios.find(u => norm(perfil(u).real_name) === comoNombre) || null;\n\nconst SLACK_FALLBACK_DM = \"U0BJLTDCAMR\";\nconst ownerSlackIdReal = owner ? owner.id : (KNOWN_OWNERS[emailNorm] || SLACK_FALLBACK_DM);\nconst ownerSlackId = FORZAR_DESTINATARIO || ownerSlackIdReal;\nconst enModoPrueba = !!FORZAR_DESTINATARIO;\nconst esFallback = !owner && !KNOWN_OWNERS[emailNorm];\n\n// Link a Notion y Link a Discovery\nconst rawId = (extraidos.notionUrl ? \"\" : (notion.id || notion.page_id || \"\").replace(/-/g, \"\"));\nconst notionUrl = extraidos.notionUrl || notion.url || (rawId ? (\"https://www.notion.so/\" + rawId) : \"\");\nconst linkDoc = extraidos.linkDiscovery || \"\";\n\n// 6. Mensaje Formateado para Slack\nconst tagIdioma = esPt ? \" 🇧🇷 *(Português)*\" : \" 🌎 *(Español)*\";\nconst footerCopia = esPt ? \"_Pronto para copiar e enviar no Gmail / Outlook._\" : \"_Listo para copiar y enviar en Gmail / Outlook._\";\n\nconst linksEncabezado = linkDoc ? (\"• <\" + linkDoc + \"|Abrir Transcripción en Google Docs>\") : \"\";\n\nconst textoSlack = [\n  (enModoPrueba ? (\":test_tube: *MODO PRUEBA* — en producción esto le hubiera llegado a `\" + ownerSlackIdReal + \"`\") : \"\"),\n  \":incoming_envelope: *Borrador de Email Post-Discovery*\" + tagIdioma + \" — \" + empresa,\n  (ia.reunion_ya_agendada ? \"📅 *Reunión pactada:* \" + (ia.detalle_reunion_agendada || \"Sí (en la llamada)\") : \"📅 *Reunión:* Pendiente de coordinar\"),\n  linksEncabezado,\n  (esFallback ? \"_Nota: Enviado a fallback de pruebas._\" : \"\"),\n  (erpResuelto.erp_sin_match ? \"⚠️ *ERP sin confirmar:* el cliente mencionó algo como \\\"\" + erpResuelto.erp_sin_match + \"\\\", pero no coincide con ninguna opción del listado de Notion — completar el campo 'Que sistema usan?' manualmente.\" : \"\"),\n  \"\",\n  \"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\",\n  \"*Para:* \" + paraTexto,\n  \"*Subject:* \" + subjectPersonalizado,\n  \"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\",\n  \"\",\n  cuerpoEmail,\n  \"\",\n  \"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\",\n  footerCopia\n].filter(Boolean).join(\"\\n\");\n\nreturn [{ json: {\n  texto_slack: textoSlack,\n  cuerpo_email: cuerpoEmail,\n  idioma: idioma,\n  para: paraTexto,\n  subject: subjectPersonalizado,\n  owner_slack_id: ownerSlackId,\n  comercial: primerNombreComercial,\n  empresa: empresa,\n  notion_url: notionUrl\n} }];\n"
+        },
+        "id": "node-armar-slack",
+        "name": "Armar mensaje de Slack",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1248,
+          272
+        ]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://slack.com/api/chat.postMessage",
+          "authentication": "predefinedCredentialType",
+          "nodeCredentialType": "slackApi",
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={\n  \"channel\": \"{{ $json.owner_slack_id }}\",\n  \"text\": {{ JSON.stringify($json.texto_slack) }},\n  \"mrkdwn\": true,\n  \"unfurl_links\": false,\n  \"unfurl_media\": false\n}",
+          "options": {}
+        },
+        "id": "node-slack-post",
+        "name": "Slack - Enviar borrador a Santiago",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          1472,
+          272
+        ],
+        "credentials": {
+          "slackApi": {
+            "id": "y1DaRieOF29GQnxm",
+            "name": "Xtract notifications"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "url": "https://slack.com/api/users.list",
+          "authentication": "predefinedCredentialType",
+          "nodeCredentialType": "slackApi",
+          "options": {
+            "response": {
+              "response": {
+                "neverError": true
+              }
+            },
+            "timeout": 30000
+          }
+        },
+        "id": "slack-traer-usuarios-wf06",
+        "name": "Slack - Traer usuarios",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          608,
+          -208
+        ],
+        "credentials": {
+          "slackApi": {
+            "id": "y1DaRieOF29GQnxm",
+            "name": "Xtract notifications"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "resource": "database",
+          "databaseId": {
+            "__rl": true,
+            "value": "09549c92-28ea-4e15-9350-055b079ce9ac",
+            "mode": "list",
+            "cachedResultName": "Sales - XT",
+            "cachedResultUrl": "https://app.notion.com/p/09549c9228ea4e159350055b079ce9ac"
+          }
+        },
+        "id": "node-notion-lista-erp",
+        "name": "Notion - Traer lista ERP",
+        "type": "n8n-nodes-base.notion",
+        "typeVersion": 2.2,
+        "position": [
+          -160,
+          448
+        ],
+        "alwaysOutputData": true,
+        "retryOnFail": true,
+        "waitBetweenTries": 3000,
+        "credentials": {
+          "notionApi": {
+            "id": "hCkfHhloIjGdaqmd",
+            "name": "Xtract Notion"
+          }
+        },
+        "onError": "continueRegularOutput"
+      },
+      {
+        "parameters": {
+          "resource": "databasePage",
+          "operation": "get",
+          "pageId": {
+            "__rl": true,
+            "mode": "url",
+            "value": "={{ $('Code - Extraer Datos').first().json.notionUrl }}"
+          },
+          "simple": false
+        },
+        "id": "node-notion-card-completa",
+        "name": "Notion - Traer card completa",
+        "type": "n8n-nodes-base.notion",
+        "typeVersion": 2.2,
+        "position": [
+          64,
+          448
+        ],
+        "alwaysOutputData": true,
+        "retryOnFail": true,
+        "waitBetweenTries": 3000,
+        "credentials": {
+          "notionApi": {
+            "id": "hCkfHhloIjGdaqmd",
+            "name": "Xtract Notion"
+          }
+        },
+        "onError": "continueRegularOutput"
+      },
+      {
+        "parameters": {
+          "jsCode": "// =====================================================================\n// RESOLVER ERP: prioridad campo manual de Notion > lo dicho en la llamada.\n// El campo manual de Notion (\"Que sistema usan?(*)\") ya sale de la lista\n// desplegable real -> si esta cargado, es la fuente de verdad y no necesita\n// matching. Si no esta cargado, se toma lo que la IA extrajo de la\n// transcripcion (erp_llamada) y se lo compara contra el listado REAL y VIVO\n// de opciones de Notion (Notion - Traer lista ERP), porque Fathom transcribe\n// pesimo los nombres de ERP (ver comentario del mismo problema en WF05:\n// \"Finnegans\" salio como Finance, Finex, Fan, Finegan y Fin en una sola\n// llamada). Si no matchea ninguna opcion real, NO se inventa nada: queda\n// generico y se avisa en el mensaje de Slack para que lo revise un humano.\n// =====================================================================\nconst PROP_ERP = \"Que sistema usan?(*)\";\n\nconst normERP = s => String(s || \"\")\n  .normalize(\"NFD\").replace(/[\\u0300-\\u036f]/g, \"\")\n  .toLowerCase()\n  .replace(/[^a-z0-9]+/g, \" \")\n  .trim();\n\nfunction levenshtein(a, b) {\n  const m = a.length, n = b.length;\n  if (!m) return n;\n  if (!n) return m;\n  const fila = Array(n + 1).fill(0).map((_, i) => i);\n  for (let i = 1; i <= m; i++) {\n    let prevDiag = fila[0];\n    fila[0] = i;\n    for (let j = 1; j <= n; j++) {\n      const tmp = fila[j];\n      fila[j] = a[i - 1] === b[j - 1] ? prevDiag : 1 + Math.min(prevDiag, fila[j], fila[j - 1]);\n      prevDiag = tmp;\n    }\n  }\n  return fila[n];\n}\n\nfunction matchearContraLista(valor, lista) {\n  const v = normERP(valor);\n  if (!v || !lista.length) return null;\n  let hit = lista.find(op => normERP(op) === v);\n  if (hit) return hit;\n  hit = lista.find(op => {\n    const o = normERP(op);\n    return o.length > 2 && (o.includes(v) || v.includes(o));\n  });\n  if (hit) return hit;\n  hit = lista.find(op => {\n    const o = normERP(op);\n    const dist = levenshtein(v, o);\n    return dist <= Math.max(1, Math.ceil(Math.min(v.length, o.length) * 0.3));\n  });\n  return hit || null;\n}\n\n// 1. Listado canonico vivo desde Notion\nlet listaCanonica = [];\ntry {\n  const db = $(\"Notion - Traer lista ERP\").first().json || {};\n  const prop = (db.properties || {})[PROP_ERP] || {};\n  const opciones = (prop.select && prop.select.options) || [];\n  listaCanonica = opciones.map(o => o.name).filter(Boolean);\n} catch (e) {}\n\n// 2. Valor manual ya cargado en la card de Notion (prioridad 1)\nlet erpNotionManual = \"\";\nlet pageId = \"\";\ntry {\n  const card = $(\"Notion - Traer card completa\").first().json || {};\n  pageId = card.id || \"\";\n  const prop = (card.properties || {})[PROP_ERP] || {};\n  erpNotionManual = (prop.select && prop.select.name) || \"\";\n} catch (e) {}\n\nif (!pageId) {\n  try {\n    const extraidos = $(\"Code - Extraer Datos\").first().json || {};\n    pageId = (extraidos.raw && extraidos.raw.id) || extraidos.pageId || (extraidos.notionUrl || \"\").split(\"/\").pop().replace(/-/g, \"\") || \"\";\n  } catch (e) {}\n}\n\n// 3. ERP mencionado en la llamada (IA), solo si Notion no lo tiene cargado\nlet erpLlamada = \"\";\ntry {\n  const iaRaw = $(\"IA - Redactar borrador de correo\").first().json || {};\n  const ia = iaRaw.output || iaRaw;\n  erpLlamada = (ia.erp_llamada || \"\").toString().trim();\n} catch (e) {}\n\nlet erp = \"\";\nlet erpConfirmado = false;\nlet erpSinMatch = \"\";\nlet debeActualizarNotion = false;\n\nif (erpNotionManual) {\n  erp = erpNotionManual;\n  erpConfirmado = true;\n  debeActualizarNotion = false; // Ya esta cargado en Notion, no pisar\n} else if (erpLlamada) {\n  const matched = matchearContraLista(erpLlamada, listaCanonica);\n  if (matched) {\n    erp = matched;\n    erpConfirmado = true;\n    debeActualizarNotion = true; // Solo actualiza si hizo match exacto con listaCanonica\n  } else {\n    erpSinMatch = erpLlamada;\n  }\n}\n\nreturn [{ json: {\n  erp,\n  erp_confirmado: erpConfirmado,\n  erp_sin_match: erpSinMatch,\n  erp_lista_canonica: listaCanonica,\n  debe_actualizar_notion: debeActualizarNotion,\n  page_id: pageId\n} }];\n"
+        },
+        "id": "node-resolver-erp",
+        "name": "Resolver ERP",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          976,
+          416
+        ]
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 2
+            },
+            "conditions": [
+              {
+                "id": "cond-actualizar-erp",
+                "leftValue": "={{ $json.debe_actualizar_notion }}",
+                "rightValue": true,
+                "operator": {
+                  "type": "boolean",
+                  "operation": "equals"
+                }
+              },
+              {
+                "id": "cond-has-pageid",
+                "leftValue": "={{ $json.page_id }}",
+                "rightValue": "",
+                "operator": {
+                  "type": "string",
+                  "operation": "notEquals"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "id": "node-if-debe-actualizar-notion",
+        "name": "Debe actualizar Notion?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.2,
+        "position": [
+          1248,
+          464
+        ]
+      },
+      {
+        "parameters": {
+          "method": "PATCH",
+          "url": "=https://api.notion.com/v1/pages/{{ $json.page_id }}",
+          "authentication": "predefinedCredentialType",
+          "nodeCredentialType": "notionApi",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Notion-Version",
+                "value": "2022-06-28"
+              }
+            ]
+          },
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ JSON.stringify({\n  properties: {\n    \"Que sistema usan?(*)\": {\n      select: {\n        name: $json.erp\n      }\n    }\n  }\n}) }}",
+          "options": {
+            "response": {
+              "response": {
+                "neverError": true
+              }
+            },
+            "timeout": 30000
+          }
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          1472,
+          448
+        ],
+        "id": "node-notion-actualizar-erp",
+        "name": "Notion - Actualizar ERP",
+        "credentials": {
+          "notionApi": {
+            "id": "hCkfHhloIjGdaqmd",
+            "name": "Xtract Notion"
+          }
+        }
+      }
+    ],
+    "connections": {
+      "Link a discovery cargado": {
+        "main": [
+          [
+            {
+              "node": "Code - Extraer Datos",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Slack - Traer usuarios",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Code - Extraer Datos": {
+        "main": [
+          [
+            {
+              "node": "Preparar transcripcion",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Notion - Traer lista ERP",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Notion - Traer card completa",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "JWT": {
+        "main": [
+          []
+        ]
+      },
+      "HTTP - Generar Access Token": {
+        "main": [
+          []
+        ]
+      },
+      "Drive - export texto": {
+        "main": [
+          []
+        ]
+      },
+      "Preparar transcripcion": {
+        "main": [
+          [
+            {
+              "node": "IA - Redactar borrador de correo",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "IA - Redactar borrador de correo": {
+        "main": [
+          [
+            {
+              "node": "Resolver ERP",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Armar mensaje de Slack": {
+        "main": [
+          [
+            {
+              "node": "Slack - Enviar borrador a Santiago",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "OpenRouter Chat Model": {
+        "ai_languageModel": [
+          [
+            {
+              "node": "IA - Redactar borrador de correo",
+              "type": "ai_languageModel",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Notion - Traer lista ERP": {
+        "main": [
+          []
+        ]
+      },
+      "Notion - Traer card completa": {
+        "main": [
+          []
+        ]
+      },
+      "Resolver ERP": {
+        "main": [
+          [
+            {
+              "node": "Armar mensaje de Slack",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Debe actualizar Notion?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Debe actualizar Notion?": {
+        "main": [
+          [
+            {
+              "node": "Notion - Actualizar ERP",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          []
+        ]
+      }
+    },
+    "nodeGroups": [],
+    "authors": "Santiago Wuerich",
+    "name": "Version 0626ab75",
+    "description": "",
+    "autosaved": false,
+    "createdAt": "2026-09-10T21:00:01.410Z",
+    "updatedAt": "2026-09-10T21:00:02.882Z",
+    "workflowPublishHistory": [
+      {
+        "id": 2624,
+        "workflowId": "xP2LYks5hHkcmgN5",
+        "versionId": "0626ab75-090b-4637-b50c-6a0b0d08babb",
+        "event": "activated",
+        "userId": "aa64b914-db8b-4587-b15e-b195296be28f",
+        "createdAt": "2026-09-10T21:00:02.873Z"
+      }
+    ]
+  }
+}

@@ -1,0 +1,297 @@
+{
+  "name": "Outbound B2B — Disparador Inteligente de Emails (Brevo & Vanware)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "disparar-outbound-vanware",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "name": "Webhook Manual (Test)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        180,
+        240
+      ],
+      "id": "node-webhook-manual",
+      "webhookId": "disparar-outbound-vanware"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "30 9 * * 1-5"
+            }
+          ]
+        }
+      },
+      "name": "Cron Lun-Vie 09:30 AM",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        180,
+        440
+      ],
+      "id": "node-cron-trigger"
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1pteXQKBYKCVewqTguWzcYm-G7cEyQVRIIUzEXkcwJi4/edit",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "leads_mails_argentina",
+          "mode": "name"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Estado",
+              "lookupValue": ""
+            }
+          ]
+        },
+        "options": {
+          "outputFormatting": "formatted",
+          "returnAllMatches": "limit",
+          "limit": 200
+        }
+      },
+      "name": "Leer Leads Pendientes (Lote 200)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        420,
+        340
+      ],
+      "id": "node-read-sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "vB1bfFFyDiA59OJt",
+          "name": "Wuerich"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Segmentación inteligente por 3 verticales de Vanware:\n// 1. Sin Web -> Desarrollo de Sitio Web / Landing Page de Alta Conversión\n// 2. Servicios / Clínicas / Inmobiliarias -> Automatización IA WhatsApp\n// 3. Empresas B2B / Mayoristas -> Sistema de Gestión y Software a Medida\n\nconst items = $input.all();\nconst results = [];\n\nconst IA_KEYWORDS = [\n  'dentist', 'dentista', 'odontologia', 'clinic', 'clinica', 'medico', 'salud',\n  'veterinarian', 'veterinaria', 'real_estate', 'inmobiliaria', 'car_dealer', 'concesionaria',\n  'lawyer', 'abogado', 'consultor', 'agencia', 'turismo', 'hotel', 'hostel'\n];\n\nfunction capitalize(str) {\n  if (!str) return '';\n  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();\n}\n\nfunction cleanCompanyName(name) {\n  if (!name) return 'su equipo';\n  let clean = name.replace(/\\b(S\\.A\\.|S\\.R\\.L\\.|S\\.A\\.S\\.|S\\.C\\.|INC\\.|LLC)\\b/gi, '').trim();\n  if (clean === clean.toUpperCase() && clean.length > 3) {\n    clean = clean.split(' ').map(w => capitalize(w)).join(' ');\n  }\n  return clean;\n}\n\nfor (const item of items) {\n  const row = item.json;\n  const email = (row.Mail || row.mail || row.Email || row.email || '').trim().toLowerCase();\n  \n  if (!email || !email.includes('@') || !email.includes('.')) continue;\n  if (email.endsWith('@example.com') || email.endsWith('@sentry.io')) continue;\n\n  const nombre = cleanCompanyName(row.Nombre || row.nombre || row.Name || 'su equipo');\n  const ciudad = (row.Ciudad || row.ciudad || row.Region || 'su ciudad').trim();\n  const rubroRaw = (row.Rubro || row.rubro || row.Categoria || row.rubro_overture || '').toLowerCase();\n  const tieneWeb = (row.Tiene_Web || row.tiene_web || row.sitio_web || '').toString().toLowerCase();\n\n  const isSinWeb = tieneWeb === 'no' || tieneWeb === '' || tieneWeb === 'false';\n  const isIA = IA_KEYWORDS.some(k => rubroRaw.includes(k));\n\n  let producto = '';\n  let introTexto = '';\n  let ben1 = '';\n  let ben2 = '';\n  let ben3 = '';\n  let resultado = '';\n  let asunto = '';\n\n  if (isSinWeb) {\n    // VERTICAL 1: SITIOS WEB & LANDINGS\n    producto = 'nuestro desarrollo de Sitios Web y Tiendas Online de Alta Conversión';\n    introTexto = `noté que hoy no tienen un sitio web oficial activo para captar clientes que buscan servicios como los suyos en Google desde ${ciudad}.`;\n    ben1 = 'Tener presencia profesional en Google y captar clientes que hoy eligen a la competencia';\n    ben2 = 'Diseño ultra rápido adaptado 100% a celulares con botón directo a WhatsApp';\n    ben3 = 'Estructura clara de servicios y catálogo para filtrar consultas y acelerar ventas';\n    resultado = 'duplicar las consultas comerciales recibidas desde canales digitales';\n    asunto = `Propuesta de Sitio Web para ${nombre}`;\n  } else if (isIA) {\n    // VERTICAL 2: AUTOMATIZACIÓN IA PARA WHATSAPP\n    producto = 'nuestro Sistema de Automatización con IA para WhatsApp';\n    introTexto = `desarrollamos asistentes con Inteligencia Artificial que atienden, filtran y agendan consultas de clientes por WhatsApp las 24 hs sin demoras.`;\n    ben1 = 'Atención inmediata 24/7 sin dejar clientes esperando fuera de horario comercial';\n    ben2 = 'Calificación automática de prospectos y agendamiento directo en el calendario comercial';\n    ben3 = 'Sincronización de cada conversación en un CRM para seguimiento de oportunidades';\n    resultado = 'reducir un 70% los tiempos de respuesta y no perder prospectos fuera de horario';\n    asunto = `Consulta para ${nombre}`;\n  } else {\n    // VERTICAL 3: SOFTWARE & SISTEMAS DE GESTIÓN A MEDIDA\n    producto = 'nuestro desarrollo de Sistemas de Gestión y Software a Medida';\n    introTexto = `desarrollamos plataformas a medida para empresas que necesitan centralizar stock, clientes, pedidos y facturación en un solo sistema.`;\n    ben1 = 'Control total de stock, despachos y compras en tiempo real desde una sola pantalla';\n    ben2 = 'Automatizar facturación y seguimiento de pedidos sin planillas de Excel desactualizadas';\n    ben3 = 'Reducir más de 12 horas semanales dedicadas a tareas administrativas repetitivas';\n    resultado = 'ordenar sus operaciones de punta a punta y ganar control total del negocio';\n    asunto = `Una pregunta sobre ${nombre}`;\n  }\n\n  const avatarUrl = 'https://vanware.com.ar/santiago.png';\n  const bgWoodUrl = 'https://vanware.com.ar/hero-fluted-wood.png';\n  const calendlyUrl = 'https://calendly.com/vanware-sys/30min';\n\n  const htmlContent = `<!DOCTYPE html>\n<html lang=\"es\">\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>Vanware</title>\n</head>\n<body style=\"margin:0; padding:0; background-color:#EBE7DF; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing:antialiased; color:#222222;\">\n\n  <table width=\"100%\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\" style=\"background-color:#EBE7DF; padding:30px 10px;\">\n    <tr>\n      <td align=\"center\">\n        \n        <table width=\"100%\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\" style=\"max-width:520px; background-color:#F4F0EA; border-radius:28px; overflow:hidden; box-shadow:0 12px 35px rgba(0,0,0,0.07);\">\n          \n          <!-- HERO ACANALADO MADERA ROJO/BORGOÑA -->\n          <tr>\n            <td style=\"padding:12px 12px 0 12px;\">\n              <table width=\"100%\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\" background=\"${bgWoodUrl}\" style=\"background-image:url('${bgWoodUrl}'); background-size:cover; background-position:center; background-color:#680E14; border-radius:20px; text-align:center; overflow:hidden;\">\n                \n                <!-- Barra superior -->\n                <tr>\n                  <td style=\"padding:18px 20px 10px 20px;\">\n                    <table width=\"100%\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\">\n                      <tr>\n                        <td align=\"left\">\n                          <span style=\"font-size:16px; font-weight:800; color:#FFFFFF; letter-spacing:-0.3px;\">\n                            &#9673; Vanware\n                          </span>\n                        </td>\n                        <td align=\"right\">\n                          <a href=\"https://vanware.com.ar\" style=\"font-size:11px; color:#F0C4C8; text-decoration:none; margin-left:12px;\">Sistemas</a>\n                          <a href=\"https://vanware.com.ar\" style=\"font-size:11px; color:#F0C4C8; text-decoration:none; margin-left:12px;\">Soluciones</a>\n                          <a href=\"https://vanware.com.ar\" style=\"font-size:11px; color:#F0C4C8; text-decoration:none; margin-left:12px;\">Contacto</a>\n                        </td>\n                      </tr>\n                    </table>\n                  </td>\n                </tr>\n\n                <!-- Título Hero -->\n                <tr>\n                  <td style=\"padding:14px 20px 6px 20px;\">\n                    <h1 style=\"margin:0; font-size:25px; line-height:1.2; font-weight:700; color:#FFFFFF;\">\n                      Notamos algo<br>\n                      <span style=\"font-family:'Georgia', serif; font-style:italic; font-weight:normal; color:#FAD5D8;\">que vale la pena compartir</span>\n                    </h1>\n                    <p style=\"margin:10px auto 0 auto; font-size:13px; line-height:1.45; color:#E8B4B8; max-width:360px;\">\n                      Encontramos su empresa analizando operaciones en ${ciudad} y creemos que podemos optimizar su día a día.\n                    </p>\n                  </td>\n                </tr>\n\n                <!-- Foto de Santiago Recortada -->\n                <tr>\n                  <td align=\"center\" style=\"padding-top:10px; line-height:0;\">\n                    <img src=\"${avatarUrl}\" alt=\"Santiago de Vanware\" width=\"220\" style=\"display:block; max-width:220px; width:100%; height:auto; border:0; vertical-align:bottom; border-radius:100px 100px 0 0;\">\n                  </td>\n                </tr>\n\n              </table>\n            </td>\n          </tr>\n\n          <!-- MENSAJE PERSONALIZADO -->\n          <tr>\n            <td style=\"padding:26px 26px 14px 26px; text-align:center;\">\n              <p style=\"margin:0 0 12px 0; font-size:17px; font-weight:700; color:#1C1A19;\">\n                Hola ${nombre},\n              </p>\n              <p style=\"margin:0; font-size:14px; line-height:1.6; color:#383533;\">\n                Mi nombre es Santiago, de <strong>Vanware</strong>. Nos dedicamos a la venta e implementación de soluciones digitales para empresas, y les escribo porque ${introTexto}\n              </p>\n            </td>\n          </tr>\n\n          <!-- TARJETA INTERIOR BLANCA: BENEFICIOS -->\n          <tr>\n            <td style=\"padding:4px 20px 18px 20px;\">\n              <table width=\"100%\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\" style=\"background-color:#FFFFFF; border-radius:20px; padding:22px 20px; border:1px solid #E5E0D8;\">\n                \n                <tr>\n                  <td align=\"center\" style=\"padding-bottom:12px;\">\n                    <span style=\"display:inline-block; background-color:#FDEEEE; color:#8F1820; font-size:11px; font-weight:700; letter-spacing:0.4px; text-transform:uppercase; padding:4px 12px; border-radius:20px;\">\n                      &bull; Propuesta a medida\n                    </span>\n                  </td>\n                </tr>\n\n                <tr>\n                  <td align=\"center\" style=\"padding-bottom:18px;\">\n                    <h2 style=\"margin:0; font-size:21px; line-height:1.25; color:#1A1817; font-weight:700;\">\n                      Tres mejoras clave.<br>\n                      <span style=\"font-family:'Georgia', serif; font-style:italic; color:#8F1820; font-weight:normal;\">Gran impacto operativo.</span>\n                    </h2>\n                    <p style=\"margin:6px 0 0 0; font-size:12px; color:#78726A;\">\n                      En concreto, ${producto} permite:\n                    </p>\n                  </td>\n                </tr>\n\n                <!-- Bullets -->\n                <tr>\n                  <td>\n                    <table width=\"100%\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\">\n                      <tr>\n                        <td width=\"24\" valign=\"top\" style=\"padding:6px 0; font-size:14px;\">&#x1F7E2;</td>\n                        <td valign=\"top\" style=\"padding:6px 0 6px 8px; font-size:13px; line-height:1.45; color:#2E2C2A;\">\n                          ${ben1}\n                        </td>\n                      </tr>\n                      <tr>\n                        <td width=\"24\" valign=\"top\" style=\"padding:6px 0; font-size:14px;\">&#x1F7E2;</td>\n                        <td valign=\"top\" style=\"padding:6px 0 6px 8px; font-size:13px; line-height:1.45; color:#2E2C2A;\">\n                          ${ben2}\n                        </td>\n                      </tr>\n                      <tr>\n                        <td width=\"24\" valign=\"top\" style=\"padding:6px 0; font-size:14px;\">&#x1F7E2;</td>\n                        <td valign=\"top\" style=\"padding:6px 0 6px 8px; font-size:13px; line-height:1.45; color:#2E2C2A;\">\n                          ${ben3}\n                        </td>\n                      </tr>\n                    </table>\n                  </td>\n                </tr>\n\n                <!-- Resultado -->\n                <tr>\n                  <td style=\"padding-top:14px; border-top:1px dashed #E2DDD5;\">\n                    <p style=\"margin:0; font-size:12px; line-height:1.5; color:#5E5851; text-align:center;\">\n                      &#x1F680; Ya ayudamos a empresas a <strong>${resultado}</strong>.\n                    </p>\n                  </td>\n                </tr>\n\n              </table>\n            </td>\n          </tr>\n\n          <!-- LLAMADO A LA ACCION (BOTON CALENDLY) -->\n          <tr>\n            <td style=\"padding:8px 24px 26px 24px; text-align:center;\">\n              <p style=\"margin:0 0 16px 0; font-size:13px; line-height:1.5; color:#47433F;\">\n                Si les interesa, pueden coordinar una <strong>llamada breve de 15 minutos</strong> para mostrarles cómo funciona en vivo y cotizarlo según su necesidad puntual:\n              </p>\n              \n              <table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" align=\"center\">\n                <tr>\n                  <td align=\"center\" style=\"border-radius:50px; background-color:#781219;\">\n                    <a href=\"${calendlyUrl}\" target=\"_blank\" style=\"display:inline-block; padding:13px 30px; font-size:13px; font-weight:700; color:#FFFFFF; text-decoration:none; border-radius:50px;\">\n                      Coordinar una llamada &rarr;\n                    </a>\n                  </td>\n                </tr>\n              </table>\n            </td>\n          </tr>\n\n          <!-- PIE DE PAGINA -->\n          <tr>\n            <td style=\"background-color:#EBE5DC; padding:16px 20px; text-align:center; border-top:1px solid #DFDAD0;\">\n              <p style=\"margin:0 0 3px 0; font-size:12px; font-weight:600; color:#2E2B29;\">\n                Santiago &bull; Vanware\n              </p>\n              <p style=\"margin:0; font-size:11px; color:#78726A;\">\n                Venta e implementación de software empresarial &bull; <a href=\"https://vanware.com.ar\" style=\"color:#78726A; text-decoration:underline;\">vanware.com.ar</a>\n              </p>\n            </td>\n          </tr>\n\n        </table>\n\n      </td>\n    </tr>\n  </table>\n\n</body>\n</html>`;\n\n  results.push({\n    json: {\n      id: row.id || '',\n      mail: email,\n      nombre: nombre,\n      ciudad: ciudad,\n      rubro: rubroRaw,\n      asunto: asunto,\n      cuerpo_html: htmlContent\n    }\n  });\n}\n\nreturn results;"
+      },
+      "name": "Segmentar ICP y Generar HTML Vanware",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        340
+      ],
+      "id": "node-icp-copy-generator"
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "name": "Split In Batches (1 a 1)",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        900,
+        340
+      ],
+      "id": "node-split-batches"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.brevo.com/v3/smtp/email",
+        "authentication": "none",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "api-key",
+              "value": "YOUR_BREVO_API_KEY"
+            },
+            {
+              "name": "accept",
+              "value": "application/json"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={\n  \"sender\": {\n    \"name\": \"Santiago de Vanware\",\n    \"email\": \"contacto@vanware.com.ar\"\n  },\n  \"to\": [\n    {\n      \"email\": \"{{ $json.mail }}\",\n      \"name\": \"{{ $json.nombre }}\"\n    }\n  ],\n  \"replyTo\": {\n    \"email\": \"contacto@vanware.com.ar\",\n    \"name\": \"Santiago Wuerich\"\n  },\n  \"subject\": \"{{ $json.asunto }}\",\n  \"htmlContent\": {{ JSON.stringify($json.cuerpo_html) }}\n}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "name": "Enviar Correo via Brevo API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1120,
+        340
+      ],
+      "id": "node-send-brevo",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "amount": 2,
+        "unit": "seconds"
+      },
+      "name": "Pacing (Espera 2s)",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1340,
+        340
+      ],
+      "id": "node-wait-pacing",
+      "webhookId": "34938eb5-cfba-43d9-95e2-62ff1875c742"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1pteXQKBYKCVewqTguWzcYm-G7cEyQVRIIUzEXkcwJi4/edit",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "leads_mails_argentina",
+          "mode": "name"
+        },
+        "matchingColumns": [
+          "Mail"
+        ],
+        "fields": {
+          "values": [
+            {
+              "column": "Estado",
+              "value": "=Contactado {{ $today.format('YYYY-MM-DD') }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Marcar Como Contactado en Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1560,
+        340
+      ],
+      "id": "node-update-sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "vB1bfFFyDiA59OJt",
+          "name": "Wuerich"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook Manual (Test)": {
+      "main": [
+        [
+          {
+            "node": "Leer Leads Pendientes (Lote 200)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cron Lun-Vie 09:30 AM": {
+      "main": [
+        [
+          {
+            "node": "Leer Leads Pendientes (Lote 200)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leer Leads Pendientes (Lote 200)": {
+      "main": [
+        [
+          {
+            "node": "Segmentar ICP y Generar HTML Vanware",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Segmentar ICP y Generar HTML Vanware": {
+      "main": [
+        [
+          {
+            "node": "Split In Batches (1 a 1)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split In Batches (1 a 1)": {
+      "main": [
+        [
+          {
+            "node": "Enviar Correo via Brevo API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar Correo via Brevo API": {
+      "main": [
+        [
+          {
+            "node": "Pacing (Espera 2s)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pacing (Espera 2s)": {
+      "main": [
+        [
+          {
+            "node": "Marcar Como Contactado en Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Marcar Como Contactado en Sheets": {
+      "main": [
+        [
+          {
+            "node": "Split In Batches (1 a 1)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

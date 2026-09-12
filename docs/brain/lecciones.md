@@ -151,6 +151,29 @@ guarda el *por qué* y el *cuándo*.
 
 ---
 
+## 2026-09-10 · Webhooks `TEMP` activos 9 días en PROD de Xtract, filtrando PII sin autenticación
+
+- **Síntoma:** una auditoría de rutina encontró tres workflows en `n8n.xtract.app` (dominio del
+  cliente) activos, con nombres `TEMP - ...`, aceptando `POST` público **sin ningún auth** y
+  devolviendo datos reales en la respuesta HTTP: `egC6T1U4V4YHA8tf` ("TEMP - cancelar reunion
+  Gaston (borrar)", activo desde 2026-09-02, devuelve invitados/PII de una reunión real de
+  Calendly), `h8ioQvIpoWlVV1mV` y `Xoq5S04QXlr2JKx2` (activos desde 2026-08-28, devuelven el
+  contenido completo de hojas de leads y de la pestaña "Interacciones").
+- **Causa:** `testing-protocol.md §3` solo manda barrer `TEMP - ` "al iniciar un trabajo en DEV".
+  Nunca se aplicó ese barrido a PROD Xtract, así que un temporal creado ahí no tiene ninguna
+  red que lo atrape — puede quedar vivo indefinidamente, aunque el propio nombre del workflow
+  diga "(borrar)".
+- **Regla:** el barrido de `TEMP - ` de [`testing-protocol.md §3`](testing-protocol.md#3-limpieza-del-entorno-de-desarrollo)
+  aplica también a `n8n.xtract.app`, no solo a DEV. Además, motivó el
+  [Patrón 11 — Entorno de Prueba Embebido con Redirect Seguro](catalogo-patrones.md#11-patrón-entorno-de-prueba-embebido-con-redirect-seguro-2026-09-10):
+  si el modo prueba de un proyecto nuevo está embebido en el propio workflow (fail-safe por
+  diseño) en vez de depender de que alguien se acuerde de borrar un workflow temporal, este tipo
+  de incidente deja de depender de la disciplina de limpieza.
+- **Impacto real:** cualquiera con la URL (o que la adivinara) podía extraer leads y PII de una
+  reunión real sin autenticarse, desde la instancia productiva del cliente.
+
+---
+
 ## Reglas heredadas (origen sin fecha registrada)
 
 Estas quedaron documentadas antes de existir este registro. Si volvés a toparte con el caso,

@@ -1,0 +1,103 @@
+{
+  "id": "m5tb2mdgtowxYMXA",
+  "name": "Agente Minutas Hunting",
+  "description": null,
+  "active": true,
+  "activeVersionId": "eb1a1dae-3c30-4ee1-94e2-070b5a665810",
+  "createdAt": "2026-08-19T15:12:25.193Z",
+  "updatedAt": "2026-08-19T15:12:36.849Z",
+  "isArchived": false,
+  "versionId": "eb1a1dae-3c30-4ee1-94e2-070b5a665810",
+  "versionCounter": 3,
+  "sourceWorkflowId": null,
+  "triggerCount": 1,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "1a7979e4-cd1c-4ebf-b476-c1744eda60b3",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "337e3fb0-7d1f-45ac-814b-4d605267ece9",
+      "name": "Webhook",
+      "webhookId": "1a7979e4-cd1c-4ebf-b476-c1744eda60b3"
+    }
+  ],
+  "connections": {},
+  "nodeGroups": [],
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "pinData": {},
+  "meta": null,
+  "tags": [],
+  "shared": [
+    {
+      "role": "workflow:owner",
+      "workflowId": "m5tb2mdgtowxYMXA",
+      "projectId": "GcZu9tSo2Hvl3tu1",
+      "project": {
+        "id": "GcZu9tSo2Hvl3tu1",
+        "name": "Santiago Wuerich <santiagow142001@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "customTelemetryTags": [],
+        "creatorId": "aa64b914-db8b-4587-b15e-b195296be28f",
+        "createdAt": "2026-07-30T14:04:56.362Z",
+        "updatedAt": "2026-08-04T21:24:46.921Z"
+      },
+      "createdAt": "2026-08-19T15:12:25.193Z",
+      "updatedAt": "2026-08-19T15:12:25.193Z"
+    }
+  ],
+  "activeVersion": {
+    "versionId": "eb1a1dae-3c30-4ee1-94e2-070b5a665810",
+    "workflowId": "m5tb2mdgtowxYMXA",
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "1a7979e4-cd1c-4ebf-b476-c1744eda60b3",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2.1,
+        "position": [
+          0,
+          0
+        ],
+        "id": "337e3fb0-7d1f-45ac-814b-4d605267ece9",
+        "name": "Webhook",
+        "webhookId": "1a7979e4-cd1c-4ebf-b476-c1744eda60b3"
+      }
+    ],
+    "connections": {},
+    "nodeGroups": [],
+    "authors": "Santiago Wuerich",
+    "name": "activar nodo",
+    "description": "",
+    "autosaved": true,
+    "createdAt": "2026-08-19T15:12:36.860Z",
+    "updatedAt": "2026-08-19T15:12:46.944Z",
+    "workflowPublishHistory": [
+      {
+        "id": 1453,
+        "workflowId": "m5tb2mdgtowxYMXA",
+        "versionId": "eb1a1dae-3c30-4ee1-94e2-070b5a665810",
+        "event": "activated",
+        "userId": "aa64b914-db8b-4587-b15e-b195296be28f",
+        "createdAt": "2026-08-19T15:12:46.890Z"
+      }
+    ]
+  }
+}

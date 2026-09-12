@@ -1,0 +1,313 @@
+{
+  "id": "h8ioQvIpoWlVV1mV",
+  "name": "TEMP - Inspect Current Leads Piloto and Enviados WA",
+  "description": null,
+  "active": true,
+  "activeVersionId": "c4cfc175-e7c9-4132-8336-0b8e731d64b8",
+  "createdAt": "2026-08-28T13:34:32.945Z",
+  "updatedAt": "2026-08-28T13:34:32.945Z",
+  "isArchived": false,
+  "versionId": "c4cfc175-e7c9-4132-8336-0b8e731d64b8",
+  "versionCounter": 1,
+  "sourceWorkflowId": null,
+  "triggerCount": 1,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "temp-inspect-sheets-batch",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "webhook",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "temp-inspect-sheets-batch"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "mode": "url",
+          "value": "https://docs.google.com/spreadsheets/d/1w6wVAuYmHjI8Fk4b3S1VLxAcgSSQkUjHOTrE1enmaP8/edit"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Leads Piloto"
+        },
+        "options": {}
+      },
+      "id": "read-piloto",
+      "name": "Read Leads Piloto",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        200,
+        0
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "sgEH8OTRXcjJiTTc",
+          "name": "SheetCuentaSantiago"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "mode": "url",
+          "value": "https://docs.google.com/spreadsheets/d/1w6wVAuYmHjI8Fk4b3S1VLxAcgSSQkUjHOTrE1enmaP8/edit"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Enviados WA"
+        },
+        "options": {}
+      },
+      "id": "read-enviados",
+      "name": "Read Enviados WA",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        400,
+        0
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "sgEH8OTRXcjJiTTc",
+          "name": "SheetCuentaSantiago"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const piloto = $('Read Leads Piloto').all().map(i => i.json);\nconst enviados = $('Read Enviados WA').all().map(i => i.json);\nreturn [{ json: {\n  piloto_count: piloto.length,\n  piloto: piloto,\n  enviados_count: enviados.length,\n  enviados_sample: enviados.slice(-5)\n} }];"
+      },
+      "id": "pack",
+      "name": "Pack",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        600,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Read Leads Piloto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Leads Piloto": {
+      "main": [
+        [
+          {
+            "node": "Read Enviados WA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Enviados WA": {
+      "main": [
+        [
+          {
+            "node": "Pack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "nodeGroups": [],
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "pinData": null,
+  "meta": null,
+  "tags": [],
+  "shared": [
+    {
+      "role": "workflow:owner",
+      "workflowId": "h8ioQvIpoWlVV1mV",
+      "projectId": "GcZu9tSo2Hvl3tu1",
+      "project": {
+        "id": "GcZu9tSo2Hvl3tu1",
+        "name": "Santiago Wuerich <santiagow142001@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "customTelemetryTags": [],
+        "creatorId": "aa64b914-db8b-4587-b15e-b195296be28f",
+        "createdAt": "2026-07-30T14:04:56.362Z",
+        "updatedAt": "2026-08-04T21:24:46.921Z"
+      },
+      "createdAt": "2026-08-28T13:34:32.945Z",
+      "updatedAt": "2026-08-28T13:34:32.945Z"
+    }
+  ],
+  "activeVersion": {
+    "versionId": "c4cfc175-e7c9-4132-8336-0b8e731d64b8",
+    "workflowId": "h8ioQvIpoWlVV1mV",
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "temp-inspect-sheets-batch",
+          "responseMode": "lastNode",
+          "options": {}
+        },
+        "id": "webhook",
+        "name": "Webhook",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2,
+        "position": [
+          0,
+          0
+        ],
+        "webhookId": "temp-inspect-sheets-batch"
+      },
+      {
+        "parameters": {
+          "documentId": {
+            "__rl": true,
+            "mode": "url",
+            "value": "https://docs.google.com/spreadsheets/d/1w6wVAuYmHjI8Fk4b3S1VLxAcgSSQkUjHOTrE1enmaP8/edit"
+          },
+          "sheetName": {
+            "__rl": true,
+            "mode": "name",
+            "value": "Leads Piloto"
+          },
+          "options": {}
+        },
+        "id": "read-piloto",
+        "name": "Read Leads Piloto",
+        "type": "n8n-nodes-base.googleSheets",
+        "typeVersion": 4.5,
+        "position": [
+          200,
+          0
+        ],
+        "credentials": {
+          "googleSheetsOAuth2Api": {
+            "id": "sgEH8OTRXcjJiTTc",
+            "name": "SheetCuentaSantiago"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "documentId": {
+            "__rl": true,
+            "mode": "url",
+            "value": "https://docs.google.com/spreadsheets/d/1w6wVAuYmHjI8Fk4b3S1VLxAcgSSQkUjHOTrE1enmaP8/edit"
+          },
+          "sheetName": {
+            "__rl": true,
+            "mode": "name",
+            "value": "Enviados WA"
+          },
+          "options": {}
+        },
+        "id": "read-enviados",
+        "name": "Read Enviados WA",
+        "type": "n8n-nodes-base.googleSheets",
+        "typeVersion": 4.5,
+        "position": [
+          400,
+          0
+        ],
+        "credentials": {
+          "googleSheetsOAuth2Api": {
+            "id": "sgEH8OTRXcjJiTTc",
+            "name": "SheetCuentaSantiago"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "const piloto = $('Read Leads Piloto').all().map(i => i.json);\nconst enviados = $('Read Enviados WA').all().map(i => i.json);\nreturn [{ json: {\n  piloto_count: piloto.length,\n  piloto: piloto,\n  enviados_count: enviados.length,\n  enviados_sample: enviados.slice(-5)\n} }];"
+        },
+        "id": "pack",
+        "name": "Pack",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          600,
+          0
+        ]
+      }
+    ],
+    "connections": {
+      "Webhook": {
+        "main": [
+          [
+            {
+              "node": "Read Leads Piloto",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Read Leads Piloto": {
+        "main": [
+          [
+            {
+              "node": "Read Enviados WA",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Read Enviados WA": {
+        "main": [
+          [
+            {
+              "node": "Pack",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "nodeGroups": [],
+    "authors": "Santiago Wuerich",
+    "name": null,
+    "description": null,
+    "autosaved": false,
+    "createdAt": "2026-08-28T13:34:32.945Z",
+    "updatedAt": "2026-08-28T13:34:32.945Z",
+    "workflowPublishHistory": [
+      {
+        "id": 2014,
+        "workflowId": "h8ioQvIpoWlVV1mV",
+        "versionId": "c4cfc175-e7c9-4132-8336-0b8e731d64b8",
+        "event": "activated",
+        "userId": "aa64b914-db8b-4587-b15e-b195296be28f",
+        "createdAt": "2026-08-28T13:34:33.739Z"
+      }
+    ]
+  }
+}

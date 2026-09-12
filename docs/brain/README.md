@@ -53,6 +53,8 @@ Idea ─▶ [3] patrón ─▶ diseño ─▶ [5] crítica ─▶ [4] construcci
   línea de "última verificación". Sin fecha, se trata como sospechosa.
 - **El dato manda sobre el documento.** Si la instancia dice otra cosa que la tabla, se
   corrige la tabla en el mismo trabajo, no "después".
+- **Workflows grandes vía MCP se delegan, no se cargan enteros.** Ver
+  [`sistemas.md §5`](sistemas.md#5-manejo-de-respuestas-grandes-de-mcp-2026-09-10).
 
 ---
 

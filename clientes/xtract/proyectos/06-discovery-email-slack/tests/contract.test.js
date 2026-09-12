@@ -46,6 +46,14 @@ function runExtractor(jsCode, payload) {
   return script.runInContext(vm.createContext(sandbox), { timeout: 2000 });
 }
 
+function runResolverErp(jsCode, mocks) {
+  const sandbox = {
+    $: (name) => ({ first: () => ({ json: mocks[name] || {} }) }),
+  };
+  const script = new vm.Script('(function(){\n' + jsCode + '\n})()');
+  return script.runInContext(vm.createContext(sandbox), { timeout: 2000 });
+}
+
 console.log('\n=== 06 contract test — fixtures ===');
 for (const [name, p] of Object.entries(FIXTURES)) {
   let data;
@@ -101,6 +109,71 @@ for (const name of ['happy-es', 'happy-pt', 'edge-sin-link']) {
   check('edge-campos-nulos no lanza excepción', !threw, threw && threw.message);
   if (!threw) {
     check('edge-campos-nulos retorna fileId vacío controlado', rowNulos.fileId === '', JSON.stringify(rowNulos).slice(0, 120));
+  }
+}
+
+console.log('\n=== 06 contract test — Resolver ERP (matching contra listado de Notion) ===');
+{
+  const erpCode = loadWorkflowCode('Resolver ERP');
+  const listaMock = {
+    properties: {
+      'Que sistema usan?(*)': {
+        select: { options: [{ name: 'SAP' }, { name: 'NetSuite' }, { name: 'Finnegans' }, { name: 'Tango' }, { name: 'Xubio' }] },
+      },
+    },
+  };
+  const casos = [
+    {
+      nombre: 'prioriza el campo manual de Notion sobre lo dicho en la llamada',
+      mocks: {
+        'Notion - Traer lista ERP': listaMock,
+        'Notion - Traer card completa': { properties: { 'Que sistema usan?(*)': { select: { name: 'NetSuite' } } } },
+        'IA - Redactar borrador de correo': { erp_llamada: 'algo que no importa' },
+      },
+      esperado: (out) => out.erp === 'NetSuite' && out.erp_confirmado === true && out.debe_actualizar_notion === false,
+    },
+    {
+      nombre: 'matchea variante con typo chico contra la lista (Finegan -> Finnegans)',
+      mocks: {
+        'Notion - Traer lista ERP': listaMock,
+        'Notion - Traer card completa': {},
+        'IA - Redactar borrador de correo': { erp_llamada: 'Finegan' },
+      },
+      esperado: (out) => out.erp === 'Finnegans' && out.erp_confirmado === true && out.debe_actualizar_notion === true,
+    },
+    {
+      nombre: 'matchea exacto case-insensitive (sap -> SAP)',
+      mocks: {
+        'Notion - Traer lista ERP': listaMock,
+        'Notion - Traer card completa': {},
+        'IA - Redactar borrador de correo': { erp_llamada: 'sap' },
+      },
+      esperado: (out) => out.erp === 'SAP' && out.erp_confirmado === true && out.debe_actualizar_notion === true,
+    },
+    {
+      nombre: 'no inventa un match cuando lo dicho no corresponde a ninguna opción real',
+      mocks: {
+        'Notion - Traer lista ERP': listaMock,
+        'Notion - Traer card completa': {},
+        'IA - Redactar borrador de correo': { erp_llamada: 'Un sistema hecho en Excel a medida' },
+      },
+      esperado: (out) => out.erp === '' && out.erp_confirmado === false && out.erp_sin_match === 'Un sistema hecho en Excel a medida' && out.debe_actualizar_notion === false,
+    },
+    {
+      nombre: 'sin dato en ningún lado no genera alerta falsa',
+      mocks: {
+        'Notion - Traer lista ERP': listaMock,
+        'Notion - Traer card completa': {},
+        'IA - Redactar borrador de correo': { erp_llamada: '' },
+      },
+      esperado: (out) => out.erp === '' && out.erp_sin_match === '',
+    },
+  ];
+  for (const c of casos) {
+    let out;
+    try { out = runResolverErp(erpCode, c.mocks)[0].json; }
+    catch (e) { check(c.nombre, false, e.message); continue; }
+    check(c.nombre, c.esperado(out), out);
   }
 }
 
